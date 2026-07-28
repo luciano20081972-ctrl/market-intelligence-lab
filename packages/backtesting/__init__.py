@@ -1,11 +1,6 @@
-"""Backtest result types that keep simulated performance separate from live claims."""
+"""Deterministic, long-only, shared-cash historical simulation."""
 
-from dataclasses import dataclass
+from packages.backtesting.engine import BacktestEngine
+from packages.backtesting.types import BacktestConfig, BacktestResult, HistoricalBar
 
-
-@dataclass(frozen=True)
-class BacktestSummary:
-    strategy_name: str
-    observations: int
-    simulated_return: float
-    max_drawdown: float
+__all__ = ["BacktestConfig", "BacktestEngine", "BacktestResult", "HistoricalBar"]

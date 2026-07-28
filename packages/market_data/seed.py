@@ -218,4 +218,7 @@ def seed_demonstration_data(session: Session) -> dict[str, int]:
                 records_processed=len(ASSETS) * BAR_COUNT_PER_ASSET,
             )
         )
+    from packages.strategies.seed import seed_builtin_strategies
+
+    seed_builtin_strategies(session)
     return {"assets_inserted": inserted_assets, "bars_inserted": inserted_bars}

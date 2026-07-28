@@ -1,0 +1,28 @@
+import { useQuery } from "@tanstack/react-query";
+import { Link, useParams } from "react-router-dom";
+import { api } from "../api";
+import { ErrorState, LoadingState } from "../components/States";
+
+function Sparkline({ values, label, color = "#4fd1a1" }: { values: number[]; label: string; color?: string }) {
+  if (!values.length) return null;
+  const low = Math.min(...values); const high = Math.max(...values); const span = high - low || 1;
+  const points = values.map((value, index) => `${index / Math.max(values.length - 1, 1) * 1000},${180 - (value - low) / span * 160}`).join(" ");
+  return <svg className="research-chart" viewBox="0 0 1000 200" role="img" aria-label={label}><polyline points={points} fill="none" stroke={color} strokeWidth="3" /></svg>;
+}
+
+export function BacktestDetail() {
+  const { id = "" } = useParams();
+  const run = useQuery({ queryKey: ["backtest", id], queryFn: () => api.backtest(id) });
+  const trades = useQuery({ queryKey: ["backtest-trades", id], queryFn: () => api.backtestTrades(id) });
+  const curve = useQuery({ queryKey: ["backtest-equity", id], queryFn: () => api.backtestEquity(id) });
+  if (run.isLoading || trades.isLoading || curve.isLoading) return <LoadingState label="Loading backtest report" />;
+  const error = run.error || trades.error || curve.error;
+  if (error) return <ErrorState error={error} />;
+  const data = run.data!; const metrics = data.metrics;
+  return <section><Link className="back-link" to="/backtests">← Backtest history</Link><div className="page-heading"><div><p className="eyebrow">HYPOTHETICAL SIMULATION</p><h1>{data.strategy_name}</h1><p>{data.asset_symbols.join(", ")} against {data.benchmark_symbol} · {new Date(data.start_time).toLocaleDateString()} – {new Date(data.end_time).toLocaleDateString()}</p></div><span className="health"><i />{data.status}</span></div><div className="disclaimer"><strong>Hypothetical results</strong><p>This simulation uses synthetic stored bars and modeled execution. It is not actual performance or financial advice.</p></div>
+    <div className="metric-grid"><article className="metric"><span>Total return</span><strong>{(Number(metrics.total_return ?? 0) * 100).toFixed(2)}%</strong></article><article className="metric"><span>Annualized return</span><strong>{(Number(metrics.annualized_return ?? 0) * 100).toFixed(2)}%</strong></article><article className="metric"><span>Max drawdown</span><strong>{(Number(metrics.maximum_drawdown ?? 0) * 100).toFixed(2)}%</strong></article><article className="metric"><span>Sharpe ratio</span><strong>{Number(metrics.sharpe_ratio ?? 0).toFixed(2)}</strong></article></div>
+    <div className="chart-grid"><article className="panel chart-panel"><div className="panel-title"><div><p className="eyebrow">EQUITY</p><h2>Portfolio value</h2></div><span className="tag">Final ${Number(data.final_equity).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div><Sparkline label="Equity curve" values={curve.data!.map(point => Number(point.equity))} /></article><article className="panel chart-panel"><div className="panel-title"><div><p className="eyebrow">BENCHMARK</p><h2>{data.benchmark_symbol} comparison</h2></div><span className="tag">{(Number(metrics.benchmark_return ?? 0) * 100).toFixed(2)}%</span></div><Sparkline label="Benchmark curve" color="#7da7e8" values={curve.data!.map(point => Number(point.benchmark_value))} /></article><article className="panel chart-panel"><div className="panel-title"><div><p className="eyebrow">RISK</p><h2>Drawdown</h2></div><span className="tag">Max {(Number(metrics.maximum_drawdown ?? 0) * 100).toFixed(2)}%</span></div><Sparkline label="Drawdown chart" color="#df8a8a" values={curve.data!.map(point => Number(point.drawdown))} /></article></div>
+    <div className="panel-grid"><article className="panel"><div className="panel-title"><h2>Execution assumptions</h2></div><dl className="detail-list">{Object.entries(data.execution_assumptions).map(([key, value]) => <div key={key}><dt>{key.replaceAll("_", " ")}</dt><dd>{String(value)}</dd></div>)}</dl></article><article className="panel"><div className="panel-title"><h2>Strategy parameters</h2></div><pre className="configuration">{JSON.stringify(data.strategy_configuration, null, 2)}</pre></article><article className="panel"><div className="panel-title"><h2>Provenance</h2></div><dl className="detail-list"><div><dt>App version</dt><dd>v{data.application_version}</dd></div><div><dt>Strategy version</dt><dd>{data.strategy_version_id.slice(0, 8)}</dd></div><div><dt>Data sources</dt><dd>{data.data_source_identifiers.length}</dd></div><div><dt>Classification</dt><dd>Hypothetical</dd></div></dl></article></div>
+    <h2 className="section-title">Trades</h2><div className="table-card"><table><thead><tr><th>Execution</th><th>Symbol</th><th>Side</th><th className="number">Quantity</th><th className="number">Price</th><th className="number">Fees</th><th>Reason</th></tr></thead><tbody>{trades.data!.map(trade => <tr key={trade.id}><td>{new Date(trade.execution_time).toLocaleDateString()}</td><td>{trade.symbol}</td><td><span className={`side ${trade.side}`}>{trade.side}</span></td><td className="number">{Number(trade.quantity).toFixed(4)}</td><td className="number">${Number(trade.price).toFixed(2)}</td><td className="number">${Number(trade.fees).toFixed(2)}</td><td>{trade.reason}</td></tr>)}</tbody></table></div>
+  </section>;
+}

@@ -1,11 +1,6 @@
-"""Simulation-only portfolio types; this package cannot submit brokerage orders."""
+"""Simulation-only portfolios, orders, fills, and deterministic risk controls."""
 
-from dataclasses import dataclass
-from decimal import Decimal
+from packages.paper_trading.engine import PaperTradingEngine
+from packages.paper_trading.types import OrderPreview, OrderRequest, OrderResult
 
-
-@dataclass(frozen=True)
-class SimulatedPosition:
-    symbol: str
-    quantity: Decimal
-    average_price: Decimal
+__all__ = ["OrderPreview", "OrderRequest", "OrderResult", "PaperTradingEngine"]

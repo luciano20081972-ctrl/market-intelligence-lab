@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Market Intelligence Lab"
-    version: str = "0.1.0"
+    version: str = "0.2.0"
     environment: str = "development"
     database_url: str = "sqlite:///./data/market_intelligence.db"
     api_host: str = "127.0.0.1"

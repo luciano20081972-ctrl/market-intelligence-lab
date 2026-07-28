@@ -1,6 +1,6 @@
 # Market Intelligence Lab
 
-Market Intelligence Lab is a local-first stock and ETF research foundation for historical data, explainable signals, reproducible backtests, political-market intelligence, and simulated paper trading. Version 0.1.0 establishes a working data model, deterministic demonstration dataset, versioned API, and responsive research interface.
+Market Intelligence Lab is a local-first stock and ETF research workbench for historical data, explainable signals, reproducible backtests, and simulated paper trading. Version 0.2.0 adds transparent strategy definitions, point-in-time shared-cash simulations, and risk-controlled hypothetical portfolios to the v0.1.0 data foundation.
 
 > **Synthetic demonstration data — not live market data.** The bundled prices are generated locally from a fixed seed and must never be interpreted as real, current, or licensed market information.
 
@@ -15,7 +15,9 @@ This release has no Fidelity or brokerage integration, brokerage login automatio
 - `packages/database`: SQLAlchemy 2 models, UTC-aware types, and transaction helpers.
 - `packages/market_data`: provider protocol and deterministic demonstration seed.
 - `packages/provenance`: append-only application audit events.
-- `packages/strategies`, `backtesting`, `paper_trading`, `risk`: small domain contracts that preserve simulation boundaries.
+- `packages/strategies`: seven versioned, parameter-validated transparent strategies and technical indicators.
+- `packages/backtesting`: shared-cash, long-only, no-lookahead simulation and performance metrics.
+- `packages/paper_trading`: deterministic market/limit/stop/stop-limit simulation and portfolio risk rules.
 - `migrations`: authoritative Alembic schema history.
 
 SQLite is the default local database. UUID keys, explicit constraints, portable column types, and SQLAlchemy abstractions keep the schema PostgreSQL-compatible.
@@ -64,6 +66,14 @@ python scripts/seed.py
 ```
 
 Seeding is deterministic and idempotent. It creates nine assets and 120 daily bars per asset. Re-running it does not duplicate records.
+
+## Research workflows
+
+Open **Strategy Lab** to inspect the seven built-in rules and run a backtest. Results include trades, equity, drawdown, benchmark comparison, exact data-source identifiers, strategy configuration, and execution assumptions. Signals become eligible only on a later aligned bar after their publication/effective time; all assets share one cash balance.
+
+Open **Paper Portfolios** to create a hypothetical cash account. Preview each simulated order before submission to see its deterministic stored-bar outcome and all risk rejections. Market, limit, stop, and stop-limit orders are supported; client order IDs make retries idempotent. Limit prices are never violated, short selling is disabled, and no request is sent to a broker.
+
+See [Backtesting and paper trading](docs/backtesting-paper-trading.md) for calculation, fill, gap, and risk-control details.
 
 ## Local startup
 
@@ -127,10 +137,10 @@ The frontend is served at `http://127.0.0.1:8080`. Runtime database data lives i
 
 - Data is synthetic and fixed; there is no live or delayed market feed.
 - No SEC, macroeconomic, congressional-disclosure, political-event, or regulatory-event ingestion yet.
-- Strategy, backtesting, paper-trading, and risk packages expose safe foundations only; they do not yet run portfolios.
+- Backtests use fixed daily demonstration bars; intraday execution, partial fills, market impact, and liquidity depth are not modeled.
 - Authentication and multi-user isolation are not implemented.
 - SQLite is tested locally; PostgreSQL deployment testing is deferred.
-- Market calendars, splits, dividends, and corporate-action adjustment are not modeled in v0.1.0.
+- Market calendars, splits, dividends, and corporate-action adjustment are not modeled in v0.2.0.
 
 See [the roadmap](docs/roadmap.md) for the planned next increment.
 
@@ -143,6 +153,11 @@ Market Intelligence Lab is research software, not financial advice. Synthetic pr
 - [Architecture](docs/architecture.md)
 - [Database](docs/database.md)
 - [Data provenance](docs/data-provenance.md)
+- [Backtesting and paper trading](docs/backtesting-paper-trading.md)
+- [Backtesting methodology](docs/backtesting-methodology.md)
+- [Order execution model](docs/order-execution-model.md)
+- [Paper trading](docs/paper-trading.md)
+- [Risk controls](docs/risk-controls.md)
 - [Local development](docs/local-development.md)
 - [Testing](docs/testing.md)
 - [Security](SECURITY.md)

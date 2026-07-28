@@ -1,19 +1,16 @@
-"""Pure strategy signal contracts; no order execution is permitted."""
+"""Transparent, deterministic research strategies and technical indicators."""
 
-from dataclasses import dataclass
-from datetime import datetime
-from typing import Protocol
+from packages.strategies.registry import (
+    STRATEGY_DEFINITIONS,
+    get_strategy_definition,
+    validate_strategy_parameters,
+)
+from packages.strategies.types import SignalDecision, StrategyDefinition
 
-
-@dataclass(frozen=True)
-class ResearchSignal:
-    symbol: str
-    observed_at: datetime
-    score: float
-    explanation: str
-
-
-class ResearchStrategy(Protocol):
-    name: str
-
-    def evaluate(self, symbol: str) -> ResearchSignal: ...
+__all__ = [
+    "STRATEGY_DEFINITIONS",
+    "SignalDecision",
+    "StrategyDefinition",
+    "get_strategy_definition",
+    "validate_strategy_parameters",
+]

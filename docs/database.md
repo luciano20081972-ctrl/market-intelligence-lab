@@ -9,6 +9,11 @@
 - `Watchlist`: named user-curated collection.
 - `WatchlistAsset`: many-to-many link with an added timestamp.
 - `AuditEvent`: append-only application mutation record.
+- `Strategy` / `StrategyVersion`: named strategy identity and immutable validated parameter versions.
+- `BacktestRun`, `BacktestTrade`, `BacktestDailySnapshot`: reproducible simulation inputs, executions, metrics, and daily state.
+- `Signal` / `SignalFactor`: explainable signal direction, timing, source bar, and indicator factors.
+- `PaperPortfolio`, `PaperPosition`, `PaperOrder`, `PaperFill`, `PortfolioSnapshot`: simulated cash, holdings, order lifecycle, execution, and performance history.
+- `RiskRule`: enabled portfolio-level pre-trade limits and configuration.
 
 UUID primary keys avoid coupling identifiers to database insertion order and support future distributed ingestion. Symbols and watchlist names are unique. A price bar is unique across asset, interval, event time, and data source.
 
@@ -22,4 +27,4 @@ Prices use `NUMERIC(18, 6)` and are serialized as decimals. Volume is a nonnegat
 
 ## Migrations
 
-The revision `0001_foundation` is authoritative. Never edit a migration that has shipped; add a new revision. Verify from an empty database with `alembic upgrade head`, then use `alembic check` to detect ORM/schema drift.
+Revisions `0001_foundation` and `0002_backtesting_paper_trading` are authoritative. Never edit a migration that has shipped; add a new revision. Verify from an empty database with `alembic upgrade head`, then use `alembic check` to detect ORM/schema drift.

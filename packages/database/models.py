@@ -159,3 +159,331 @@ class AuditEvent(Base):
     entity_id: Mapped[str] = mapped_column(String(64), index=True)
     details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     occurred_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+
+
+class Strategy(Base):
+    __tablename__ = "strategies"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(120), unique=True)
+    strategy_type: Mapped[str] = mapped_column(String(64), index=True)
+    description: Mapped[str] = mapped_column(Text)
+    is_builtin: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+    versions: Mapped[list[StrategyVersion]] = relationship(
+        back_populates="strategy", cascade="all, delete-orphan", passive_deletes=True
+    )
+
+
+class StrategyVersion(Base):
+    __tablename__ = "strategy_versions"
+    __table_args__ = (
+        UniqueConstraint("strategy_id", "version", name="uq_strategy_version_number"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    strategy_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("strategies.id", ondelete="CASCADE"), index=True
+    )
+    version: Mapped[int] = mapped_column(Integer)
+    parameters: Mapped[dict[str, Any]] = mapped_column(JSON)
+    parameter_schema: Mapped[dict[str, Any]] = mapped_column(JSON)
+    calculation_notes: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+    strategy: Mapped[Strategy] = relationship(back_populates="versions")
+    backtest_runs: Mapped[list[BacktestRun]] = relationship(back_populates="strategy_version")
+
+
+class BacktestRun(Base):
+    __tablename__ = "backtest_runs"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    strategy_version_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("strategy_versions.id", ondelete="RESTRICT"), index=True
+    )
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    asset_symbols: Mapped[list[str]] = mapped_column(JSON)
+    benchmark_symbol: Mapped[str] = mapped_column(String(16))
+    start_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    end_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    initial_cash: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    cash_balance: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    final_equity: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    strategy_configuration: Mapped[dict[str, Any]] = mapped_column(JSON)
+    risk_configuration: Mapped[dict[str, Any]] = mapped_column(JSON)
+    execution_assumptions: Mapped[dict[str, Any]] = mapped_column(JSON)
+    source_data_identifiers: Mapped[list[str]] = mapped_column(JSON)
+    data_source_identifiers: Mapped[list[str]] = mapped_column(JSON)
+    metrics: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    application_version: Mapped[str] = mapped_column(String(20))
+    is_hypothetical: Mapped[bool] = mapped_column(Boolean, default=True)
+    error_message: Mapped[str | None] = mapped_column(Text)
+    started_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+    strategy_version: Mapped[StrategyVersion] = relationship(back_populates="backtest_runs")
+    trades: Mapped[list[BacktestTrade]] = relationship(
+        back_populates="backtest_run", cascade="all, delete-orphan", passive_deletes=True
+    )
+    snapshots: Mapped[list[BacktestDailySnapshot]] = relationship(
+        back_populates="backtest_run", cascade="all, delete-orphan", passive_deletes=True
+    )
+    signals: Mapped[list[Signal]] = relationship(
+        back_populates="backtest_run", cascade="all, delete-orphan", passive_deletes=True
+    )
+
+
+class BacktestTrade(Base):
+    __tablename__ = "backtest_trades"
+    __table_args__ = (CheckConstraint("quantity > 0", name="backtest_trade_quantity_positive"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    backtest_run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("backtest_runs.id", ondelete="CASCADE"), index=True
+    )
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="RESTRICT"), index=True
+    )
+    source_price_bar_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("price_bars.id", ondelete="RESTRICT")
+    )
+    symbol: Mapped[str] = mapped_column(String(16), index=True)
+    side: Mapped[str] = mapped_column(String(8))
+    signal_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    execution_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    quantity: Mapped[Decimal] = mapped_column(Numeric(20, 8))
+    price: Mapped[Decimal] = mapped_column(Numeric(20, 8))
+    gross_value: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    fees: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    cash_after: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    reason: Mapped[str] = mapped_column(String(160))
+
+    backtest_run: Mapped[BacktestRun] = relationship(back_populates="trades")
+
+
+class BacktestDailySnapshot(Base):
+    __tablename__ = "backtest_daily_snapshots"
+    __table_args__ = (
+        UniqueConstraint("backtest_run_id", "event_time", name="uq_backtest_snapshot_time"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    backtest_run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("backtest_runs.id", ondelete="CASCADE"), index=True
+    )
+    event_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    equity: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    cash: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    positions: Mapped[dict[str, Any]] = mapped_column(JSON)
+    cumulative_fees: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    exposure: Mapped[Decimal] = mapped_column(Numeric(12, 8))
+    drawdown: Mapped[Decimal] = mapped_column(Numeric(12, 8))
+    benchmark_value: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+
+    backtest_run: Mapped[BacktestRun] = relationship(back_populates="snapshots")
+
+
+class PaperPortfolio(Base):
+    __tablename__ = "paper_portfolios"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(120), unique=True)
+    currency: Mapped[str] = mapped_column(String(3), default="USD")
+    starting_cash: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    cash_balance: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    realized_pnl: Mapped[Decimal] = mapped_column(Numeric(20, 6), default=Decimal("0"))
+    status: Mapped[str] = mapped_column(String(20), default="active", index=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+    positions: Mapped[list[PaperPosition]] = relationship(
+        back_populates="portfolio", cascade="all, delete-orphan", passive_deletes=True
+    )
+    orders: Mapped[list[PaperOrder]] = relationship(
+        back_populates="portfolio", cascade="all, delete-orphan", passive_deletes=True
+    )
+    fills: Mapped[list[PaperFill]] = relationship(
+        back_populates="portfolio", cascade="all, delete-orphan", passive_deletes=True
+    )
+    snapshots: Mapped[list[PortfolioSnapshot]] = relationship(
+        back_populates="portfolio", cascade="all, delete-orphan", passive_deletes=True
+    )
+    risk_rules: Mapped[list[RiskRule]] = relationship(
+        back_populates="portfolio", cascade="all, delete-orphan", passive_deletes=True
+    )
+
+
+class PaperPosition(Base):
+    __tablename__ = "paper_positions"
+    __table_args__ = (
+        UniqueConstraint("portfolio_id", "asset_id", name="uq_paper_position_asset"),
+        CheckConstraint("quantity >= 0", name="paper_position_quantity_nonnegative"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    portfolio_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("paper_portfolios.id", ondelete="CASCADE"), index=True
+    )
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="RESTRICT"), index=True
+    )
+    quantity: Mapped[Decimal] = mapped_column(Numeric(20, 8))
+    average_cost: Mapped[Decimal] = mapped_column(Numeric(20, 8))
+    realized_pnl: Mapped[Decimal] = mapped_column(Numeric(20, 6), default=Decimal("0"))
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+    portfolio: Mapped[PaperPortfolio] = relationship(back_populates="positions")
+    asset: Mapped[Asset] = relationship()
+
+
+class PaperOrder(Base):
+    __tablename__ = "paper_orders"
+    __table_args__ = (
+        UniqueConstraint("portfolio_id", "client_order_id", name="uq_paper_order_client_id"),
+        CheckConstraint("quantity > 0", name="paper_order_quantity_positive"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    portfolio_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("paper_portfolios.id", ondelete="CASCADE"), index=True
+    )
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="RESTRICT"), index=True
+    )
+    client_order_id: Mapped[str] = mapped_column(String(80))
+    side: Mapped[str] = mapped_column(String(8))
+    order_type: Mapped[str] = mapped_column(String(20), index=True)
+    quantity: Mapped[Decimal] = mapped_column(Numeric(20, 8))
+    limit_price: Mapped[Decimal | None] = mapped_column(Numeric(20, 8))
+    stop_price: Mapped[Decimal | None] = mapped_column(Numeric(20, 8))
+    status: Mapped[str] = mapped_column(String(24), index=True)
+    is_triggered: Mapped[bool] = mapped_column(Boolean, default=False)
+    rejection_reason: Mapped[str | None] = mapped_column(String(300))
+    estimated_value: Mapped[Decimal | None] = mapped_column(Numeric(20, 6))
+    estimated_fees: Mapped[Decimal | None] = mapped_column(Numeric(20, 6))
+    assumptions: Mapped[dict[str, Any]] = mapped_column(JSON)
+    source_price_bar_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("price_bars.id", ondelete="RESTRICT")
+    )
+    submitted_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+    cancelled_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+    portfolio: Mapped[PaperPortfolio] = relationship(back_populates="orders")
+    asset: Mapped[Asset] = relationship()
+    fills: Mapped[list[PaperFill]] = relationship(
+        back_populates="order", cascade="all, delete-orphan", passive_deletes=True
+    )
+
+
+class PaperFill(Base):
+    __tablename__ = "paper_fills"
+    __table_args__ = (CheckConstraint("quantity > 0", name="paper_fill_quantity_positive"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    portfolio_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("paper_portfolios.id", ondelete="CASCADE"), index=True
+    )
+    order_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("paper_orders.id", ondelete="CASCADE"), index=True
+    )
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="RESTRICT"), index=True
+    )
+    source_price_bar_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("price_bars.id", ondelete="RESTRICT")
+    )
+    side: Mapped[str] = mapped_column(String(8))
+    quantity: Mapped[Decimal] = mapped_column(Numeric(20, 8))
+    price: Mapped[Decimal] = mapped_column(Numeric(20, 8))
+    gross_value: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    fees: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    filled_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+
+    portfolio: Mapped[PaperPortfolio] = relationship(back_populates="fills")
+    order: Mapped[PaperOrder] = relationship(back_populates="fills")
+    asset: Mapped[Asset] = relationship()
+
+
+class PortfolioSnapshot(Base):
+    __tablename__ = "portfolio_snapshots"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    portfolio_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("paper_portfolios.id", ondelete="CASCADE"), index=True
+    )
+    event_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    equity: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    cash: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    realized_pnl: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    unrealized_pnl: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    exposure: Mapped[Decimal] = mapped_column(Numeric(12, 8))
+    positions: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+    portfolio: Mapped[PaperPortfolio] = relationship(back_populates="snapshots")
+
+
+class RiskRule(Base):
+    __tablename__ = "risk_rules"
+    __table_args__ = (
+        UniqueConstraint("portfolio_id", "rule_type", name="uq_risk_rule_portfolio_type"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    portfolio_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("paper_portfolios.id", ondelete="CASCADE"), index=True
+    )
+    rule_type: Mapped[str] = mapped_column(String(64))
+    limit_value: Mapped[Decimal] = mapped_column(Numeric(20, 8))
+    configuration: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+    portfolio: Mapped[PaperPortfolio] = relationship(back_populates="risk_rules")
+
+
+class Signal(Base):
+    __tablename__ = "signals"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    backtest_run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("backtest_runs.id", ondelete="CASCADE"), index=True
+    )
+    strategy_version_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("strategy_versions.id", ondelete="RESTRICT"), index=True
+    )
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="RESTRICT"), index=True
+    )
+    source_price_bar_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("price_bars.id", ondelete="RESTRICT")
+    )
+    generated_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    eligible_after: Mapped[datetime] = mapped_column(UTCDateTime())
+    direction: Mapped[str] = mapped_column(String(16))
+    strength: Mapped[Decimal] = mapped_column(Numeric(12, 8))
+    explanation: Mapped[str] = mapped_column(String(500))
+
+    backtest_run: Mapped[BacktestRun] = relationship(back_populates="signals")
+    factors: Mapped[list[SignalFactor]] = relationship(
+        back_populates="signal", cascade="all, delete-orphan", passive_deletes=True
+    )
+
+
+class SignalFactor(Base):
+    __tablename__ = "signal_factors"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    signal_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("signals.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(80))
+    value: Mapped[Decimal] = mapped_column(Numeric(20, 8))
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+
+    signal: Mapped[Signal] = relationship(back_populates="factors")

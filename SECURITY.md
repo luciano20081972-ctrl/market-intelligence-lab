@@ -2,7 +2,7 @@
 
 ## Deliberate trust boundary
 
-Market Intelligence Lab v0.1.0 is a local research and simulation application. It must not be used as a brokerage gateway or real-money execution system.
+Market Intelligence Lab v0.2.0 is a local research and simulation application. It must not be used as a brokerage gateway or real-money execution system.
 
 - No real brokerage access or Fidelity integration.
 - No collection or storage of brokerage usernames, passwords, session cookies, API credentials, or two-factor codes.

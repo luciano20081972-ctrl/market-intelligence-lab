@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from apps.api.dependencies import get_db
-from apps.api.routers import assets, system, watchlists
+from apps.api.routers import assets, backtests, paper_portfolios, strategies, system, watchlists
 from apps.api.schemas import HealthResponse
 from packages.core.config import Settings, get_settings
 from packages.database.session import create_database_engine, make_session_factory
@@ -49,6 +49,9 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.include_router(system.router, prefix="/api/v1")
     app.include_router(assets.router, prefix="/api/v1")
     app.include_router(watchlists.router, prefix="/api/v1")
+    app.include_router(strategies.router, prefix="/api/v1")
+    app.include_router(backtests.router, prefix="/api/v1")
+    app.include_router(paper_portfolios.router, prefix="/api/v1")
     return app
 
 
