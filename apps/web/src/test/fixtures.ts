@@ -1,7 +1,7 @@
 import type { Asset, PriceBar, SystemInfo, Watchlist } from "../types";
 
 export const systemInfo: SystemInfo = {
-  app_name: "Market Intelligence Lab", version: "0.3.0", environment: "test",
+  app_name: "Market Intelligence Lab", version: "0.4.0", environment: "test",
   database_engine: "sqlite", demonstration_mode: true, database_health: "healthy",
   tracked_assets: 9, watchlists: 0, demonstration_bars: 1080,
   warning: "Synthetic demonstration data — not live market data.",

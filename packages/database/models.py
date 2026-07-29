@@ -127,6 +127,12 @@ class PriceBar(Base):
     )
     checksum: Mapped[str] = mapped_column(String(64), default="", server_default="")
     record_version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    import_job_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("import_jobs.id", ondelete="SET NULL"), index=True
+    )
+    raw_provider_metadata: Mapped[dict[str, Any]] = mapped_column(
+        JSON, default=dict, server_default="{}"
+    )
     is_demonstration_data: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
 
@@ -235,6 +241,15 @@ class BacktestRun(Base):
     metrics: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     application_version: Mapped[str] = mapped_column(String(20))
     is_hypothetical: Mapped[bool] = mapped_column(Boolean, default=True)
+    data_classification: Mapped[str] = mapped_column(
+        String(32), default="synthetic", server_default="synthetic"
+    )
+    provider_identifiers: Mapped[list[str]] = mapped_column(JSON, default=list, server_default="[]")
+    import_job_identifiers: Mapped[list[str]] = mapped_column(
+        JSON, default=list, server_default="[]"
+    )
+    adjustment_statuses: Mapped[list[str]] = mapped_column(JSON, default=list, server_default="[]")
+    calendar_code: Mapped[str] = mapped_column(String(32), default="XNYS", server_default="XNYS")
     error_message: Mapped[str | None] = mapped_column(Text)
     started_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
     completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
@@ -578,6 +593,14 @@ class ImportJob(Base):
     processing_duration_ms: Mapped[int] = mapped_column(Integer, default=0)
     error_summary: Mapped[str | None] = mapped_column(Text)
     validation_report: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    idempotency_key: Mapped[str | None] = mapped_column(String(128), unique=True, index=True)
+    dry_run: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    adjustment_preference: Mapped[str] = mapped_column(
+        String(24), default="unadjusted", server_default="unadjusted"
+    )
+    queue_name: Mapped[str] = mapped_column(
+        String(32), default="manual", server_default="manual", index=True
+    )
 
     provider: Mapped[Provider] = relationship(back_populates="import_jobs")
     batches: Mapped[list[ImportBatch]] = relationship(
@@ -723,3 +746,201 @@ class ImportError(Base):
 
     job: Mapped[ImportJob] = relationship(back_populates="errors")
     batch: Mapped[ImportBatch | None] = relationship(back_populates="errors")
+
+
+class WorkerInstance(Base):
+    __tablename__ = "worker_instances"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    worker_identifier: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    status: Mapped[str] = mapped_column(String(32), default="starting", index=True)
+    started_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    last_heartbeat_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+    stopped_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    current_job_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("import_jobs.id", ondelete="SET NULL"), index=True
+    )
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+
+
+class JobLease(Base):
+    __tablename__ = "job_leases"
+    __table_args__ = (CheckConstraint("expires_at > acquired_at", name="job_lease_expiry"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("import_jobs.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    worker_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("worker_instances.id", ondelete="CASCADE"), index=True
+    )
+    lease_token: Mapped[str] = mapped_column(String(64), unique=True)
+    acquired_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    expires_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    heartbeat_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class JobEvent(Base):
+    __tablename__ = "job_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("import_jobs.id", ondelete="CASCADE"), index=True
+    )
+    event_type: Mapped[str] = mapped_column(String(48), index=True)
+    from_status: Mapped[str | None] = mapped_column(String(32))
+    to_status: Mapped[str | None] = mapped_column(String(32))
+    message: Mapped[str] = mapped_column(Text, default="")
+    details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+
+
+class ImportSchedule(Base):
+    __tablename__ = "import_schedules"
+    __table_args__ = (
+        UniqueConstraint("provider_id", "name", name="uq_import_schedule_provider_name"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    provider_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("providers.id", ondelete="RESTRICT"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(120))
+    scope_type: Mapped[str] = mapped_column(String(24), default="assets")
+    symbols: Mapped[list[str]] = mapped_column(JSON, default=list)
+    date_range_policy: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    mode: Mapped[str] = mapped_column(String(24), default="incremental")
+    adjustment_preference: Mapped[str] = mapped_column(String(24), default="unadjusted")
+    timezone: Mapped[str] = mapped_column(String(80), default="UTC")
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    next_run_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    last_run_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    failure_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+
+class ScheduleRun(Base):
+    __tablename__ = "schedule_runs"
+    __table_args__ = (
+        UniqueConstraint("schedule_id", "scheduled_for", name="uq_schedule_run_due_time"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    schedule_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("import_schedules.id", ondelete="CASCADE"), index=True
+    )
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("import_jobs.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    scheduled_for: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    status: Mapped[str] = mapped_column(String(32), default="queued")
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class ProviderRateLimitState(Base):
+    __tablename__ = "provider_rate_limit_states"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    provider_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("providers.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    requests_remaining: Mapped[int | None] = mapped_column(Integer)
+    reset_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    rate_limit_events: Mapped[int] = mapped_column(Integer, default=0)
+    last_response_status: Mapped[int | None] = mapped_column(Integer)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+
+class ProviderSymbolMapping(Base):
+    __tablename__ = "provider_symbol_mappings"
+    __table_args__ = (
+        UniqueConstraint("provider_id", "canonical_symbol", name="uq_provider_canonical_symbol"),
+        UniqueConstraint("provider_id", "provider_symbol", name="uq_provider_external_symbol"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    provider_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("providers.id", ondelete="CASCADE"), index=True
+    )
+    canonical_symbol: Mapped[str] = mapped_column(String(32), index=True)
+    provider_symbol: Mapped[str] = mapped_column(String(64), index=True)
+    exchange_code: Mapped[str] = mapped_column(String(32), default="XNYS")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+
+class ReconciliationRun(Base):
+    __tablename__ = "reconciliation_runs"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    provider_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("providers.id", ondelete="SET NULL"), index=True
+    )
+    status: Mapped[str] = mapped_column(String(32), default="running", index=True)
+    dry_run: Mapped[bool] = mapped_column(Boolean, default=True)
+    configuration: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    records_checked: Mapped[int] = mapped_column(Integer, default=0)
+    issue_count: Mapped[int] = mapped_column(Integer, default=0)
+    conflict_count: Mapped[int] = mapped_column(Integer, default=0)
+    started_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+
+class ReconciliationIssue(Base):
+    __tablename__ = "reconciliation_issues"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("reconciliation_runs.id", ondelete="CASCADE"), index=True
+    )
+    asset_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("assets.id", ondelete="SET NULL"), index=True
+    )
+    provider_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("providers.id", ondelete="SET NULL"), index=True
+    )
+    issue_type: Mapped[str] = mapped_column(String(64), index=True)
+    severity: Mapped[str] = mapped_column(String(16), index=True)
+    record_identifier: Mapped[str | None] = mapped_column(String(180))
+    outcome: Mapped[str] = mapped_column(String(32), default="preserved")
+    resolution_decision: Mapped[str] = mapped_column(String(80), default="manual_review")
+    existing_checksum: Mapped[str | None] = mapped_column(String(64))
+    incoming_checksum: Mapped[str | None] = mapped_column(String(64))
+    details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+
+
+class OperationalMetric(Base):
+    __tablename__ = "operational_metrics"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    metric_name: Mapped[str] = mapped_column(String(80), index=True)
+    metric_value: Mapped[Decimal] = mapped_column(Numeric(20, 6))
+    labels: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    job_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("import_jobs.id", ondelete="CASCADE"), index=True
+    )
+    worker_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("worker_instances.id", ondelete="CASCADE"), index=True
+    )
+    recorded_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+
+
+class ProviderHealthSnapshot(Base):
+    __tablename__ = "provider_health_snapshots"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    provider_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("providers.id", ondelete="CASCADE"), index=True
+    )
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    configured: Mapped[bool] = mapped_column(Boolean)
+    connectivity_status: Mapped[str] = mapped_column(String(32))
+    message: Mapped[str] = mapped_column(Text, default="")
+    quota: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    checked_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)

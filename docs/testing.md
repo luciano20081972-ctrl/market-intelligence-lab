@@ -15,3 +15,8 @@ Vitest and React Testing Library cover the foundation screens, backtesting and p
 The Playwright smoke test loads the application, finds a seeded asset, creates a watchlist, adds AAPL, opens its detail page, and fails on browser-console errors. Install Chromium once with `pnpm exec playwright install chromium`, then run `pnpm run test:e2e`.
 
 Tests must not be reported as passed unless they ran. Docker verification is distinct from source-level verification and is reported separately when Docker is unavailable.
+# Sprint 4 verification
+
+Provider unit tests use `httpx.MockTransport` and deterministic CSV fixtures; ordinary tests never access the internet. Queue tests cover idempotency, claim exclusivity, lease renewal/expiry, abandoned recovery, metrics, scheduling deduplication, cancellation, restart cursors, and graceful shutdown. Calendar coverage validates a post-2027 holiday and early close. Reconciliation and imported/mixed backtest tests verify non-destructive outcomes and provenance.
+
+Run `python scripts/verify.py` for backend tests/Ruff/MyPy and frontend TypeScript/Vitest/build. Run Playwright separately after installing Chromium. An optional one-request Stooq smoke test is documented in `real-market-data.md` and is never part of the default suite.

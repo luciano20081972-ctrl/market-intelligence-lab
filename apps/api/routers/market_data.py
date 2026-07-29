@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
@@ -25,11 +25,13 @@ from apps.api.schemas_sprint3 import (
     TradingSessionPage,
     TradingSessionResponse,
 )
+from packages.core.config import get_settings
 from packages.database.models import (
     CorporateAction,
     ExchangeCalendar,
     ImportError,
     ImportJob,
+    JobEvent,
     Provider,
     TradingSession,
 )
@@ -40,9 +42,13 @@ from packages.market_data.ingestion import (
     restart_import_job,
     run_import_job,
 )
+from packages.market_data.rate_limit import InProcessRateLimiter
 from packages.market_data.registry import default_registry
 
 router = APIRouter(tags=["market-data"])
+import_limiter = InProcessRateLimiter(
+    limit=get_settings().expensive_request_limit_per_minute, window_seconds=60
+)
 
 
 def _error(code: str, message: str, status_code: int = 422) -> HTTPException:
@@ -60,6 +66,9 @@ def _provider(value: Provider) -> ProviderResponse:
         health=value.health,
         last_tested_at=value.last_tested_at,
         last_successful_import_at=value.last_successful_import_at,
+        adapter_type=value.adapter_type,
+        authentication_required=bool(value.configuration.get("authentication_required", False)),
+        configuration_status="configured" if value.is_enabled else "unconfigured",
     )
 
 
@@ -98,6 +107,10 @@ def _job(value: ImportJob, *, include_batches: bool = False) -> ImportJobRespons
         processing_duration_ms=value.processing_duration_ms,
         error_summary=value.error_summary,
         validation_report=value.validation_report,
+        resume_cursor=value.resume_cursor,
+        dry_run=value.dry_run,
+        adjustment_preference=value.adjustment_preference,
+        queue_name=value.queue_name,
         batches=batches,
     )
 
@@ -155,7 +168,14 @@ def test_provider(
 
 
 @router.post("/import/jobs", response_model=ImportJobResponse, status_code=status.HTTP_201_CREATED)
-def create_job(payload: ImportJobCreate, session: Session = Depends(get_db)) -> ImportJobResponse:
+def create_job(
+    payload: ImportJobCreate,
+    request: Request,
+    session: Session = Depends(get_db),
+) -> ImportJobResponse:
+    client_key = request.client.host if request.client else "local"
+    if not import_limiter.allow(f"{client_key}:import-submit"):
+        raise _error("rate_limit_exceeded", "Too many import submissions", 429)
     try:
         job = create_import_job(
             session,
@@ -166,7 +186,23 @@ def create_job(payload: ImportJobCreate, session: Session = Depends(get_db)) -> 
             end=payload.end,
             interval=payload.interval,
             max_attempts=payload.max_attempts,
+            adjustment_preference=payload.adjustment_preference,
+            dry_run=payload.dry_run,
+            idempotency_key=request.headers.get("Idempotency-Key"),
         )
+        existing_event = session.scalar(
+            select(JobEvent.id).where(JobEvent.job_id == job.id, JobEvent.event_type == "queued")
+        )
+        if existing_event is None:
+            session.add(
+                JobEvent(
+                    job_id=job.id,
+                    event_type="queued",
+                    to_status="queued",
+                    message="Import job accepted",
+                    details={"provider_code": payload.provider_code},
+                )
+            )
         if payload.execute_immediately:
             run_import_job(session, job)
         session.commit()

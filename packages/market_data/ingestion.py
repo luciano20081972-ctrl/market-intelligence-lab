@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import time
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -19,16 +20,24 @@ from packages.database.models import (
     ImportBatch,
     ImportError,
     ImportJob,
+    JobEvent,
     PriceBar,
     Provider,
+    ProviderRateLimitState,
+    ProviderSymbolMapping,
     TradingSession,
 )
 from packages.market_data.corporate_actions import validate_corporate_action
 from packages.market_data.quality import ValidationReport, validate_historical_bars, validate_symbol
 from packages.market_data.registry import ProviderRegistry, default_registry
-from packages.market_data.types import HistoricalBarRecord, ProviderTemporaryError
+from packages.market_data.types import (
+    HistoricalBarRecord,
+    ProviderError,
+    ProviderRateLimitError,
+    ProviderTemporaryError,
+)
 
-TERMINAL_STATUSES = {"succeeded", "failed", "cancelled"}
+TERMINAL_STATUSES = {"succeeded", "failed", "cancelled", "dead_letter"}
 RESTARTABLE_STATUSES = {"failed", "retrying", "interrupted", "cancelled"}
 
 
@@ -53,6 +62,10 @@ def create_import_job(
     end: datetime,
     interval: str = "1d",
     max_attempts: int = 3,
+    adjustment_preference: str = "unadjusted",
+    dry_run: bool = False,
+    idempotency_key: str | None = None,
+    queue_name: str = "manual",
 ) -> ImportJob:
     provider = session.scalar(select(Provider).where(Provider.code == provider_code.lower()))
     if provider is None:
@@ -69,6 +82,14 @@ def create_import_job(
         raise ValueError("start and end must be timezone-aware and start must precede end")
     if max_attempts < 1 or max_attempts > 10:
         raise ValueError("max_attempts must be between 1 and 10")
+    if adjustment_preference not in {"adjusted", "unadjusted", "provider_default"}:
+        raise ValueError("invalid adjustment preference")
+    if idempotency_key:
+        existing = session.scalar(
+            select(ImportJob).where(ImportJob.idempotency_key == idempotency_key)
+        )
+        if existing is not None:
+            return existing
     job = ImportJob(
         provider_id=provider.id,
         mode=mode,
@@ -78,8 +99,14 @@ def create_import_job(
             "start": start.isoformat(),
             "end": end.isoformat(),
             "interval": interval,
+            "adjustment_preference": adjustment_preference,
+            "dry_run": dry_run,
         },
         max_attempts=max_attempts,
+        adjustment_preference=adjustment_preference,
+        dry_run=dry_run,
+        idempotency_key=idempotency_key,
+        queue_name=queue_name,
     )
     session.add(job)
     session.flush()
@@ -89,10 +116,20 @@ def create_import_job(
 def request_cancellation(session: Session, job: ImportJob) -> ImportJob:
     if job.status in TERMINAL_STATUSES:
         raise ValueError(f"cannot cancel a {job.status} job")
+    previous = job.status
     job.cancel_requested = True
     if job.status == "queued":
         job.status = "cancelled"
         job.completed_at = datetime.now(UTC)
+    session.add(
+        JobEvent(
+            job_id=job.id,
+            event_type="cancellation_requested",
+            from_status=previous,
+            to_status=job.status,
+            message="Cancellation requested",
+        )
+    )
     session.flush()
     return job
 
@@ -161,6 +198,23 @@ def _asset(session: Session, provider: Provider, adapter: Any, symbol: str) -> A
                 retrieval_time=metadata.retrieval_time,
                 checksum=checksum,
                 version=metadata.version,
+            )
+        )
+    provider_symbol = str(metadata.metadata.get("provider_symbol", metadata.symbol))
+    mapping = session.scalar(
+        select(ProviderSymbolMapping).where(
+            ProviderSymbolMapping.provider_id == provider.id,
+            ProviderSymbolMapping.canonical_symbol == asset.symbol,
+        )
+    )
+    if mapping is None:
+        session.add(
+            ProviderSymbolMapping(
+                provider_id=provider.id,
+                canonical_symbol=asset.symbol,
+                provider_symbol=provider_symbol,
+                exchange_code=asset.exchange,
+                metadata_json={"source": "adapter_metadata"},
             )
         )
     return asset
@@ -233,8 +287,9 @@ def run_import_job(
     session: Session,
     job: ImportJob,
     registry: ProviderRegistry = default_registry,
+    heartbeat: Callable[[], None] | None = None,
 ) -> ImportJob:
-    if job.status not in {"queued", "retrying", "interrupted"}:
+    if job.status not in {"queued", "retrying", "interrupted", "running"}:
         raise ValueError(f"job status '{job.status}' cannot be run")
     provider = session.get(Provider, job.provider_id)
     if provider is None or not provider.is_enabled:
@@ -256,6 +311,8 @@ def run_import_job(
     reports: list[dict[str, Any]] = list(job.validation_report.get("batches", []))
     try:
         for sequence, symbol in enumerate(job.symbols):
+            if heartbeat:
+                heartbeat()
             if sequence < start_index:
                 continue
             if job.cancel_requested:
@@ -279,7 +336,32 @@ def run_import_job(
             else:
                 batch.status = "running"
             asset = _asset(session, provider, adapter, symbol)
-            records = adapter.fetch_historical_bars(symbol, start, end, interval)
+            fetch_start = start
+            if job.mode == "incremental":
+                latest = session.scalar(
+                    select(PriceBar.event_time)
+                    .where(
+                        PriceBar.asset_id == asset.id,
+                        PriceBar.interval == interval,
+                        PriceBar.data_source_id == source.id,
+                    )
+                    .order_by(PriceBar.event_time.desc())
+                    .limit(1)
+                )
+                if latest is not None:
+                    fetch_start = max(start, latest + timedelta(microseconds=1))
+            records = (
+                adapter.fetch_historical_bars(symbol, fetch_start, end, interval)
+                if fetch_start < end
+                else []
+            )
+            if job.adjustment_preference == "adjusted" and any(
+                record.adjustment_status not in {"adjusted", "split_adjusted", "total_return"}
+                for record in records
+            ):
+                raise ValueError(
+                    f"provider '{provider.code}' cannot satisfy the requested adjusted series"
+                )
             report = validate_historical_bars(
                 records,
                 valid_session_dates=valid_sessions or None,
@@ -315,7 +397,7 @@ def run_import_job(
                 checksum = _record_checksum(record)
                 checksums.append(checksum)
                 duplicate = session.scalar(
-                    select(PriceBar.id).where(
+                    select(PriceBar).where(
                         PriceBar.asset_id == asset.id,
                         PriceBar.interval == record.interval,
                         PriceBar.event_time == record.event_time,
@@ -328,7 +410,36 @@ def run_import_job(
                         PriceBar.checksum == checksum,
                     )
                 )
-                if duplicate is not None or checksum_duplicate is not None:
+                if duplicate is not None:
+                    if duplicate.checksum and duplicate.checksum != checksum:
+                        session.add(
+                            ImportError(
+                                job_id=job.id,
+                                batch_id=batch.id,
+                                error_code="conflicting_reimport",
+                                message=(
+                                    "Incoming provider record conflicts with the preserved "
+                                    "canonical record"
+                                ),
+                                record_identifier=(
+                                    f"{record.symbol}:{record.interval}:{record.event_time.isoformat()}"
+                                ),
+                                payload_summary={
+                                    "existing_checksum": duplicate.checksum,
+                                    "incoming_checksum": checksum,
+                                    "resolution": "preserved_existing",
+                                },
+                                is_retryable=False,
+                            )
+                        )
+                    batch.records_skipped += 1
+                    job.records_skipped += 1
+                    continue
+                if checksum_duplicate is not None:
+                    batch.records_skipped += 1
+                    job.records_skipped += 1
+                    continue
+                if job.dry_run:
                     batch.records_skipped += 1
                     job.records_skipped += 1
                     continue
@@ -352,6 +463,8 @@ def run_import_job(
                         adjustment_status=record.adjustment_status,
                         checksum=checksum,
                         record_version=record.version,
+                        import_job_id=job.id,
+                        raw_provider_metadata=record.raw_metadata or {},
                     )
                 )
                 batch.records_inserted += 1
@@ -370,6 +483,8 @@ def run_import_job(
             reports.append({"symbol": symbol, **report_data})
             job.resume_cursor = {"symbol_index": sequence + 1}
             session.flush()
+            if heartbeat:
+                heartbeat()
         if job.status == "running":
             job.status = "succeeded"
             provider.last_successful_import_at = datetime.now(UTC)
@@ -377,6 +492,18 @@ def run_import_job(
         if job.status in TERMINAL_STATUSES:
             job.completed_at = datetime.now(UTC)
     except ProviderTemporaryError as exc:
+        if isinstance(exc, ProviderRateLimitError):
+            rate_state = session.scalar(
+                select(ProviderRateLimitState).where(
+                    ProviderRateLimitState.provider_id == provider.id
+                )
+            )
+            if rate_state is None:
+                rate_state = ProviderRateLimitState(provider_id=provider.id)
+                session.add(rate_state)
+            rate_state.rate_limit_events += 1
+            rate_state.last_response_status = 429
+            rate_state.updated_at = datetime.now(UTC)
         session.add(
             ImportError(
                 job_id=job.id,
@@ -395,7 +522,7 @@ def run_import_job(
         else:
             job.status = "failed"
             job.completed_at = datetime.now(UTC)
-    except (ValueError, IntegrityError) as exc:
+    except (ProviderError, ValueError, IntegrityError) as exc:
         session.add(
             ImportError(
                 job_id=job.id,

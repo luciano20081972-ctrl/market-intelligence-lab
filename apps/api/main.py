@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import Engine, text
 from sqlalchemy.exc import SQLAlchemyError
@@ -11,6 +11,7 @@ from apps.api.routers import (
     assets,
     backtests,
     market_data,
+    operations,
     paper_portfolios,
     strategies,
     system,
@@ -19,6 +20,7 @@ from apps.api.routers import (
 from apps.api.schemas import HealthResponse
 from packages.core.config import Settings, get_settings
 from packages.database.session import create_database_engine, make_session_factory
+from packages.market_data.observability import correlation_middleware
 
 
 def create_app(settings: Settings | None = None, engine: Engine | None = None) -> FastAPI:
@@ -37,8 +39,9 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
         allow_origins=app_settings.cors_origins,
         allow_credentials=False,
         allow_methods=["GET", "POST", "PATCH", "DELETE"],
-        allow_headers=["Content-Type"],
+        allow_headers=["Content-Type", "X-Correlation-ID", "Idempotency-Key"],
     )
+    app.middleware("http")(correlation_middleware)
 
     @app.get("/health", response_model=HealthResponse, tags=["system"])
     def health(session: Session = Depends(get_db)) -> HealthResponse:
@@ -49,6 +52,21 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
                 status="degraded", database="unavailable", version=app_settings.version
             )
         return HealthResponse(status="healthy", database="healthy", version=app_settings.version)
+
+    @app.get("/health/live", tags=["system"])
+    def liveness() -> dict[str, str]:
+        return {"status": "healthy", "version": app_settings.version}
+
+    @app.get("/health/ready", tags=["system"])
+    def readiness(session: Session = Depends(get_db)) -> dict[str, str]:
+        try:
+            session.execute(text("SELECT 1"))
+        except SQLAlchemyError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail={"code": "database_unavailable", "message": "Database is unavailable"},
+            ) from exc
+        return {"status": "healthy", "database": "healthy", "version": app_settings.version}
 
     @app.get("/", include_in_schema=False)
     def root(request: Request) -> dict[str, str]:
@@ -61,6 +79,7 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.include_router(backtests.router, prefix="/api/v1")
     app.include_router(paper_portfolios.router, prefix="/api/v1")
     app.include_router(market_data.router, prefix="/api/v1")
+    app.include_router(operations.router, prefix="/api/v1")
     return app
 
 

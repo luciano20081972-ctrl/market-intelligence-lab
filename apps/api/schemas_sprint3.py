@@ -23,6 +23,9 @@ class ProviderResponse(BaseModel):
     health: str
     last_tested_at: datetime | None
     last_successful_import_at: datetime | None
+    adapter_type: str = ""
+    authentication_required: bool = False
+    configuration_status: str = "unconfigured"
 
 
 class ProviderPage(BaseModel):
@@ -43,13 +46,17 @@ class ProviderTestResponse(BaseModel):
 
 class ImportJobCreate(BaseModel):
     provider_code: str = Field(min_length=1, max_length=48)
-    symbols: list[str] = Field(min_length=1, max_length=100)
+    symbols: list[str] = Field(min_length=1, max_length=25)
     mode: Literal["full", "incremental"] = "incremental"
     start: datetime
     end: datetime
     interval: str = Field(default="1d", pattern=r"^(1d|1h|15m|5m|1m)$")
     max_attempts: int = Field(default=3, ge=1, le=10)
-    execute_immediately: bool = True
+    execute_immediately: bool = False
+    adjustment_preference: Literal["adjusted", "unadjusted", "provider_default"] = (
+        "provider_default"
+    )
+    dry_run: bool = False
 
     @field_validator("symbols")
     @classmethod
@@ -90,6 +97,10 @@ class ImportJobResponse(BaseModel):
     processing_duration_ms: int
     error_summary: str | None
     validation_report: dict[str, Any]
+    resume_cursor: dict[str, Any] = Field(default_factory=dict)
+    dry_run: bool = False
+    adjustment_preference: str = "provider_default"
+    queue_name: str = "manual"
     batches: list[ImportBatchResponse] = Field(default_factory=list)
 
 

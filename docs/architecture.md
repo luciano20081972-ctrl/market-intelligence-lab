@@ -2,7 +2,7 @@
 
 ## Shape
 
-The repository is a modular monorepo with one Python process and one browser application. FastAPI owns transport concerns; reusable packages own data and domain behavior. React talks only to the versioned JSON API through a typed client.
+The repository is a modular monorepo with an API process, an explicit optional worker process, and one browser application. FastAPI owns transport concerns; reusable packages own data and domain behavior. React talks only to the versioned JSON API through a typed client.
 
 ```text
 React/Vite -> /api/v1 -> FastAPI routers -> SQLAlchemy sessions -> SQLite/PostgreSQL
@@ -38,3 +38,8 @@ ProviderRegistry -> adapter records -> quality validation -> ImportBatch -> norm
 Each import job is durable and resumes at a symbol cursor. Per-record and per-batch checksums prevent duplicates, while database uniqueness constraints provide a concurrent-write backstop. Exchange sessions are seeded independently and validation rejects bars on closed sessions. Raw close values remain immutable; adjusted values and the adjustment status are stored alongside them.
 
 The current in-memory scheduler is only an orchestration boundary. A later worker can claim the same daily, manual, retry, and failed queues without changing the job model or API.
+# Version 0.4 operational topology
+
+The API only validates and persists import requests. An explicit `packages.market_data.worker` process owns execution; it polls the same database, creates schedules, recovers expired leases, conditionally claims one job, renews ownership, and writes bars/events/metrics in transactions. No worker thread starts during API import or tests.
+
+Stooq is the only operational external adapter and can reach only its fixed HTTPS CSV endpoint. `exchange-calendars` supplies maintained XNYS schedules, which remain persisted in the existing normalized calendar tables. Reconciliation reads canonical bars and writes separate non-destructive findings. This release targets one API instance and one worker; distributed brokers, authentication, and multi-tenant isolation are outside the topology.

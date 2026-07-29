@@ -32,3 +32,8 @@ This sprint should not add brokerage connectivity or trading.
 - Implement one licensed provider adapter with sandbox credentials and contract tests.
 - Replace the finite holiday table with a maintained calendar feed.
 - Add a durable worker and scheduler lease model, observability, authentication, rate limiting, and provider license controls.
+# After v0.4.0
+
+Sprint 4 completes the first operational historical provider, maintained XNYS calendar, durable single-process queue/worker, daily schedules, health/observability, reconciliation, and imported-data backtests.
+
+Recommended Sprint 5 priorities are complete authentication and authorization, multi-user isolation, distributed rate limiting/worker coordination, provider-terms governance and retention controls, a second independently sourced provider for reconciliation, schedule policies tied to exchange close, and production PostgreSQL concurrency/deployment validation. Brokerage connectivity and real-money execution remain out of scope.

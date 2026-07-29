@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
@@ -64,21 +64,70 @@ def run_backtest(
     if missing:
         raise ValueError(f"Unknown assets: {', '.join(missing)}")
     bars_by_symbol: dict[str, list[HistoricalBar]] = {}
+    classifications: set[str] = set()
+    provider_identifiers: set[str] = set()
+    import_job_identifiers: set[str] = set()
+    adjustment_statuses: set[str] = set()
+    coverage_warnings: list[str] = []
     for symbol in symbols:
         asset = assets[symbol]
-        bars = session.scalars(
-            select(PriceBar)
-            .where(
-                PriceBar.asset_id == asset.id,
-                PriceBar.event_time >= start_time,
-                PriceBar.event_time <= end_time,
+        bars = list(
+            session.scalars(
+                select(PriceBar)
+                .where(
+                    PriceBar.asset_id == asset.id,
+                    PriceBar.event_time >= start_time,
+                    PriceBar.event_time <= end_time,
+                )
+                .order_by(PriceBar.event_time)
+            ).all()
+        )
+        available = {"synthetic" if bar.is_demonstration_data else "imported" for bar in bars}
+        if config.data_source_mode == "synthetic":
+            bars = [bar for bar in bars if bar.is_demonstration_data]
+        elif config.data_source_mode == "imported":
+            bars = [bar for bar in bars if not bar.is_demonstration_data]
+        elif len(available) > 1 and not config.allow_mixed_data:
+            raise ValueError(
+                f"Mixed synthetic and imported data for {symbol} is rejected by default"
             )
-            .order_by(PriceBar.event_time)
-        ).all()
+        classifications.update(
+            "synthetic" if bar.is_demonstration_data else "imported" for bar in bars
+        )
+        provider_identifiers.update(str(bar.provider_id) for bar in bars if bar.provider_id)
+        import_job_identifiers.update(str(bar.import_job_id) for bar in bars if bar.import_job_id)
+        adjustment_statuses.update(bar.adjustment_status for bar in bars)
+        if config.adjustment_preference == "adjusted" and any(
+            bar.adjustment_status in {"unadjusted", "provider_unspecified"} for bar in bars
+        ):
+            raise ValueError(
+                f"Adjusted data was requested but {symbol} has unadjusted or unspecified bars"
+            )
+        if len({bar.adjustment_status for bar in bars}) > 1 and not config.allow_mixed_data:
+            raise ValueError(f"Incompatible adjustment states for {symbol}")
+        if len({bar.data_source_id for bar in bars}) > 1 and not config.allow_mixed_data:
+            raise ValueError(
+                f"Multiple data sources for {symbol} require explicit mixed-data opt-in"
+            )
+        if config.allow_mixed_data:
+            by_time = {bar.event_time: bar for bar in bars}
+            bars = [by_time[key] for key in sorted(by_time)]
+        if bars and bars[0].event_time > start_time + timedelta(days=7):
+            coverage_warnings.append(f"{symbol} begins after the requested start")
+        if bars and bars[-1].event_time < end_time - timedelta(days=7):
+            coverage_warnings.append(f"{symbol} ends before the requested end")
+        if (
+            bars
+            and any(not bar.is_demonstration_data for bar in bars)
+            and datetime.now(UTC) - max(bar.retrieval_time for bar in bars) > timedelta(days=7)
+        ):
+            coverage_warnings.append(f"{symbol} imported data is stale")
         bars_by_symbol[symbol] = [_historical_bar(bar, symbol) for bar in bars]
     if any(not bars_by_symbol[symbol] for symbol in symbols):
         empty = [symbol for symbol in symbols if not bars_by_symbol[symbol]]
         raise ValueError(f"No price history in range for: {', '.join(empty)}")
+    if len(classifications) > 1 and not config.allow_mixed_data:
+        raise ValueError("Mixed synthetic and imported series are rejected by default")
 
     result = BacktestEngine().run(
         bars_by_symbol={symbol: bars_by_symbol[symbol] for symbol in config.symbols},
@@ -102,12 +151,25 @@ def run_backtest(
             "max_position_pct": str(config.max_position_pct),
             "max_total_exposure": str(config.max_total_exposure),
         },
-        execution_assumptions=result.assumptions,
+        execution_assumptions={
+            **result.assumptions,
+            "data_source_mode": config.data_source_mode,
+            "adjustment_preference": config.adjustment_preference,
+            "calendar": "XNYS",
+            "coverage_warnings": coverage_warnings,
+        },
         source_data_identifiers=result.source_data_identifiers,
         data_source_identifiers=result.data_source_identifiers,
         metrics=result.metrics,
         application_version=settings.version,
         is_hypothetical=True,
+        data_classification=(
+            "mixed" if len(classifications) > 1 else next(iter(classifications), "unknown")
+        ),
+        provider_identifiers=sorted(provider_identifiers),
+        import_job_identifiers=sorted(import_job_identifiers),
+        adjustment_statuses=sorted(adjustment_statuses),
+        calendar_code="XNYS",
         completed_at=utc_now(),
     )
     session.add(run)

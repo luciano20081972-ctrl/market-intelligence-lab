@@ -80,7 +80,7 @@ describe("Sprint 2 research workflows", () => {
     expect(await screen.findByText("5.00%")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Benchmark curve" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Drawdown chart" })).toBeInTheDocument();
-    expect(screen.getByText("Hypothetical results")).toBeInTheDocument();
+    expect(screen.getByText(/Hypothetical results · synthetic data/)).toBeInTheDocument();
   });
 
   it("creates a paper portfolio", async () => {

@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+import csv
 import hashlib
+import io
+import json
+import os
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from zoneinfo import ZoneInfo
+
+import httpx
 
 from packages.market_data.types import (
     CAPABILITIES,
@@ -11,6 +18,10 @@ from packages.market_data.types import (
     CorporateActionRecord,
     HistoricalBarRecord,
     ProviderDisabledError,
+    ProviderError,
+    ProviderRateLimitError,
+    ProviderResponseError,
+    ProviderTemporaryError,
 )
 
 PROVIDER_DEFINITIONS: tuple[dict[str, object], ...] = (
@@ -63,6 +74,178 @@ class DisabledProviderAdapter:
         self, exchange: str, start: datetime, end: datetime
     ) -> list[CalendarSessionRecord]:
         raise self._disabled()
+
+
+class StooqAdapter:
+    """Read-only daily OHLCV adapter for Stooq's fixed HTTPS CSV endpoint."""
+
+    code = "stooq"
+    name = "Stooq Historical Daily Data"
+    capabilities: tuple[str, ...] = ("historical_ohlcv", "asset_metadata")
+    base_url = "https://stooq.com/q/d/l/"
+    max_response_bytes = 2_000_000
+    max_range_days = 7_400
+
+    def __init__(
+        self,
+        *,
+        transport: httpx.BaseTransport | None = None,
+        timeout_seconds: float | None = None,
+    ) -> None:
+        self.transport = transport
+        configured_timeout = timeout_seconds or float(os.getenv("MIL_STOOQ_TIMEOUT_SECONDS", "10"))
+        if configured_timeout < 1 or configured_timeout > 60:
+            raise ValueError("Stooq timeout must be between 1 and 60 seconds")
+        self.timeout_seconds = configured_timeout
+
+    @staticmethod
+    def normalize_symbol(symbol: str) -> str:
+        canonical = symbol.strip().upper()
+        if not canonical or len(canonical) > 16:
+            raise ValueError("symbol must contain between 1 and 16 characters")
+        if canonical.startswith("^") or "." in canonical:
+            return canonical.lower()
+        return f"{canonical.lower()}.us"
+
+    def health(self) -> dict[str, object]:
+        return {
+            "status": "healthy",
+            "configured": True,
+            "connectivity": "not_tested",
+            "provider": self.code,
+            "authentication_required": False,
+            "base_url": self.base_url,
+        }
+
+    def test_connectivity(self) -> dict[str, object]:
+        body = self._get({"s": "aapl.us", "d1": "20260102", "d2": "20260109", "i": "d"})
+        header = body.decode("utf-8-sig", errors="replace").splitlines()[0]
+        if header.strip() != "Date,Open,High,Low,Close,Volume":
+            raise ProviderResponseError("Stooq connectivity response was malformed")
+        return {**self.health(), "connectivity": "connected"}
+
+    def _get(self, params: dict[str, str]) -> bytes:
+        try:
+            with httpx.Client(
+                timeout=httpx.Timeout(self.timeout_seconds),
+                transport=self.transport,
+                follow_redirects=False,
+                headers={"User-Agent": "Market-Intelligence-Lab/0.4"},
+            ) as client:
+                response = client.get(self.base_url, params=params)
+        except (httpx.TimeoutException, httpx.NetworkError) as exc:
+            raise ProviderTemporaryError("Stooq request timed out or was unavailable") from exc
+        if response.status_code == 429:
+            raise ProviderRateLimitError("Stooq rate limit reached; retry later")
+        if response.status_code >= 500:
+            raise ProviderTemporaryError(f"Stooq temporarily returned HTTP {response.status_code}")
+        if response.status_code != 200:
+            raise ProviderError(f"Stooq rejected the request with HTTP {response.status_code}")
+        body = response.content
+        if len(body) > self.max_response_bytes:
+            raise ProviderResponseError("Stooq response exceeded the configured size limit")
+        if not body.strip():
+            raise ProviderResponseError("Stooq returned an empty response")
+        return body
+
+    def fetch_historical_bars(
+        self, symbol: str, start: datetime, end: datetime, interval: str = "1d"
+    ) -> list[HistoricalBarRecord]:
+        if interval != "1d":
+            raise ValueError("Stooq adapter supports daily bars only")
+        if start.tzinfo is None or end.tzinfo is None or start >= end:
+            raise ValueError("start/end must be timezone-aware and ordered")
+        if (end - start).days > self.max_range_days:
+            raise ValueError(f"Stooq date range cannot exceed {self.max_range_days} days")
+        provider_symbol = self.normalize_symbol(symbol)
+        body = self._get(
+            {
+                "s": provider_symbol,
+                "d1": start.strftime("%Y%m%d"),
+                "d2": end.strftime("%Y%m%d"),
+                "i": "d",
+            }
+        )
+        try:
+            text = body.decode("utf-8-sig")
+        except UnicodeDecodeError as exc:
+            raise ProviderResponseError("Stooq response was not valid UTF-8 CSV") from exc
+        reader = csv.DictReader(io.StringIO(text))
+        required = {"Date", "Open", "High", "Low", "Close", "Volume"}
+        if reader.fieldnames is None or not required.issubset(reader.fieldnames):
+            raise ProviderResponseError("Stooq CSV columns were missing or malformed")
+        retrieved = datetime.now(UTC)
+        timezone = ZoneInfo("America/New_York")
+        records: list[HistoricalBarRecord] = []
+        try:
+            for row in reader:
+                if any(row.get(field, "").strip() in {"", "N/D"} for field in required):
+                    raise ProviderResponseError("Stooq CSV contained a missing market value")
+                session_date = datetime.strptime(row["Date"], "%Y-%m-%d").date()
+                close_local = datetime.combine(
+                    session_date, datetime.min.time(), tzinfo=timezone
+                ) + timedelta(hours=16)
+                event_time = close_local.astimezone(UTC)
+                raw = {key: row[key] for key in sorted(required)}
+                checksum = hashlib.sha256(
+                    json.dumps(raw, sort_keys=True, separators=(",", ":")).encode()
+                ).hexdigest()
+                records.append(
+                    HistoricalBarRecord(
+                        symbol=symbol.strip().upper(),
+                        interval="1d",
+                        event_time=event_time,
+                        publication_time=retrieved,
+                        effective_time=event_time,
+                        retrieval_time=retrieved,
+                        open=Decimal(row["Open"]),
+                        high=Decimal(row["High"]),
+                        low=Decimal(row["Low"]),
+                        close=Decimal(row["Close"]),
+                        adjusted_close=Decimal(row["Close"]),
+                        volume=int(Decimal(row["Volume"])),
+                        adjustment_status="provider_unspecified",
+                        checksum=checksum,
+                        provider_symbol=provider_symbol,
+                        raw_metadata={"source_row": raw, "provider_symbol": provider_symbol},
+                    )
+                )
+        except ProviderResponseError:
+            raise
+        except (KeyError, ValueError, ArithmeticError) as exc:
+            raise ProviderResponseError("Stooq CSV contained an invalid market value") from exc
+        if not records:
+            raise ProviderResponseError("Stooq returned no data for the requested symbol and dates")
+        return records
+
+    def fetch_asset_metadata(self, symbol: str) -> AssetMetadataRecord:
+        now = datetime.now(UTC)
+        canonical = symbol.strip().upper()
+        provider_symbol = self.normalize_symbol(canonical)
+        return AssetMetadataRecord(
+            symbol=canonical,
+            name=canonical,
+            asset_type="Stock",
+            exchange="XNYS",
+            currency="USD",
+            sector=None,
+            industry=None,
+            effective_time=now,
+            retrieval_time=now,
+            metadata={"provider_symbol": provider_symbol, "metadata_status": "symbol_only"},
+        )
+
+    def fetch_corporate_actions(
+        self, symbol: str, start: datetime, end: datetime
+    ) -> list[CorporateActionRecord]:
+        del symbol, start, end
+        return []
+
+    def fetch_exchange_calendar(
+        self, exchange: str, start: datetime, end: datetime
+    ) -> list[CalendarSessionRecord]:
+        del exchange, start, end
+        return []
 
 
 class SyntheticHistoricalAdapter:

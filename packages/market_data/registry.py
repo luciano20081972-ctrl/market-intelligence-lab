@@ -6,6 +6,7 @@ from typing import cast
 from packages.market_data.adapters import (
     PROVIDER_DEFINITIONS,
     DisabledProviderAdapter,
+    StooqAdapter,
     SyntheticHistoricalAdapter,
 )
 from packages.market_data.types import MarketDataAdapter
@@ -58,8 +59,11 @@ class ProviderRegistry:
 def build_default_registry() -> ProviderRegistry:
     registry = ProviderRegistry()
     registry.register(SyntheticHistoricalAdapter(), enabled_by_default=True)
+    registry.register(StooqAdapter(), enabled_by_default=True)
     for definition in PROVIDER_DEFINITIONS:
         code = str(definition["code"])
+        if code == "stooq":
+            continue
         name = str(definition["name"])
         environment_keys = tuple(cast(list[str], definition["env"]))
         registry.register(

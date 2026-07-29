@@ -97,6 +97,8 @@ export interface Backtest {
   metrics: Record<string, number | string>; strategy_configuration: Record<string, unknown>;
   risk_configuration: Record<string, unknown>; execution_assumptions: Record<string, unknown>;
   data_source_identifiers: string[]; application_version: string; is_hypothetical: boolean;
+  data_classification?: string; provider_identifiers?: string[];
+  import_job_identifiers?: string[]; adjustment_statuses?: string[]; calendar_code?: string;
   created_at: string;
 }
 export interface BacktestPage { items: Backtest[]; page: number; page_size: number; total: number }
@@ -156,6 +158,7 @@ export interface Provider {
   id: string; code: string; name: string; capabilities: string[];
   credential_environment_keys: string[]; is_enabled: boolean; health: string;
   last_tested_at: string | null; last_successful_import_at: string | null;
+  adapter_type: string; authentication_required: boolean; configuration_status: string;
 }
 export interface ProviderPage { items: Provider[]; meta: PageMeta; }
 export interface ImportBatch {
@@ -170,6 +173,8 @@ export interface ImportJob {
   records_processed: number; records_inserted: number; records_skipped: number;
   processing_duration_ms: number; error_summary: string | null;
   validation_report: { batches?: Array<{ symbol: string; valid: boolean; error_count: number; warning_count: number }> };
+  resume_cursor: Record<string, unknown>; dry_run: boolean; adjustment_preference: string;
+  queue_name: string;
   batches: ImportBatch[];
 }
 export interface ImportJobPage { items: ImportJob[]; meta: PageMeta; }
@@ -190,3 +195,41 @@ export interface TradingSession {
   open_time: string; close_time: string; is_early_close: boolean; status: string;
 }
 export interface TradingSessionPage { items: TradingSession[]; meta: PageMeta; }
+
+export interface ProviderStatus {
+  provider_id: string; code: string; configured: boolean; health: string; connectivity: string;
+  last_checked_at: string | null; last_successful_import_at: string | null; stale: boolean;
+  authentication_required: boolean;
+  rate_limit: { requests_remaining: number | null; reset_at: string | null; events: number };
+}
+export interface ImportPreview {
+  provider: string; mode: string; dry_run: boolean; adjustment_preference: string;
+  can_submit: boolean; reports: Array<{ symbol: string; provider_symbol?: string; records: number; valid: boolean; issues?: Array<Record<string, unknown>>; error?: string }>;
+}
+export interface JobEvent {
+  id: string; event_type: string; from_status: string | null; to_status: string | null;
+  message: string; details: Record<string, unknown>; created_at: string;
+}
+export interface QueueSummary {
+  depth: number; failed: number; running: number; by_status: Record<string, number>;
+}
+export interface WorkerInstance {
+  id: string; worker_identifier: string; status: string; last_heartbeat_at: string;
+  current_job_id: string | null;
+}
+export interface WorkerPage { items: WorkerInstance[]; meta: PageMeta; }
+export interface ImportSchedule {
+  id: string; provider_id: string; name: string; symbols: string[]; mode: string;
+  adjustment_preference: string; timezone: string; is_enabled: boolean;
+  next_run_at: string; last_run_at: string | null; failure_count: number;
+  last_error: string | null; date_range_policy: { lookback_days?: number };
+}
+export interface ReconciliationIssue {
+  id: string; type: string; severity: string; record: string | null;
+  outcome: string; resolution: string;
+}
+export interface ReconciliationReport {
+  id?: string; status?: string; dry_run: boolean; records_checked: number;
+  issue_count: number; conflict_count?: number; started_at?: string;
+  issues?: ReconciliationIssue[] | Array<{ type: string; severity: string; record: string }>;
+}

@@ -12,4 +12,9 @@ Every normalized bar includes provider, original symbol, event/publication/effec
 
 ## Scheduler boundary
 
-InMemoryImportScheduler exposes daily, manual, retry, and failed queues. It intentionally performs no background work and requires no external services in v0.3.0.
+The legacy in-memory scheduler remains only as a compatibility boundary. Version 0.4 uses persisted schedules, jobs, events, leases, and the explicit database-backed worker; it still requires no external broker.
+# Version 0.4 durable ingestion
+
+New API imports are queued by default. Idempotency keys suppress duplicate requests. Incremental jobs start after the latest stored provider-source bar; full jobs re-read the requested window. Each successful symbol batch advances a persisted cursor. Workers hold renewable leases, classify retryable provider failures, apply exponential backoff, recover abandoned attempts, and dead-letter exhausted work.
+
+Stooq values are never imputed. Provider/calendar disagreement, malformed values, and conflicting checksums become explicit validation/import issues. Identical rows are skipped; conflicting canonical rows are preserved. Dry-run imports validate and count rows without writing bars. See `worker-operations.md` and `job-state-machine.md`.

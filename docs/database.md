@@ -28,3 +28,8 @@ Prices use `NUMERIC(18, 6)` and are serialized as decimals. Volume is a nonnegat
 ## Migrations
 
 Revisions `0001_foundation` and `0002_backtesting_paper_trading` are authoritative. Never edit a migration that has shipped; add a new revision. Verify from an empty database with `alembic upgrade head`, then use `alembic check` to detect ORM/schema drift.
+# Version 0.4 schema additions
+
+Alembic revision `1a52c2d25013` additively introduces `worker_instances`, `job_leases`, `job_events`, `import_schedules`, `schedule_runs`, `provider_rate_limit_states`, `provider_symbol_mappings`, `reconciliation_runs`, `reconciliation_issues`, `operational_metrics`, and `provider_health_snapshots`.
+
+`import_jobs` gains a unique idempotency key, dry-run and adjustment preferences, and queue name. `price_bars` gains an optional import-job foreign key and non-secret provider metadata. `backtest_runs` records data classification, provider/import identifiers, adjustment states, and calendar code. Existing v0.3 rows receive safe server defaults; price provenance and restrictive foreign keys are preserved. Clean and populated-v0.3 upgrade rehearsals plus `alembic check` are automated.

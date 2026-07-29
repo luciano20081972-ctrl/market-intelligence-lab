@@ -4,7 +4,7 @@ import hashlib
 import math
 import random
 import uuid
-from datetime import UTC, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 
 from sqlalchemy import func, select
@@ -168,10 +168,15 @@ def _bars_for(asset: Asset, source: DataSource, seed_index: int) -> list[PriceBa
     return bars
 
 
-def seed_demonstration_data(session: Session) -> dict[str, int]:
+def seed_demonstration_data(
+    session: Session,
+    *,
+    calendar_start: date = date(2020, 1, 1),
+    calendar_end: date = date(2035, 12, 31),
+) -> dict[str, int]:
     """Idempotently seed stable, explicitly synthetic research data."""
 
-    seed_market_data_platform(session)
+    seed_market_data_platform(session, calendar_start=calendar_start, calendar_end=calendar_end)
     source = session.get(DataSource, DEMO_SOURCE_ID)
     if source is None:
         source = DataSource(

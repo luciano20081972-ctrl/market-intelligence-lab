@@ -55,16 +55,16 @@ def _job(session: Session, symbols: list[str] | None = None):  # type: ignore[no
     )
 
 
-def test_provider_registry_contains_disabled_placeholders() -> None:
+def test_provider_registry_contains_operational_stooq_and_disabled_placeholders() -> None:
     codes = {item.code: item for item in default_registry.all()}
     assert codes["synthetic"].enabled_by_default is True
+    assert codes["stooq"].enabled_by_default is True
     for code in {
         "alpha_vantage",
         "twelve_data",
         "polygon",
         "financial_modeling_prep",
         "tiingo",
-        "stooq",
         "yahoo_finance",
     }:
         assert codes[code].enabled_by_default is False
@@ -223,6 +223,7 @@ def test_market_data_api_workflow(client) -> None:  # type: ignore[no-untyped-de
             "mode": "incremental",
             "start": "2026-07-06T00:00:00Z",
             "end": "2026-07-10T23:59:59Z",
+            "execute_immediately": True,
         },
     )
     assert created.status_code == 201

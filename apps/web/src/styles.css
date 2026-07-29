@@ -124,6 +124,15 @@ code { color: #8be6c2; background: #101d1a; padding: .15rem .3rem; border-radius
 .side.buy { color: #71ddb4; background: #10271f; }.side.sell { color: #e69a9a; background: #281515; }
 .narrow { max-width: 980px; margin: 0 auto; }
 .preview { margin-top: 1rem; border-left: 3px solid #4fd1a1; }.preview.rejected { border-left-color: #d06e6e; }
+.preview-card, .success-message { margin-top: 1rem; padding: .8rem 1rem; border-left: 3px solid #4fd1a1; background: #0f211c; color: #a7d9c6; }
+.checkbox-label { display: flex; align-items: center; gap: .55rem; align-self: end; min-height: 40px; }
+.checkbox-label input { width: auto; }
+.timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: .7rem; }
+.timeline li { border-left: 3px solid #3e8f72; background: #101820; padding: .8rem 1rem; }
+.timeline span, .timeline time { display: block; color: #7f8d9c; font-size: .75rem; margin-top: .25rem; }
+.timeline p { margin: .35rem 0; }
+.json-block { max-height: 240px; overflow: auto; white-space: pre-wrap; color: #9fb0bf; background: #0a1117; padding: .8rem; }
+.large-number { display: block; margin-top: .5rem; font-size: 2rem; }
 .risk-list { display: grid; gap: .7rem; }
 .risk-row { display: grid; grid-template-columns: minmax(220px, 1fr) 180px auto auto; align-items: end; gap: .7rem; }
 .risk-row h2 { text-transform: capitalize; }.risk-row p { margin: .35rem 0 0; }

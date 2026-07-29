@@ -26,6 +26,11 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="seed deterministic demonstration data after migrations",
     )
+    parser.add_argument(
+        "--worker",
+        action="store_true",
+        help="start the explicit durable import worker alongside API and frontend",
+    )
     return parser.parse_args()
 
 
@@ -78,6 +83,10 @@ def main() -> int:
         print(f"[dev] Web: http://{settings.web_host}:{settings.web_port}")
         processes.append(subprocess.Popen(api_command, cwd=ROOT))
         processes.append(subprocess.Popen(web_command, cwd=WEB))
+        if args.worker:
+            processes.append(
+                subprocess.Popen([sys.executable, "-m", "packages.market_data.worker"], cwd=ROOT)
+            )
         while all(process.poll() is None for process in processes):
             time.sleep(0.5)
         return next((process.returncode for process in processes if process.returncode), 0) or 0

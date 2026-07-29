@@ -25,6 +25,14 @@ class ProviderTemporaryError(ProviderError):
     """Retryable provider failure such as throttling or temporary unavailability."""
 
 
+class ProviderRateLimitError(ProviderTemporaryError):
+    """Retryable provider throttling response."""
+
+
+class ProviderResponseError(ProviderError):
+    """Permanent malformed, empty, or unsupported provider response."""
+
+
 @dataclass(frozen=True)
 class HistoricalBarRecord:
     symbol: str
@@ -42,6 +50,8 @@ class HistoricalBarRecord:
     adjustment_status: str = "unadjusted"
     version: int = 1
     checksum: str = ""
+    provider_symbol: str = ""
+    raw_metadata: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)

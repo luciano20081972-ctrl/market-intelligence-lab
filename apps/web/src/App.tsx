@@ -14,6 +14,10 @@ import { ImportJobs } from "./pages/ImportJobs";
 import { Documentation } from "./pages/Documentation";
 import { Overview } from "./pages/Overview";
 import { Providers } from "./pages/Providers";
+import { ProviderDetail } from "./pages/ProviderDetail";
+import { Operations } from "./pages/Operations";
+import { Reconciliation } from "./pages/Reconciliation";
+import { Schedules } from "./pages/Schedules";
 import { PaperPortfolioDetail } from "./pages/PaperPortfolioDetail";
 import { PaperPortfolios } from "./pages/PaperPortfolios";
 import { RiskSettings } from "./pages/RiskSettings";
@@ -40,8 +44,12 @@ export function App() {
       <Route path="paper-portfolios/:id/risk" element={<RiskSettings />} />
       <Route path="data-sources" element={<DataSources />} />
       <Route path="providers" element={<Providers />} />
+      <Route path="providers/:id" element={<ProviderDetail />} />
       <Route path="imports" element={<ImportJobs />} />
       <Route path="imports/:id" element={<ImportJobDetail />} />
+      <Route path="operations" element={<Operations />} />
+      <Route path="schedules" element={<Schedules />} />
+      <Route path="reconciliation" element={<Reconciliation />} />
       <Route path="data-quality" element={<DataQuality />} />
       <Route path="corporate-actions" element={<CorporateActions />} />
       <Route path="exchange-calendar" element={<ExchangeCalendar />} />

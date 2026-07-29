@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
+import exchange_calendars as exchange_calendars  # type: ignore[import-untyped]
+from sqlalchemy import insert, select
 from sqlalchemy.orm import Session
 
 from packages.database.models import ExchangeCalendar, TradingSession
@@ -120,3 +122,47 @@ def valid_session_dates(
             )
         ).all()
     )
+
+
+def generate_maintained_sessions(
+    session: Session,
+    calendar: ExchangeCalendar,
+    start_date: date,
+    end_date: date,
+) -> int:
+    """Persist official XNYS sessions from the maintained exchange-calendars package."""
+    if calendar.code != "XNYS":
+        raise ValueError("maintained calendar generation currently supports XNYS only")
+    if start_date > end_date:
+        raise ValueError("start_date must not be after end_date")
+    maintained = exchange_calendars.get_calendar(
+        "XNYS", start=start_date.isoformat(), end=end_date.isoformat()
+    )
+    schedule = maintained.schedule
+    existing = set(
+        session.scalars(
+            select(TradingSession.session_date).where(TradingSession.calendar_id == calendar.id)
+        ).all()
+    )
+    rows: list[dict[str, object]] = []
+    for label, row in schedule.iterrows():
+        label_string = label.date().isoformat()
+        if label_string in existing:
+            continue
+        open_time = row["open"].to_pydatetime().astimezone(UTC)
+        close_time = row["close"].to_pydatetime().astimezone(UTC)
+        is_early_close = (close_time - open_time) < timedelta(hours=6, minutes=30)
+        rows.append(
+            {
+                "id": uuid.uuid4(),
+                "calendar_id": calendar.id,
+                "session_date": label_string,
+                "open_time": open_time,
+                "close_time": close_time,
+                "is_early_close": is_early_close,
+                "status": "open",
+            }
+        )
+    if rows:
+        session.execute(insert(TradingSession), rows)
+    return len(rows)

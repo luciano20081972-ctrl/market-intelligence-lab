@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Market Intelligence Lab"
-    version: str = "0.3.0"
+    version: str = "0.4.0"
     environment: str = "development"
     database_url: str = "sqlite:///./data/market_intelligence.db"
     api_host: str = "127.0.0.1"
@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     web_port: int = Field(default=5173, ge=1, le=65535)
     cors_origins: list[str] = ["http://127.0.0.1:5173", "http://localhost:5173"]
     seed_demo_data: bool = True
+    worker_poll_interval: float = Field(default=2.0, ge=0.1, le=300)
+    worker_lease_seconds: int = Field(default=60, ge=10, le=3600)
+    stooq_timeout_seconds: float = Field(default=10.0, ge=1, le=60)
+    json_logs: bool = False
+    expensive_request_limit_per_minute: int = Field(default=10, ge=1, le=1000)
 
     @field_validator("database_url")
     @classmethod

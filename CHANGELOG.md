@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.0 - 2026-07-29
+
+### Added
+
+- Operational, read-only Stooq daily OHLCV adapter with fixed URL allowlisting, symbol mapping, bounded requests, timeouts, response limits, normalized errors, fixture coverage, checksums, and audit metadata.
+- Maintained `exchange-calendars` XNYS sessions beyond 2027, including holidays, timezones, and early closes.
+- Database-backed single-process import queue with leases, heartbeats, retries, cancellation, abandoned recovery, dead-letter state, cursors, idempotency, and persisted job events.
+- Explicit worker command, recurring daily schedules, operational metrics and logs, health/readiness endpoints, provider status snapshots, and application-level expensive-request rate limits.
+- Dry-run and persisted reconciliation for gaps, sessions, duplicates, OHLC/volume, stale data, symbols, adjustment state, checksum changes, and preserved conflicts.
+- Provider detail, import preview/timeline, queue/worker dashboard, schedule management, reconciliation UI, and imported-data backtest provenance.
+- Alembic revision `1a52c2d25013` and clean plus v0.3 upgrade rehearsals.
+
+### Safety
+
+- Trading remains entirely simulated. No broker, Fidelity, live order, autonomous trading, or credential-storage capability was added.
+- Provider data is not bundled and no commercial redistribution license is claimed.
+
 ## 0.3.0 - 2026-07-28
 
 ### Added

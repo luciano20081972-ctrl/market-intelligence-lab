@@ -56,6 +56,11 @@ def _summary(run: BacktestRun) -> BacktestSummaryResponse:
         data_source_identifiers=run.data_source_identifiers,
         application_version=run.application_version,
         is_hypothetical=run.is_hypothetical,
+        data_classification=run.data_classification,
+        provider_identifiers=run.provider_identifiers,
+        import_job_identifiers=run.import_job_identifiers,
+        adjustment_statuses=run.adjustment_statuses,
+        calendar_code=run.calendar_code,
         created_at=run.created_at,
     )
 
@@ -84,6 +89,9 @@ def create_backtest(
             execution_delay=payload.execution_delay,
             max_position_pct=payload.max_position_pct,
             max_total_exposure=payload.max_total_exposure,
+            data_source_mode=payload.data_source_mode,
+            allow_mixed_data=payload.allow_mixed_data,
+            adjustment_preference=payload.adjustment_preference,
         )
         run = run_backtest(
             session,

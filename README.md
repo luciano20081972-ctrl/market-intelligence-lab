@@ -1,8 +1,8 @@
 # Market Intelligence Lab
 
-Market Intelligence Lab is a local-first stock and ETF research workbench for historical data, explainable signals, reproducible backtests, and simulated paper trading. Version 0.3.0 adds a durable, provider-neutral historical market-data platform while retaining transparent backtests and risk-controlled hypothetical portfolios.
+Market Intelligence Lab is a local-first stock and ETF research workbench for historical data, explainable signals, reproducible backtests, and simulated paper trading. Version 0.4.0 adds read-only Stooq daily-history ingestion, a database-backed worker queue, recurring schedules, reconciliation, and operational health while retaining deterministic synthetic demonstrations.
 
-> **Synthetic demonstration data — not live market data.** The bundled prices are generated locally from a fixed seed and must never be interpreted as real, current, or licensed market information.
+> **Research data and simulated trading only.** Bundled prices are synthetic. External Stooq history is read-only, is not bundled, may be delayed or incomplete, and requires an independent terms/licensing review before production or redistribution use.
 
 ## Safety scope
 
@@ -13,7 +13,7 @@ This release has no Fidelity or brokerage integration, brokerage login automatio
 - `apps/api`: FastAPI HTTP application and `/api/v1` routes.
 - `apps/web`: React, TypeScript, Vite, TanStack Query, React Router, and Recharts client.
 - `packages/database`: SQLAlchemy 2 models, UTC-aware types, and transaction helpers.
-- `packages/market_data`: provider registry, disabled adapter placeholders, durable ingestion jobs, exchange calendars, corporate-action adjustment, validation, and deterministic demonstration data.
+- `packages/market_data`: operational Stooq and synthetic adapters, durable jobs and leases, worker/schedules, maintained exchange calendars, reconciliation, validation, and observability.
 - `packages/provenance`: append-only application audit events.
 - `packages/strategies`: seven versioned, parameter-validated transparent strategies and technical indicators.
 - `packages/backtesting`: shared-cash, long-only, no-lookahead simulation and performance metrics.
@@ -85,10 +85,17 @@ python scripts/dev.py --seed
 
 Open `http://127.0.0.1:5173`; API documentation is at `http://127.0.0.1:8000/docs`. Press Ctrl+C to stop both processes.
 
+Start the stack with the explicit durable worker when processing queued imports:
+
+```powershell
+python scripts/dev.py --seed --worker
+```
+
 Separate startup commands:
 
 ```powershell
 python -m uvicorn apps.api.main:app --host 127.0.0.1 --port 8000 --reload
+python -m packages.market_data.worker
 ```
 
 ```powershell
@@ -102,6 +109,7 @@ pnpm run dev
 ruff check .
 mypy apps packages scripts
 pytest
+python scripts/verify.py
 ```
 
 ```powershell
@@ -135,12 +143,12 @@ The frontend is served at `http://127.0.0.1:8080`. Runtime database data lives i
 
 ## Current limitations
 
-- Data is synthetic and fixed; there is no live or delayed market feed.
+- Stooq integration is historical daily OHLCV only; it is not a real-time feed and provides no SLA.
 - No SEC, macroeconomic, congressional-disclosure, political-event, or regulatory-event ingestion yet.
 - Backtests use fixed daily demonstration bars; intraday execution, partial fills, market impact, and liquidity depth are not modeled.
 - Authentication and multi-user isolation are not implemented.
 - SQLite is tested locally; PostgreSQL deployment testing is deferred.
-- The bundled XNYS calendar is finite (2025-2027), and provider placeholders do not yet retrieve licensed external data.
+- Authentication and distributed/multi-host worker coordination are deferred; the current rate limiter and worker target a single application instance.
 
 See [the roadmap](docs/roadmap.md) for the planned next increment.
 
@@ -164,10 +172,12 @@ Market Intelligence Lab is research software, not financial advice. Synthetic pr
 - [Roadmap](docs/roadmap.md)
 - [Troubleshooting](docs/troubleshooting.md)
 
-## Historical market-data platform (v0.3.0)
+## Real market-data operations (v0.4.0)
 
-The provider registry exposes capabilities for historical OHLCV, asset metadata, corporate actions, and exchange calendars. Alpha Vantage, Twelve Data, Polygon, Financial Modeling Prep, Tiingo, Stooq, and Yahoo Finance are registered as disabled placeholders; they perform no network requests and cannot be imported until an adapter is implemented and explicitly enabled. The synthetic adapter remains enabled for deterministic local testing only.
+Stooq is enabled as the first operational external adapter because its fixed HTTPS CSV endpoint requires no API key and supports bounded daily OHLCV requests. The adapter never accepts user-controlled URLs, limits response size, normalizes symbols, classifies timeouts/rate limits/server errors, validates CSV values, and stores row checksums and non-secret raw metadata. No claim of commercial redistribution rights is made. Other external providers remain disabled placeholders; synthetic data remains enabled for offline tests.
 
-Imports support full and incremental modes, exponential retry state, cancellation, restart cursors, per-symbol batches, checksums, duplicate prevention, provenance-complete bars, quality reports, and history/error APIs. The scheduler boundary includes daily, manual, retry, and failed queues without requiring an external worker service.
+Imports are queued by default and support full/incremental modes, idempotency keys, exponential retry state, cancellation, resumable cursors, leases, heartbeat renewal, abandoned-job recovery, dead-letter outcomes, schedules, provenance-complete bars, and conflict preservation. Run `python -m packages.market_data.worker` for continuous processing or add `--once` for one attempt.
+
+XNYS sessions come from the maintained `exchange-calendars` package and are persisted for 2020–2035 by the standard seed. See the real-market-data, worker, scheduling, observability, reconciliation, and rate-limiting guides in `docs/`.
 
 See the provider framework, data ingestion, data quality, corporate actions, and exchange calendar guides in docs/.

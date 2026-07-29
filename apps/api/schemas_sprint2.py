@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -72,6 +72,11 @@ class BacktestCreate(BaseModel):
     execution_delay: int = Field(default=1, ge=1, le=20)
     max_position_pct: Decimal = Field(default=Decimal("0.40"), gt=0, le=1)
     max_total_exposure: Decimal = Field(default=Decimal("1.00"), gt=0, le=1)
+    data_source_mode: Literal["auto", "synthetic", "imported"] = "auto"
+    allow_mixed_data: bool = False
+    adjustment_preference: Literal["adjusted", "unadjusted", "provider_default"] = (
+        "provider_default"
+    )
 
     @field_validator("symbols")
     @classmethod
@@ -112,6 +117,11 @@ class BacktestSummaryResponse(BaseModel):
     data_source_identifiers: list[str]
     application_version: str
     is_hypothetical: bool
+    data_classification: str = "synthetic"
+    provider_identifiers: list[str] = Field(default_factory=list)
+    import_job_identifiers: list[str] = Field(default_factory=list)
+    adjustment_statuses: list[str] = Field(default_factory=list)
+    calendar_code: str = "XNYS"
     created_at: datetime
 
 
