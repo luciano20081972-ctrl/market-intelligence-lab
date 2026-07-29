@@ -14,7 +14,10 @@ CAPABILITIES: tuple[str, ...] = (
 
 
 class ProviderError(RuntimeError):
-    """Base error raised at the provider boundary."""
+    """Base safe error raised at the provider boundary."""
+
+    classification = "provider_error"
+    reachable = False
 
 
 class ProviderDisabledError(ProviderError):
@@ -24,13 +27,95 @@ class ProviderDisabledError(ProviderError):
 class ProviderTemporaryError(ProviderError):
     """Retryable provider failure such as throttling or temporary unavailability."""
 
+    classification = "provider_unavailable"
+    reachable = True
+
+
+class ProviderNetworkError(ProviderTemporaryError):
+    """Raised when the provider cannot be reached at all."""
+
+    classification = "network_unavailable"
+    reachable = False
+
 
 class ProviderRateLimitError(ProviderTemporaryError):
     """Retryable provider throttling response."""
 
+    classification = "rate_limited"
+    reachable = True
+
 
 class ProviderResponseError(ProviderError):
     """Permanent malformed, empty, or unsupported provider response."""
+
+    classification = "malformed_response"
+    reachable = True
+
+
+class ProviderContentTypeError(ProviderResponseError):
+    """Raised when a reachable provider returns an unsupported media type."""
+
+    classification = "unexpected_content_type"
+
+
+class ProviderAccessDeniedError(ProviderResponseError):
+    """Raised for a reachable provider access-denied response."""
+
+    classification = "access_denied"
+
+
+class ProviderRejectedRequestError(ProviderResponseError):
+    """Raised when the provider rejects a bounded request."""
+
+    classification = "provider_rejected_request"
+
+
+class ProviderEncodingError(ProviderResponseError):
+    """Raised when the response is not supported UTF-8/ASCII-compatible data."""
+
+    classification = "unsupported_encoding"
+
+
+class ProviderHtmlResponseError(ProviderResponseError):
+    """Raised for HTML verification, access-denied, or error pages."""
+
+    classification = "html_access_page"
+
+
+class ProviderNoDataError(ProviderResponseError):
+    """Raised when a valid provider response contains no observations."""
+
+    classification = "no_data"
+
+
+class ProviderUnsupportedSymbolError(ProviderResponseError):
+    """Raised when a provider explicitly rejects the normalized symbol."""
+
+    classification = "unsupported_symbol"
+
+
+class ProviderInvalidDateRangeError(ProviderError):
+    """Raised before a request when the requested date range is invalid."""
+
+    classification = "invalid_date_range"
+
+
+class ProviderSchemaError(ProviderResponseError):
+    """Raised when a provider response does not match the required schema."""
+
+    classification = "schema_mismatch"
+
+
+class ProviderDataError(ProviderResponseError):
+    """Raised when provider rows contain invalid dates or market values."""
+
+    classification = "malformed_market_data"
+
+
+class ProviderResponseTooLargeError(ProviderResponseError):
+    """Raised when a provider response exceeds the safe byte limit."""
+
+    classification = "response_too_large"
 
 
 @dataclass(frozen=True)

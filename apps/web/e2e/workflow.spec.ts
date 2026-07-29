@@ -12,6 +12,20 @@ test("seeded research workflow has no severe console errors", async ({ page }) =
   await page.getByRole("link", { name: "Stooq Historical Daily Data" }).click();
   await expect(page.getByRole("heading", { name: "Stooq Historical Daily Data" })).toBeVisible();
   await expect(page.getByText("No API key required")).toBeVisible();
+  await page.route("**/api/v1/providers/*/test", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({
+      status: "degraded",
+      connectivity: "reachable_invalid",
+      response_classification: "html_access_page",
+      schema_compatible: false,
+      message: "Stooq returned an HTML verification or access page instead of market data",
+    }),
+  }));
+  await page.getByRole("button", { name: "Test connection" }).click();
+  await expect(page.getByText("html_access_page")).toBeVisible();
+  await expect(page.getByText(/HTML verification or access page/)).toBeVisible();
   await page.getByRole("link", { name: "Import Jobs" }).click();
   await expect(page.getByRole("heading", { name: "Historical imports" })).toBeVisible();
   await page.getByLabel("Symbols").fill("AAPL,SPY");

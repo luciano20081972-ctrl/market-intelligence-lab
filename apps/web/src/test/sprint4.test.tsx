@@ -42,7 +42,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocked.provider.mockResolvedValue(provider);
   mocked.providerStatus.mockResolvedValue({ provider_id: provider.id, code: provider.code, configured: true, health: "healthy", connectivity: "not_tested", last_checked_at: null, last_successful_import_at: null, stale: true, authentication_required: false, rate_limit: { requests_remaining: null, reset_at: null, events: 0 } });
-  mocked.testProvider.mockResolvedValue({ status: "healthy", connectivity: "connected" });
+  mocked.testProvider.mockResolvedValue({
+    status: "healthy", connectivity: "connected", response_classification: "valid_csv",
+    schema_compatible: true, message: "Stooq returned compatible daily OHLCV data",
+  });
   mocked.providers.mockResolvedValue({ items: [provider], meta: { page: 1, page_size: 100, total: 1 } });
   mocked.importJobs.mockResolvedValue({ items: [], meta: { page: 1, page_size: 100, total: 0 } });
   mocked.previewImport.mockResolvedValue({ provider: "stooq", mode: "incremental", dry_run: true, adjustment_preference: "provider_default", can_submit: true, reports: [{ symbol: "AAPL", provider_symbol: "aapl.us", records: 5, valid: true }] });
@@ -70,6 +73,25 @@ describe("Sprint 4 real market-data operations", () => {
     expect(screen.getByText("No API key required")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Test connection" }));
     await waitFor(() => expect(mocked.testProvider).toHaveBeenCalledWith(provider.id));
+    expect(await screen.findByText("valid_csv")).toBeInTheDocument();
+    expect(screen.getByText("Stooq returned compatible daily OHLCV data")).toBeInTheDocument();
+  });
+
+  it.each([
+    ["reachable invalid HTML", "degraded", "reachable_invalid", "html_access_page", "Stooq returned an HTML verification or access page instead of market data"],
+    ["unavailable network", "unavailable", "unavailable", "network_unavailable", "Stooq request timed out or could not be reached"],
+    ["schema mismatch", "degraded", "reachable_invalid", "schema_mismatch", "Stooq CSV columns were missing or malformed"],
+    ["no data", "degraded", "reachable_no_data", "no_data", "Stooq returned no data for the bounded request"],
+  ])("renders the %s provider diagnostic safely", async (_name, status, connectivity, classification, message) => {
+    mocked.testProvider.mockResolvedValue({
+      status, connectivity, response_classification: classification,
+      schema_compatible: classification === "no_data", message,
+    });
+    renderPage(<ProviderDetail />, "/providers/provider-stooq", "/providers/:id");
+    await userEvent.click(await screen.findByRole("button", { name: "Test connection" }));
+    expect(await screen.findByText(classification)).toBeInTheDocument();
+    expect(screen.getByText(message)).toBeInTheDocument();
+    expect(screen.queryByText(/<!doctype|captcha|cloudflare/i)).not.toBeInTheDocument();
   });
 
   it("previews and submits a durable import", async () => {
@@ -81,6 +103,25 @@ describe("Sprint 4 real market-data operations", () => {
     await userEvent.click(screen.getByRole("button", { name: "Queue import" }));
     await waitFor(() => expect(mocked.createImportJob).toHaveBeenCalled());
     expect(mocked.createImportJob.mock.calls[0]?.[0]).toMatchObject({ execute_immediately: false });
+  });
+
+  it("prevents an external import when preflight validation fails", async () => {
+    mocked.previewImport.mockResolvedValue({
+      provider: "stooq", mode: "incremental", dry_run: true,
+      adjustment_preference: "provider_default", can_submit: false,
+      reports: [{
+        symbol: "AAPL", records: 0, valid: false,
+        error: "Stooq returned an HTML verification or access page instead of market data",
+      }],
+    });
+    renderPage(<ImportJobs />, "/imports");
+    const queue = await screen.findByRole("button", { name: "Queue import" });
+    expect(queue).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "Preview import" }));
+    expect(await screen.findByText("Preview found issues")).toBeInTheDocument();
+    expect(queue).toBeDisabled();
+    await userEvent.click(queue);
+    expect(mocked.createImportJob).not.toHaveBeenCalled();
   });
 
   it("renders queue state, worker empty state, and recovery", async () => {

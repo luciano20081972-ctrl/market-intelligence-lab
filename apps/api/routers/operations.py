@@ -87,8 +87,13 @@ def test_provider_connection(
         test_method = getattr(adapter, "test_connectivity", None)
         result = test_method() if test_method else adapter.health()
         connectivity = str(result.get("connectivity", result.get("status", "unknown")))
-        provider.health = "healthy" if connectivity in {"connected", "healthy"} else "degraded"
-        message = "Provider connection test completed"
+        reported_status = str(result.get("status", "unknown"))
+        provider.health = (
+            reported_status
+            if reported_status in {"healthy", "degraded", "unavailable", "unknown"}
+            else "degraded"
+        )
+        message = str(result.get("message", "Provider connection test completed"))
     except (ProviderError, ValueError) as exc:
         result = {"status": "unavailable", "connectivity": "unavailable"}
         provider.health = "unavailable"
@@ -128,6 +133,14 @@ def provider_status(provider_id: UUID, session: Session = Depends(get_db)) -> di
         "configured": provider.is_enabled,
         "health": provider.health,
         "connectivity": latest.connectivity_status if latest else "not_tested",
+        "response_classification": (
+            latest.details.get("response_classification") if latest else None
+        ),
+        "message": latest.message if latest else None,
+        "reachable": latest.details.get("reachable") if latest else None,
+        "valid_response": latest.details.get("valid_response") if latest else None,
+        "schema_compatible": latest.details.get("schema_compatible") if latest else None,
+        "data_available": latest.details.get("data_available") if latest else None,
         "last_checked_at": latest.checked_at if latest else None,
         "last_successful_import_at": provider.last_successful_import_at,
         "stale": provider.last_successful_import_at is None

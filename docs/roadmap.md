@@ -32,8 +32,8 @@ This sprint should not add brokerage connectivity or trading.
 - Implement one licensed provider adapter with sandbox credentials and contract tests.
 - Replace the finite holiday table with a maintained calendar feed.
 - Add a durable worker and scheduler lease model, observability, authentication, rate limiting, and provider license controls.
-# After v0.4.0
+# After v0.4.1
 
-Sprint 4 completes the first operational historical provider, maintained XNYS calendar, durable single-process queue/worker, daily schedules, health/observability, reconciliation, and imported-data backtests.
+Sprint 4 completes the first operational historical provider, maintained XNYS calendar, durable single-process queue/worker, daily schedules, health/observability, reconciliation, and imported-data backtests. Version 0.4.1 stabilizes Stooq response classification and strict parsing, persists honest health states, and prevents unvalidated external imports. Fixture-backed behavior is complete; live availability remains environment/provider dependent and Stooq still has no SLA or authoritative adjustment/publication semantics.
 
 Recommended Sprint 5 priorities are complete authentication and authorization, multi-user isolation, distributed rate limiting/worker coordination, provider-terms governance and retention controls, a second independently sourced provider for reconciliation, schedule policies tied to exchange close, and production PostgreSQL concurrency/deployment validation. Brokerage connectivity and real-money execution remain out of scope.

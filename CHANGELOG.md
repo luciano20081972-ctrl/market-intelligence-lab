@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.4.1 - 2026-07-29
+
+### Fixed
+
+- Classified Stooq response envelopes before CSV parsing, including the observed HTTP 200 `text/html` verification/access response, safe no-data/symbol/access/rate/content-type/network errors, response limits, and redirect rejection.
+- Preserved strict canonical OHLCV validation while safely normalizing UTF-8 BOMs, ASCII header capitalization, surrounding header whitespace, and line endings; unobserved semicolon delimiters remain rejected.
+- Restricted symbol mapping to confirmed simple U.S. stock and ETF forms (`AAPL`, `MSFT`, and `SPY` map to `.us`) and added a precise invalid-date-range boundary.
+- Persisted provider health as healthy, degraded reachable-invalid/reachable-no-data, or unavailable with safe response classifications and messages.
+- Required a successful preview of the exact request before the UI can queue an external import.
+
+### Tests and documentation
+
+- Added sanitized provider fixtures and deterministic coverage for response classification, strict parsing, idempotent durable Stooq-shaped imports, provenance, reconciliation, and imported-data backtesting.
+- Expanded frontend and Playwright coverage for safe provider diagnostics and documented fixture-tested versus live-verified behavior, provider limitations, and licensing caveats.
+- No database migration was required.
+
+### Safety
+
+- Trading remains simulated. No authentication, multi-user, brokerage, credential-storage, real-order, or general Sprint 5 capability was added.
+- Unexpected remote bodies are not logged or displayed, and no provider-data redistribution right is claimed.
+
 ## 0.4.0 - 2026-07-29
 
 ### Added

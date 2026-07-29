@@ -198,9 +198,17 @@ export interface TradingSessionPage { items: TradingSession[]; meta: PageMeta; }
 
 export interface ProviderStatus {
   provider_id: string; code: string; configured: boolean; health: string; connectivity: string;
+  response_classification?: string | null; message?: string | null;
+  reachable?: boolean | null; valid_response?: boolean | null;
+  schema_compatible?: boolean | null; data_available?: boolean | null;
   last_checked_at: string | null; last_successful_import_at: string | null; stale: boolean;
   authentication_required: boolean;
   rate_limit: { requests_remaining: number | null; reset_at: string | null; events: number };
+}
+export interface ProviderDiagnostic {
+  status: string; connectivity?: string; response_classification?: string;
+  message?: string; reachable?: boolean; valid_response?: boolean;
+  schema_compatible?: boolean; data_available?: boolean;
 }
 export interface ImportPreview {
   provider: string; mode: string; dry_run: boolean; adjustment_preference: string;

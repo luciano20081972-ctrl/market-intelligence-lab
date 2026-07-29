@@ -18,3 +18,9 @@ The legacy in-memory scheduler remains only as a compatibility boundary. Version
 New API imports are queued by default. Idempotency keys suppress duplicate requests. Incremental jobs start after the latest stored provider-source bar; full jobs re-read the requested window. Each successful symbol batch advances a persisted cursor. Workers hold renewable leases, classify retryable provider failures, apply exponential backoff, recover abandoned attempts, and dead-letter exhausted work.
 
 Stooq values are never imputed. Provider/calendar disagreement, malformed values, and conflicting checksums become explicit validation/import issues. Identical rows are skipped; conflicting canonical rows are preserved. Dry-run imports validate and count rows without writing bars. See `worker-operations.md` and `job-state-machine.md`.
+
+## v0.4.1 external preflight
+
+The browser requires a successful preview for the exact external-provider payload before enabling queue submission. Provider, symbols, mode, dates, interval, adjustment preference, and dry-run state are part of that boundary; changing any field invalidates the prior preview. Synthetic demonstration jobs remain queueable offline. Server-side ingestion still revalidates every response, so UI preflight is a usability guard rather than a trust boundary.
+
+Stooq-shaped deterministic fixtures exercise the normal `ImportJob`/`ImportBatch` path, provider symbol mapping, source records, row and batch checksums, non-demonstration classification, duplicate skipping, reconciliation, and imported-mode backtesting. A fixture passing these checks is not evidence that live Stooq connectivity is currently available.

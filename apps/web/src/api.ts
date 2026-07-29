@@ -4,7 +4,7 @@ import type {
   Position, PricePage, RiskRule, StrategyPage, SystemInfo, Watchlist, ProviderPage,
   ImportJob, ImportJobPage, ImportErrorPage, CorporateActionPage, TradingSessionPage,
   ImportPreview, ImportSchedule, JobEvent, Provider, ProviderStatus, QueueSummary,
-  ReconciliationReport, WorkerPage,
+  ProviderDiagnostic, ReconciliationReport, WorkerPage,
 } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -74,7 +74,7 @@ export const api = {
   providers: () => request<ProviderPage>("/api/v1/providers?page_size=100"),
   provider: (providerId: string) => request<Provider>(`/api/v1/providers/${providerId}`),
   providerStatus: (providerId: string) => request<ProviderStatus>(`/api/v1/providers/${providerId}/status`),
-  testProvider: (providerId: string) => request<{ status: string; connectivity?: string }>(`/api/v1/providers/${providerId}/test`, { method: "POST" }),
+  testProvider: (providerId: string) => request<ProviderDiagnostic>(`/api/v1/providers/${providerId}/test`, { method: "POST" }),
   importJobs: () => request<ImportJobPage>("/api/v1/import/jobs?page_size=100"),
   importJob: (id: string) => request<ImportJob>(`/api/v1/import/jobs/${id}`),
   createImportJob: (payload: Record<string, unknown>) => request<ImportJob>("/api/v1/import/jobs", { method: "POST", body: JSON.stringify(payload) }),

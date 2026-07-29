@@ -3,12 +3,14 @@ from __future__ import annotations
 import logging
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
+from pathlib import Path
 from uuid import UUID
 
 import httpx
 import pytest
 from sqlalchemy import func, select
 
+from apps.api.routers import operations as operations_router
 from packages.core.config import Settings
 from packages.database.models import (
     DataSource,
@@ -41,25 +43,47 @@ from packages.market_data.operations import (
 )
 from packages.market_data.rate_limit import InProcessRateLimiter
 from packages.market_data.reconciliation import preview_reconciliation, run_reconciliation
+from packages.market_data.registry import ProviderRegistry
 from packages.market_data.types import (
+    ProviderContentTypeError,
+    ProviderDataError,
+    ProviderEncodingError,
+    ProviderHtmlResponseError,
+    ProviderInvalidDateRangeError,
+    ProviderNetworkError,
+    ProviderNoDataError,
     ProviderRateLimitError,
+    ProviderRejectedRequestError,
     ProviderResponseError,
+    ProviderResponseTooLargeError,
+    ProviderSchemaError,
     ProviderTemporaryError,
+    ProviderUnsupportedSymbolError,
 )
 
-STOOQ_CSV = (
-    b"Date,Open,High,Low,Close,Volume\n"
-    b"2026-01-05,100,105,99,104,12345\n"
-    b"2026-01-06,104,106,101,102,23456\n"
-)
+FIXTURES = Path(__file__).parent / "fixtures"
 
 
-def _transport(status: int = 200, content: bytes = STOOQ_CSV) -> httpx.MockTransport:
+def _fixture(name: str) -> bytes:
+    return (FIXTURES / name).read_bytes()
+
+
+def _transport(
+    status: int = 200,
+    content: bytes | None = None,
+    content_type: str | None = "text/csv; charset=utf-8",
+) -> httpx.MockTransport:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.scheme == "https"
         assert request.url.host == "stooq.com"
         assert request.url.path == "/q/d/l/"
-        return httpx.Response(status, content=content, request=request)
+        headers = {"content-type": content_type} if content_type else {}
+        return httpx.Response(
+            status,
+            content=_fixture("stooq_valid.csv") if content is None else content,
+            headers=headers,
+            request=request,
+        )
 
     return httpx.MockTransport(handler)
 
@@ -82,23 +106,61 @@ def test_stooq_configuration_symbol_mapping_and_fixture_parsing() -> None:
     assert adapter.health()["authentication_required"] is False
     records = adapter.fetch_historical_bars(
         "AAPL",
-        datetime(2026, 1, 1, tzinfo=UTC),
-        datetime(2026, 1, 10, tzinfo=UTC),
+        datetime(2026, 7, 1, tzinfo=UTC),
+        datetime(2026, 7, 10, tzinfo=UTC),
     )
-    assert len(records) == 2
+    assert len(records) == 3
     assert records[0].provider_symbol == "aapl.us"
     assert records[0].close == Decimal("104")
-    assert records[0].event_time == datetime(2026, 1, 5, 21, tzinfo=UTC)
+    assert records[0].event_time == datetime(2026, 7, 6, 20, tzinfo=UTC)
     assert records[0].raw_metadata is not None
     assert len(records[0].checksum) == 64
+
+
+@pytest.mark.parametrize("symbol", ["AAPL", "MSFT", "SPY", "aapl.us"])
+def test_stooq_endpoint_and_supported_symbol_contract(symbol: str) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        expected_symbol = f"{symbol.removesuffix('.us').lower()}.us"
+        assert dict(request.url.params) == {
+            "s": expected_symbol,
+            "d1": "20260701",
+            "d2": "20260710",
+            "i": "d",
+        }
+        return httpx.Response(
+            200,
+            content=_fixture("stooq_valid.csv"),
+            headers={"content-type": "text/csv"},
+            request=request,
+        )
+
+    records = StooqAdapter(transport=httpx.MockTransport(handler)).fetch_historical_bars(
+        symbol,
+        datetime(2026, 7, 1, tzinfo=UTC),
+        datetime(2026, 7, 10, tzinfo=UTC),
+    )
+    assert len(records) == 3
+
+
+@pytest.mark.parametrize("symbol", ["^SPX", "BRK.B", "", "../AAPL"])
+def test_stooq_rejects_unconfirmed_symbol_forms(symbol: str) -> None:
+    with pytest.raises(ProviderUnsupportedSymbolError):
+        StooqAdapter.normalize_symbol(symbol)
+
+
+def test_stooq_rejects_invalid_date_range_before_network_access() -> None:
+    moment = datetime(2026, 7, 1, tzinfo=UTC)
+    with pytest.raises(ProviderInvalidDateRangeError) as captured:
+        StooqAdapter(transport=_transport()).fetch_historical_bars("AAPL", moment, moment)
+    assert captured.value.classification == "invalid_date_range"
 
 
 def test_stooq_timeout_rate_limit_and_retry_classification() -> None:
     def timeout(request: httpx.Request) -> httpx.Response:
         raise httpx.ReadTimeout("slow", request=request)
 
-    dates = (datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 10, tzinfo=UTC))
-    with pytest.raises(ProviderTemporaryError, match="timed out"):
+    dates = (datetime(2026, 7, 1, tzinfo=UTC), datetime(2026, 7, 10, tzinfo=UTC))
+    with pytest.raises(ProviderNetworkError, match="timed out"):
         StooqAdapter(transport=httpx.MockTransport(timeout)).fetch_historical_bars("AAPL", *dates)
     with pytest.raises(ProviderRateLimitError):
         StooqAdapter(transport=_transport(429)).fetch_historical_bars("AAPL", *dates)
@@ -107,20 +169,207 @@ def test_stooq_timeout_rate_limit_and_retry_classification() -> None:
 
 
 @pytest.mark.parametrize(
-    "content, message",
+    ("fixture", "content_type", "error_type", "classification"),
     [
-        (b"", "empty"),
-        (b"unexpected\nvalue\n", "columns"),
-        (b"Date,Open,High,Low,Close,Volume\n2026-01-05,N/D,2,1,2,10\n", "missing"),
+        ("stooq_empty.txt", "text/plain", ProviderNoDataError, "no_data"),
+        (
+            "stooq_html_verification.html",
+            "text/html",
+            ProviderHtmlResponseError,
+            "html_access_page",
+        ),
+        (
+            "stooq_unsupported_symbol.txt",
+            "text/plain",
+            ProviderUnsupportedSymbolError,
+            "unsupported_symbol",
+        ),
+        ("stooq_malformed_schema.csv", "text/csv", ProviderSchemaError, "schema_mismatch"),
+        (
+            "stooq_invalid_ohlc.csv",
+            "text/csv",
+            ProviderDataError,
+            "malformed_market_data",
+        ),
+        (
+            "stooq_negative_volume.csv",
+            "text/csv",
+            ProviderDataError,
+            "malformed_market_data",
+        ),
     ],
 )
-def test_stooq_rejects_empty_or_malformed_responses(content: bytes, message: str) -> None:
-    with pytest.raises(ProviderResponseError, match=message):
+def test_stooq_classifies_sanitized_response_fixtures(
+    fixture: str,
+    content_type: str,
+    error_type: type[ProviderResponseError],
+    classification: str,
+) -> None:
+    with pytest.raises(error_type) as captured:
+        StooqAdapter(
+            transport=_transport(content=_fixture(fixture), content_type=content_type)
+        ).fetch_historical_bars(
+            "AAPL",
+            datetime(2026, 7, 1, tzinfo=UTC),
+            datetime(2026, 7, 10, tzinfo=UTC),
+        )
+    assert captured.value.classification == classification
+    assert "<!DOCTYPE" not in str(captured.value)
+    assert "Verification required" not in str(captured.value)
+
+
+@pytest.mark.parametrize("fixture", ["stooq_normalized_header.csv", "stooq_bom.csv"])
+def test_stooq_accepts_safe_header_and_encoding_normalization(fixture: str) -> None:
+    records = StooqAdapter(transport=_transport(content=_fixture(fixture))).fetch_historical_bars(
+        "AAPL",
+        datetime(2026, 7, 1, tzinfo=UTC),
+        datetime(2026, 7, 10, tzinfo=UTC),
+    )
+    assert len(records) == 1 and records[0].volume == 12345
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        b"Date;Open;High;Low;Close;Volume\n2026-07-06;100;105;99;104;10\n",
+        b"Date,Open,High,Low,Close,Volume\n2026-07-06,100,105,99,104,1.5\n",
+        b"Date,Open,High,Low,Close,Volume\n2026-07-06,N/D,105,99,104,10\n",
+        b"Date,Open,High,Low,Close,Volume\n2026-02-30,100,105,99,104,10\n",
+        b"Date,Open,High,Low,Close,Volume\n2026-07-06,NaN,105,99,104,10\n",
+        b"Date,Open,High,Low,Close,Volume\n2026-06-30,100,105,99,104,10\n",
+        b"Date,Open,High,Low,Close,Close\n2026-07-06,100,105,99,104,10\n",
+        (
+            b"Date,Open,High,Low,Close,Volume\n"
+            b"2026-07-06,100,105,99,104,10\n"
+            b"2026-07-06,100,105,99,104,10\n"
+        ),
+    ],
+)
+def test_stooq_rejects_unconfirmed_or_invalid_csv_values(content: bytes) -> None:
+    with pytest.raises(ProviderResponseError):
         StooqAdapter(transport=_transport(content=content)).fetch_historical_bars(
             "AAPL",
-            datetime(2026, 1, 1, tzinfo=UTC),
-            datetime(2026, 1, 10, tzinfo=UTC),
+            datetime(2026, 7, 1, tzinfo=UTC),
+            datetime(2026, 7, 10, tzinfo=UTC),
         )
+
+
+def test_stooq_rejects_unsupported_encoding_and_oversized_response() -> None:
+    dates = (datetime(2026, 7, 1, tzinfo=UTC), datetime(2026, 7, 10, tzinfo=UTC))
+    with pytest.raises(ProviderEncodingError):
+        StooqAdapter(transport=_transport(content=b"\xff\xfeinvalid")).fetch_historical_bars(
+            "AAPL", *dates
+        )
+    adapter = StooqAdapter(transport=_transport())
+    adapter.max_response_bytes = 10
+    with pytest.raises(ProviderResponseTooLargeError):
+        adapter.fetch_historical_bars("AAPL", *dates)
+
+
+def test_stooq_rejects_unexpected_content_type_and_redirect() -> None:
+    dates = (datetime(2026, 7, 1, tzinfo=UTC), datetime(2026, 7, 10, tzinfo=UTC))
+    with pytest.raises(ProviderContentTypeError):
+        StooqAdapter(
+            transport=_transport(content_type="application/json")
+        ).fetch_historical_bars("AAPL", *dates)
+    with pytest.raises(ProviderRejectedRequestError):
+        StooqAdapter(transport=_transport(status=302)).fetch_historical_bars("AAPL", *dates)
+
+
+def test_stooq_health_distinguishes_valid_invalid_no_data_and_unavailable() -> None:
+    health_csv = (
+        b"Date,Open,High,Low,Close,Volume\n"
+        b"2024-01-02,100,105,99,104,12345\n"
+    )
+    healthy = StooqAdapter(transport=_transport(content=health_csv)).test_connectivity()
+    html = StooqAdapter(
+        transport=_transport(
+            content=_fixture("stooq_html_verification.html"), content_type="text/html"
+        )
+    ).test_connectivity()
+    no_data = StooqAdapter(
+        transport=_transport(content=_fixture("stooq_empty.txt"), content_type="text/plain")
+    ).test_connectivity()
+
+    def network_failure(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("offline", request=request)
+
+    unavailable = StooqAdapter(transport=httpx.MockTransport(network_failure)).test_connectivity()
+    assert (healthy["status"], healthy["response_classification"]) == (
+        "healthy",
+        "valid_csv",
+    )
+    assert (html["status"], html["connectivity"], html["response_classification"]) == (
+        "degraded",
+        "reachable_invalid",
+        "html_access_page",
+    )
+    assert (no_data["connectivity"], no_data["schema_compatible"]) == (
+        "reachable_no_data",
+        True,
+    )
+    assert (unavailable["status"], unavailable["reachable"]) == ("unavailable", False)
+
+
+def test_stooq_health_api_persists_reachable_invalid_diagnostic(
+    client, monkeypatch: pytest.MonkeyPatch
+) -> None:  # type: ignore[no-untyped-def]
+    registry = ProviderRegistry()
+    registry.register(
+        StooqAdapter(
+            transport=_transport(
+                content=_fixture("stooq_html_verification.html"), content_type="text/html"
+            )
+        ),
+        enabled_by_default=True,
+    )
+    monkeypatch.setattr(operations_router, "default_registry", registry)
+    provider = next(
+        item
+        for item in client.get("/api/v1/providers?page_size=100").json()["items"]
+        if item["code"] == "stooq"
+    )
+    tested = client.post(f"/api/v1/providers/{provider['id']}/test")
+    assert tested.status_code == 200
+    assert tested.json()["status"] == "degraded"
+    assert tested.json()["connectivity"] == "reachable_invalid"
+    assert tested.json()["response_classification"] == "html_access_page"
+    status = client.get(f"/api/v1/providers/{provider['id']}/status")
+    assert status.status_code == 200
+    assert status.json()["health"] == "degraded"
+    assert status.json()["response_classification"] == "html_access_page"
+    assert status.json()["message"] == (
+        "Stooq returned an HTML verification or access page instead of market data"
+    )
+
+
+def test_stooq_durable_job_preserves_safe_provider_classification(engine) -> None:  # type: ignore[no-untyped-def]
+    registry = ProviderRegistry()
+    registry.register(
+        StooqAdapter(
+            transport=_transport(
+                content=_fixture("stooq_html_verification.html"), content_type="text/html"
+            )
+        ),
+        enabled_by_default=True,
+    )
+    factory = make_session_factory(engine)
+    with session_scope(factory) as session:
+        job = create_import_job(
+            session,
+            provider_code="stooq",
+            symbols=["AAPL"],
+            mode="full",
+            start=datetime(2026, 7, 1, tzinfo=UTC),
+            end=datetime(2026, 7, 10, tzinfo=UTC),
+        )
+        run_import_job(session, job, registry)
+        assert job.status == "failed"
+        error = session.scalar(select(ImportError).where(ImportError.job_id == job.id))
+        assert error is not None
+        assert error.error_code == "html_access_page"
+        assert error.payload_summary["provider_classification"] == "html_access_page"
+        assert "<!DOCTYPE" not in error.message
 
 
 def test_import_idempotency_queue_claim_heartbeat_and_metrics(engine) -> None:  # type: ignore[no-untyped-def]
@@ -299,8 +548,116 @@ def test_operations_api_health_events_schedules_and_reconciliation(client) -> No
     health = client.get("/api/v1/operations/health")
     assert health.status_code == 200
     assert health.json()["database"] == "healthy"
-    assert client.get("/health/live").json()["version"] == "0.4.0"
+    assert client.get("/health/live").json()["version"] == "0.4.1"
     assert client.get("/health/ready").json()["database"] == "healthy"
+
+
+def test_stooq_fixture_import_is_idempotent_reconciled_and_backtestable(
+    client, engine
+) -> None:  # type: ignore[no-untyped-def]
+    def history(request: httpx.Request) -> httpx.Response:
+        provider_symbol = request.url.params["s"]
+        current = datetime.strptime(request.url.params["d1"], "%Y%m%d").date()
+        finish = datetime.strptime(request.url.params["d2"], "%Y%m%d").date()
+        base = 300 if provider_symbol == "spy.us" else 100
+        rows = ["Date,Open,High,Low,Close,Volume"]
+        index = 0
+        while current <= finish:
+            if current.weekday() < 5:
+                price = base + index
+                rows.append(
+                    f"{current.isoformat()},{price},{price + 2},{price - 1},"
+                    f"{price + 1},{10000 + index}"
+                )
+                index += 1
+            current += timedelta(days=1)
+        return httpx.Response(
+            200,
+            content=("\n".join(rows) + "\n").encode(),
+            headers={"content-type": "text/csv"},
+            request=request,
+        )
+
+    registry = ProviderRegistry()
+    registry.register(
+        StooqAdapter(transport=httpx.MockTransport(history)), enabled_by_default=True
+    )
+    factory = make_session_factory(engine)
+    start = datetime(2026, 7, 6, tzinfo=UTC)
+    end = datetime(2026, 8, 14, 23, 59, tzinfo=UTC)
+    with session_scope(factory) as session:
+        provider = session.scalar(select(Provider).where(Provider.code == "stooq"))
+        assert provider is not None
+        first = create_import_job(
+            session,
+            provider_code="stooq",
+            symbols=["AAPL", "SPY"],
+            mode="full",
+            start=start,
+            end=end,
+            adjustment_preference="provider_default",
+        )
+        run_import_job(session, first, registry)
+        assert first.status == "succeeded"
+        assert first.records_inserted == 60
+        assert (
+            session.scalar(
+                select(func.count(PriceBar.id)).where(
+                    PriceBar.import_job_id == first.id,
+                    PriceBar.is_demonstration_data.is_(False),
+                )
+            )
+            == 60
+        )
+        assert (
+            session.scalar(
+                select(func.count(ProviderSymbolMapping.id)).where(
+                    ProviderSymbolMapping.provider_id == provider.id
+                )
+            )
+            == 2
+        )
+        second = create_import_job(
+            session,
+            provider_code="stooq",
+            symbols=["AAPL", "SPY"],
+            mode="full",
+            start=start,
+            end=end,
+            adjustment_preference="provider_default",
+        )
+        run_import_job(session, second, registry)
+        assert second.status == "succeeded"
+        assert second.records_inserted == 0 and second.records_skipped == 60
+        reconciliation = run_reconciliation(
+            session, provider_id=provider.id, symbols=["AAPL", "SPY"], dry_run=True
+        )
+        assert reconciliation.status == "succeeded"
+        assert reconciliation.records_checked == 60
+        first_id = first.id
+
+    strategies = client.get("/api/v1/strategies").json()["items"]
+    version_id = next(
+        item["latest_version"]["id"]
+        for item in strategies
+        if item["strategy_type"] == "buy_and_hold"
+    )
+    result = client.post(
+        "/api/v1/backtests",
+        json={
+            "strategy_version_id": version_id,
+            "symbols": ["AAPL"],
+            "benchmark_symbol": "SPY",
+            "start_time": "2026-07-06T20:00:00Z",
+            "end_time": "2026-08-14T20:00:00Z",
+            "data_source_mode": "imported",
+        },
+    )
+    assert result.status_code == 201, result.text
+    backtest = result.json()
+    assert backtest["data_classification"] == "imported"
+    assert str(first_id) in backtest["import_job_identifiers"]
+    assert backtest["provider_identifiers"]
 
 
 def test_backtest_uses_imported_data_and_rejects_implicit_mixing(client, engine) -> None:  # type: ignore[no-untyped-def]

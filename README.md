@@ -1,6 +1,6 @@
 # Market Intelligence Lab
 
-Market Intelligence Lab is a local-first stock and ETF research workbench for historical data, explainable signals, reproducible backtests, and simulated paper trading. Version 0.4.0 adds read-only Stooq daily-history ingestion, a database-backed worker queue, recurring schedules, reconciliation, and operational health while retaining deterministic synthetic demonstrations.
+Market Intelligence Lab is a local-first stock and ETF research workbench for historical data, explainable signals, reproducible backtests, and simulated paper trading. Version 0.4.1 stabilizes the read-only Stooq integration with strict response classification, safe provider diagnostics, deterministic fixture-backed imports, and external-import preflight protection while retaining the v0.4.0 durable worker, scheduling, reconciliation, and synthetic demonstrations.
 
 > **Research data and simulated trading only.** Bundled prices are synthetic. External Stooq history is read-only, is not bundled, may be delayed or incomplete, and requires an independent terms/licensing review before production or redistribution use.
 
@@ -144,6 +144,7 @@ The frontend is served at `http://127.0.0.1:8080`. Runtime database data lives i
 ## Current limitations
 
 - Stooq integration is historical daily OHLCV only; it is not a real-time feed and provides no SLA.
+- Stooq may return a reachable HTML verification/access page instead of CSV; v0.4.1 reports that state as degraded and blocks the external import rather than accepting or exposing the body.
 - No SEC, macroeconomic, congressional-disclosure, political-event, or regulatory-event ingestion yet.
 - Backtests use fixed daily demonstration bars; intraday execution, partial fills, market impact, and liquidity depth are not modeled.
 - Authentication and multi-user isolation are not implemented.
@@ -172,9 +173,11 @@ Market Intelligence Lab is research software, not financial advice. Synthetic pr
 - [Roadmap](docs/roadmap.md)
 - [Troubleshooting](docs/troubleshooting.md)
 
-## Real market-data operations (v0.4.0)
+## Real market-data operations (v0.4.1)
 
-Stooq is enabled as the first operational external adapter because its fixed HTTPS CSV endpoint requires no API key and supports bounded daily OHLCV requests. The adapter never accepts user-controlled URLs, limits response size, normalizes symbols, classifies timeouts/rate limits/server errors, validates CSV values, and stores row checksums and non-secret raw metadata. No claim of commercial redistribution rights is made. Other external providers remain disabled placeholders; synthetic data remains enabled for offline tests.
+Stooq is enabled as the first operational external adapter because its fixed HTTPS endpoint requires no API key and can provide bounded daily OHLCV requests. The adapter never accepts user-controlled URLs, follows no redirects, limits response size, maps simple U.S. stock/ETF symbols such as `AAPL`, `MSFT`, and `SPY` to the `.us` suffix, and accepts only UTF-8/ASCII-compatible comma-delimited data with the canonical `Date,Open,High,Low,Close,Volume` fields. BOMs, header capitalization, surrounding header whitespace, and CRLF/LF are normalized; HTML, plaintext errors, unsupported delimiters, unknown/duplicate schemas, missing values, invalid dates/numbers/OHLC, and negative volume are rejected. No claim of commercial redistribution rights is made. Other external providers remain disabled placeholders; synthetic data remains enabled for offline tests.
+
+The v0.4.1 diagnostic distinguishes healthy compatible CSV, reachable-but-invalid responses, no data, rate/access responses, and network unavailability without storing or displaying a remote response body. A live diagnostic on 2026-07-29 reached `stooq.com` over HTTPS with HTTP 200 but returned `text/html` verification content, so that environment was correctly classified `html_access_page`, not healthy. External imports remain disabled until the exact request passes preview validation.
 
 Imports are queued by default and support full/incremental modes, idempotency keys, exponential retry state, cancellation, resumable cursors, leases, heartbeat renewal, abandoned-job recovery, dead-letter outcomes, schedules, provenance-complete bars, and conflict preservation. Run `python -m packages.market_data.worker` for continuous processing or add `--once` for one attempt.
 

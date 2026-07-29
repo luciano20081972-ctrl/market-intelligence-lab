@@ -24,14 +24,14 @@ const links: Array<{ to: string; label: string }> = [
 export function Layout() {
   return <div className="app-shell">
     <aside className="sidebar">
-      <div className="brand"><span className="brand-mark">MIL</span><div>Market Intelligence<small>Research Lab · v0.4.0</small></div></div>
+      <div className="brand"><span className="brand-mark">MIL</span><div>Market Intelligence<small>Research Lab · v0.4.1</small></div></div>
       <nav aria-label="Primary navigation">
         {links.map(({ to, label }) => <NavLink key={to} to={to} end={to === "/"}>{label}</NavLink>)}
       </nav>
       <div className="sidebar-foot"><span className="status-dot" />Local research environment</div>
     </aside>
     <div className="main-column">
-      <header className="topbar"><div><b>Research workspace</b><span>Simulation only</span></div><span className="version-chip">v0.4.0</span></header>
+      <header className="topbar"><div><b>Research workspace</b><span>Simulation only</span></div><span className="version-chip">v0.4.1</span></header>
       <DemoWarning />
       <main><Outlet /></main>
     </div>

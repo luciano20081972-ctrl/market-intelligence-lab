@@ -1,15 +1,17 @@
 # Real market data
 
-Version 0.4.0 selects Stooq as the first operational external provider. It is read-only, needs no API key, and exposes bounded daily CSV OHLCV history at a fixed HTTPS endpoint. This makes local setup simple and keeps credentials out of the application. Stooq does not provide a service-level agreement, authoritative publication timestamps, intraday history through this adapter, or adjustment semantics sufficient to label the series adjusted.
+Version 0.4.1 retains Stooq as the first operational external provider. It is read-only, needs no API key, and may expose bounded daily CSV OHLCV history at a fixed HTTPS endpoint. This keeps credentials out of the application, but Stooq provides no service-level agreement, authoritative publication timestamps, intraday history through this adapter, or adjustment semantics sufficient to label the series adjusted.
 
-The adapter maps `AAPL` to `aapl.us`, limits a request to 7,400 days and 2 MB, uses a configurable 1–60 second timeout, refuses redirects, and never accepts a caller-supplied URL. It normalizes HTTP 429 and temporary 5xx/network failures for durable retry. Empty, malformed, missing-value, and oversized responses fail without fabricated values. Retrieval time is used as publication time because the CSV has no publication timestamp. Each source row and aggregate batch has a SHA-256 checksum; the original provider symbol and source row are retained as non-secret JSON metadata.
+The adapter maps confirmed simple U.S. stock/ETF symbols (`AAPL`, `MSFT`, `SPY`) to lowercase `.us`, limits a request to 7,400 days and 2 MB, uses a configurable 1–60 second timeout, refuses redirects, allowlists `stooq.com`, and never accepts a caller-supplied URL. It normalizes HTTP 429 and temporary 5xx/network failures for durable retry. Accepted CSV is UTF-8/ASCII-compatible, optionally BOM-prefixed, comma-delimited, and contains exactly `Date,Open,High,Low,Close,Volume`; only header case/whitespace and line endings are normalized. Empty, HTML, plaintext error, unexpected-content-type, semicolon, malformed/duplicate-schema, missing-value, invalid-date/value/OHLC/volume, and oversized responses fail without fabricated values. Retrieval time is used as publication time because the CSV has no publication timestamp. Each source row and aggregate batch has a SHA-256 checksum; the original provider symbol and source row are retained as non-secret JSON metadata.
+
+## Observed failure and verification boundary
+
+The permitted 2026-07-29 pre-fix diagnostic used `AAPL`, daily interval, and 2024-01-02 through 2024-01-10. The fixed HTTPS endpoint returned HTTP 200, `text/html`, 796 bytes, no redirect, no BOM, UTF-8, no detected delimiter, and an HTML verification/access document. The original adapter treated every HTTP 200 body as CSV and therefore surfaced a generic header mismatch. Version 0.4.1 classifies this response as `html_access_page`, reports the reachable provider as degraded, exposes no remote body, and imports nothing.
+
+Parser behavior, the durable import path, provenance, idempotent reimport, reconciliation, and imported-data backtesting are deterministically fixture-tested. A successful live CSV response and live imported-data backtest are not claimed unless the final one-request smoke test succeeds in the executing environment.
 
 No provider data is bundled. The project does not claim Stooq data is licensed for commercial redistribution. Review the provider’s current terms, attribution, retention, and redistribution requirements independently before any production or commercial use.
 
-Ordinary tests use deterministic CSV fixtures and make no network requests. An optional manual smoke test makes exactly one small request:
+Ordinary tests use sanitized deterministic fixtures and make no network requests. For an intentional one-request smoke test, create one full Stooq job for one symbol and a short historical window with `execute_immediately` enabled through `POST /api/v1/import/jobs`. Do not call the separate provider-test endpoint first, because that would consume an additional provider request. If the job succeeds, inspect its persisted batch/provenance, run reconciliation for that provider/symbol, and run a small imported-mode backtest using the same symbol as both asset and benchmark when necessary to avoid another import request.
 
-```powershell
-python scripts/operations.py provider-test --provider stooq
-```
-
-Run it only when external access is intentional. It requires no key.
+If the single request returns HTML, no data, a rate/access response, or invalid CSV, stop and report the safe classification. Never weaken validation or repeat the request merely to obtain a different outcome. The project does not claim Stooq data is licensed for commercial redistribution; review current provider terms, attribution, retention, and redistribution requirements independently.

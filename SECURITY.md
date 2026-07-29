@@ -2,7 +2,7 @@
 
 ## Deliberate trust boundary
 
-Market Intelligence Lab v0.4.0 is a local research and simulation application. It must not be used as a brokerage gateway or real-money execution system.
+Market Intelligence Lab v0.4.1 is a local research and simulation application. It must not be used as a brokerage gateway or real-money execution system.
 
 - No real brokerage access or Fidelity integration.
 - No collection or storage of brokerage usernames, passwords, session cookies, API credentials, or two-factor codes.
@@ -39,7 +39,7 @@ Do not open a public issue containing secrets or exploit details. Contact the re
 
 ## Market-data provider credentials
 
-Version 0.4.0 stores only environment-variable references in `provider_credentials`; provider secrets are never returned by the API or persisted in application tables. Stooq is the only enabled external adapter and needs no credential. Enabling another adapter requires an explicit implementation review covering authentication, request signing, rate limits, license and redistribution terms, TLS verification, response-size limits, timeouts, and log redaction.
+Version 0.4.1 stores only environment-variable references in `provider_credentials`; provider secrets are never returned by the API or persisted in application tables. Stooq is the only enabled external adapter and needs no credential. Enabling another adapter requires an explicit implementation review covering authentication, request signing, rate limits, license and redistribution terms, TLS verification, response-size limits, timeouts, and log redaction.
 
 Imported payloads are untrusted data. Normalization enforces symbols, timezone-aware provenance, OHLC and volume invariants, exchange sessions, checksums, and duplicate constraints before records become available to research workflows.
 # Sprint 4 external-request controls
@@ -49,3 +49,5 @@ Stooq requests use one fixed HTTPS URL, refuse redirects, accept no user-control
 Expensive operations have a single-instance fixed-window limiter. This is not authentication and does not protect multiple replicas. Authentication, user isolation, distributed rate limiting, and audit retention policy remain intentionally deferred rather than partially implemented.
 
 Worker logs redact common credential patterns. Do not include authorization headers, DSNs with passwords, `.env` contents, or provider response credentials in operational metadata.
+
+Unexpected Stooq HTML/error bodies are untrusted and are neither persisted nor returned to the frontend. Diagnostics expose only an allowlisted classification and static safe message. HTTP 200 does not imply provider health: content type, response envelope, schema, dates, and market values must all validate before data can enter the durable pipeline.

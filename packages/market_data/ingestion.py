@@ -507,9 +507,12 @@ def run_import_job(
         session.add(
             ImportError(
                 job_id=job.id,
-                error_code="provider_temporary_error",
+                error_code=exc.classification,
                 message=str(exc),
-                payload_summary={"attempt": job.attempt},
+                payload_summary={
+                    "attempt": job.attempt,
+                    "provider_classification": exc.classification,
+                },
                 is_retryable=True,
             )
         )
@@ -522,7 +525,23 @@ def run_import_job(
         else:
             job.status = "failed"
             job.completed_at = datetime.now(UTC)
-    except (ProviderError, ValueError, IntegrityError) as exc:
+    except ProviderError as exc:
+        session.add(
+            ImportError(
+                job_id=job.id,
+                error_code=exc.classification,
+                message=str(exc),
+                payload_summary={
+                    "attempt": job.attempt,
+                    "provider_classification": exc.classification,
+                },
+                is_retryable=False,
+            )
+        )
+        job.status = "failed"
+        job.error_summary = str(exc)
+        job.completed_at = datetime.now(UTC)
+    except (ValueError, IntegrityError) as exc:
         session.add(
             ImportError(
                 job_id=job.id,
