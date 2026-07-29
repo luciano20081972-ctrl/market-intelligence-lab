@@ -45,6 +45,12 @@ class Asset(Base):
     watchlist_links: Mapped[list[WatchlistAsset]] = relationship(
         back_populates="asset", cascade="all, delete-orphan", passive_deletes=True
     )
+    metadata_versions: Mapped[list[AssetMetadataVersion]] = relationship(
+        back_populates="asset", cascade="all, delete-orphan", passive_deletes=True
+    )
+    corporate_actions: Mapped[list[CorporateAction]] = relationship(
+        back_populates="asset", cascade="all, delete-orphan", passive_deletes=True
+    )
 
 
 class DataSource(Base):
@@ -112,6 +118,15 @@ class PriceBar(Base):
     data_source_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("data_sources.id", ondelete="RESTRICT"), index=True
     )
+    provider_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("providers.id", ondelete="RESTRICT"), index=True
+    )
+    original_symbol: Mapped[str] = mapped_column(String(32), default="", server_default="")
+    adjustment_status: Mapped[str] = mapped_column(
+        String(24), default="unadjusted", server_default="unadjusted"
+    )
+    checksum: Mapped[str] = mapped_column(String(64), default="", server_default="")
+    record_version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     is_demonstration_data: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
 
@@ -487,3 +502,224 @@ class SignalFactor(Base):
     metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
 
     signal: Mapped[Signal] = relationship(back_populates="factors")
+
+
+class Provider(Base):
+    __tablename__ = "providers"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    code: Mapped[str] = mapped_column(String(48), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(120), unique=True)
+    adapter_type: Mapped[str] = mapped_column(String(80))
+    capabilities: Mapped[list[str]] = mapped_column(JSON, default=list)
+    configuration: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    credential_environment_keys: Mapped[list[str]] = mapped_column(JSON, default=list)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    health: Mapped[str] = mapped_column(String(32), default="disabled")
+    last_tested_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    last_successful_import_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+    credentials: Mapped[list[ProviderCredential]] = relationship(
+        back_populates="provider", cascade="all, delete-orphan", passive_deletes=True
+    )
+    import_jobs: Mapped[list[ImportJob]] = relationship(back_populates="provider")
+
+
+class ProviderCredential(Base):
+    __tablename__ = "provider_credentials"
+    __table_args__ = (
+        UniqueConstraint("provider_id", "key_name", name="uq_provider_credential_key"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    provider_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("providers.id", ondelete="CASCADE"), index=True
+    )
+    key_name: Mapped[str] = mapped_column(String(80))
+    secret_reference: Mapped[str] = mapped_column(String(160))
+    last_four: Mapped[str | None] = mapped_column(String(4))
+    is_configured: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+    provider: Mapped[Provider] = relationship(back_populates="credentials")
+
+
+class ImportJob(Base):
+    __tablename__ = "import_jobs"
+    __table_args__ = (
+        CheckConstraint("max_attempts > 0", name="import_job_max_attempts_positive"),
+        CheckConstraint("records_processed >= 0", name="import_job_processed_nonnegative"),
+        CheckConstraint("records_inserted >= 0", name="import_job_inserted_nonnegative"),
+        CheckConstraint("records_skipped >= 0", name="import_job_skipped_nonnegative"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    provider_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("providers.id", ondelete="RESTRICT"), index=True
+    )
+    mode: Mapped[str] = mapped_column(String(24), index=True)
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    symbols: Mapped[list[str]] = mapped_column(JSON, default=list)
+    request_configuration: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    resume_cursor: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    requested_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+    started_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    next_retry_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    attempt: Mapped[int] = mapped_column(Integer, default=0)
+    max_attempts: Mapped[int] = mapped_column(Integer, default=3)
+    records_processed: Mapped[int] = mapped_column(Integer, default=0)
+    records_inserted: Mapped[int] = mapped_column(Integer, default=0)
+    records_skipped: Mapped[int] = mapped_column(Integer, default=0)
+    processing_duration_ms: Mapped[int] = mapped_column(Integer, default=0)
+    error_summary: Mapped[str | None] = mapped_column(Text)
+    validation_report: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+
+    provider: Mapped[Provider] = relationship(back_populates="import_jobs")
+    batches: Mapped[list[ImportBatch]] = relationship(
+        back_populates="job", cascade="all, delete-orphan", passive_deletes=True
+    )
+    errors: Mapped[list[ImportError]] = relationship(
+        back_populates="job", cascade="all, delete-orphan", passive_deletes=True
+    )
+
+
+class ImportBatch(Base):
+    __tablename__ = "import_batches"
+    __table_args__ = (UniqueConstraint("job_id", "sequence", name="uq_import_batch_job_sequence"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("import_jobs.id", ondelete="CASCADE"), index=True
+    )
+    sequence: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    request_timestamp: Mapped[datetime] = mapped_column(UTCDateTime())
+    retrieval_timestamp: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    publication_timestamp: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    effective_timestamp: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    checksum: Mapped[str] = mapped_column(String(64))
+    records_processed: Mapped[int] = mapped_column(Integer, default=0)
+    records_inserted: Mapped[int] = mapped_column(Integer, default=0)
+    records_skipped: Mapped[int] = mapped_column(Integer, default=0)
+    validation_report: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    started_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+    job: Mapped[ImportJob] = relationship(back_populates="batches")
+    errors: Mapped[list[ImportError]] = relationship(back_populates="batch")
+
+
+class AssetMetadataVersion(Base):
+    __tablename__ = "asset_metadata_versions"
+    __table_args__ = (
+        UniqueConstraint("asset_id", "provider_id", "version", name="uq_asset_metadata_version"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE"), index=True
+    )
+    provider_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("providers.id", ondelete="RESTRICT"), index=True
+    )
+    original_symbol: Mapped[str] = mapped_column(String(32))
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON)
+    effective_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    retrieval_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    checksum: Mapped[str] = mapped_column(String(64))
+    version: Mapped[int] = mapped_column(Integer)
+
+    asset: Mapped[Asset] = relationship(back_populates="metadata_versions")
+
+
+class CorporateAction(Base):
+    __tablename__ = "corporate_actions"
+    __table_args__ = (
+        UniqueConstraint("provider_id", "checksum", name="uq_corporate_action_provider_checksum"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE"), index=True
+    )
+    provider_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("providers.id", ondelete="RESTRICT"), index=True
+    )
+    action_type: Mapped[str] = mapped_column(String(32), index=True)
+    original_symbol: Mapped[str] = mapped_column(String(32))
+    effective_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    publication_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    retrieval_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    ratio: Mapped[Decimal | None] = mapped_column(Numeric(20, 8))
+    amount: Mapped[Decimal | None] = mapped_column(Numeric(20, 8))
+    currency: Mapped[str | None] = mapped_column(String(3))
+    old_symbol: Mapped[str | None] = mapped_column(String(32))
+    new_symbol: Mapped[str | None] = mapped_column(String(32))
+    checksum: Mapped[str] = mapped_column(String(64))
+    record_version: Mapped[int] = mapped_column(Integer, default=1)
+    status: Mapped[str] = mapped_column(String(24), default="active")
+
+    asset: Mapped[Asset] = relationship(back_populates="corporate_actions")
+
+
+class ExchangeCalendar(Base):
+    __tablename__ = "exchange_calendars"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    code: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    timezone: Mapped[str] = mapped_column(String(80))
+    weekend_days: Mapped[list[int]] = mapped_column(JSON, default=lambda: [5, 6])
+    holiday_dates: Mapped[list[str]] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+    sessions: Mapped[list[TradingSession]] = relationship(
+        back_populates="calendar", cascade="all, delete-orphan", passive_deletes=True
+    )
+
+
+class TradingSession(Base):
+    __tablename__ = "trading_sessions"
+    __table_args__ = (
+        UniqueConstraint("calendar_id", "session_date", name="uq_calendar_session_date"),
+        CheckConstraint("close_time > open_time", name="trading_session_close_after_open"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    calendar_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("exchange_calendars.id", ondelete="CASCADE"), index=True
+    )
+    session_date: Mapped[str] = mapped_column(String(10), index=True)
+    open_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    close_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    is_early_close: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(String(24), default="open")
+
+    calendar: Mapped[ExchangeCalendar] = relationship(back_populates="sessions")
+
+
+class ImportError(Base):
+    __tablename__ = "import_errors"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("import_jobs.id", ondelete="CASCADE"), index=True
+    )
+    batch_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("import_batches.id", ondelete="CASCADE"), index=True
+    )
+    error_code: Mapped[str] = mapped_column(String(64), index=True)
+    message: Mapped[str] = mapped_column(Text)
+    record_identifier: Mapped[str | None] = mapped_column(String(160))
+    payload_summary: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    is_retryable: Mapped[bool] = mapped_column(Boolean, default=False)
+    occurred_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+
+    job: Mapped[ImportJob] = relationship(back_populates="errors")
+    batch: Mapped[ImportBatch | None] = relationship(back_populates="errors")

@@ -8,7 +8,7 @@ from packages.core.config import Settings
 def test_health_endpoint(client: TestClient) -> None:
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "healthy", "database": "healthy", "version": "0.2.0"}
+    assert response.json() == {"status": "healthy", "database": "healthy", "version": "0.3.0"}
 
 
 def test_system_information(client: TestClient) -> None:

@@ -2,13 +2,13 @@
 
 ## Backend
 
-Pytest uses an isolated SQLite database per test. Coverage includes the foundation workflows plus indicator calculations, seven strategy contracts, strict parameter validation, shared-cash and delayed no-lookahead backtests, costs and exposure controls, metrics and provenance, paper market/limit/stop/stop-limit behavior, idempotency, long-only enforcement, fills, P&L, pause/resume, risk rejections, and API validation.
+Pytest uses an isolated SQLite database per test. Coverage includes the foundation workflows plus indicator calculations, seven strategy contracts, strict parameter validation, shared-cash and delayed no-lookahead backtests, costs and exposure controls, metrics and provenance, paper market/limit/stop/stop-limit behavior, idempotency, long-only enforcement, fills, P&L, pause/resume, risk rejections, provider registration, durable imports, retries/restarts, provenance, quality validation, corporate actions, exchange calendars, and API validation.
 
 Run `pytest`, `ruff check .`, and `mypy apps packages scripts` from the root. CI also applies Alembic to an empty database and runs `alembic check`.
 
 ## Frontend
 
-Vitest and React Testing Library cover the v0.1.0 screens plus strategy backtest submission, paper portfolio creation, order risk preview, and risk-rule updates. Run `pnpm test`, `pnpm run typecheck`, and `pnpm run build` from `apps/web`.
+Vitest and React Testing Library cover the foundation screens, backtesting and paper-trading workflows, provider health, import creation/detail, data quality, corporate actions, and exchange sessions. Run `pnpm test`, `pnpm run typecheck`, and `pnpm run build` from `apps/web`.
 
 ## Browser workflow
 

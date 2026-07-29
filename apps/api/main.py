@@ -7,7 +7,15 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from apps.api.dependencies import get_db
-from apps.api.routers import assets, backtests, paper_portfolios, strategies, system, watchlists
+from apps.api.routers import (
+    assets,
+    backtests,
+    market_data,
+    paper_portfolios,
+    strategies,
+    system,
+    watchlists,
+)
 from apps.api.schemas import HealthResponse
 from packages.core.config import Settings, get_settings
 from packages.database.session import create_database_engine, make_session_factory
@@ -19,7 +27,7 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app = FastAPI(
         title=app_settings.app_name,
         version=app_settings.version,
-        description="Research foundation using clearly labeled synthetic demonstration data.",
+        description="Historical market-data research platform with simulated trading only.",
     )
     app.state.settings = app_settings
     app.state.engine = app_engine
@@ -52,6 +60,7 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.include_router(strategies.router, prefix="/api/v1")
     app.include_router(backtests.router, prefix="/api/v1")
     app.include_router(paper_portfolios.router, prefix="/api/v1")
+    app.include_router(market_data.router, prefix="/api/v1")
     return app
 
 

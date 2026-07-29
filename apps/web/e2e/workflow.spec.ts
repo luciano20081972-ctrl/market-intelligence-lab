@@ -5,6 +5,15 @@ test("seeded research workflow has no severe console errors", async ({ page }) =
   page.on("console", message => { if (message.type() === "error") severe.push(message.text()); });
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Market overview" })).toBeVisible();
+  await page.getByRole("link", { name: "Providers" }).click();
+  await expect(page.getByRole("heading", { name: "Providers" })).toBeVisible();
+  await expect(page.getByText("Deterministic Synthetic Demonstration Provider")).toBeVisible();
+  await page.getByRole("link", { name: "Import Jobs" }).click();
+  await expect(page.getByRole("heading", { name: "Import jobs" })).toBeVisible();
+  await page.getByRole("button", { name: "Create import" }).click();
+  await expect(page.getByText(/inserted ·/).first()).toBeVisible();
+  await page.getByRole("link", { name: "Data Quality" }).click();
+  await expect(page.getByRole("heading", { name: "Data quality" })).toBeVisible();
   await page.getByRole("link", { name: "Asset Explorer" }).click();
   await expect(page.getByRole("link", { name: "AAPL" })).toBeVisible();
   await page.getByRole("link", { name: "Watchlists" }).click();

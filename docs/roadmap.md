@@ -20,3 +20,15 @@ This sprint should not add brokerage connectivity or trading.
 - Macroeconomic series with release/vintage semantics.
 - Congressional transaction and political/regulatory event timelines.
 - Authentication, PostgreSQL deployment, observability, dependency scanning, and backups.
+
+## Sprint 3 — v0.3.0 historical market-data platform
+
+- Provider capability registry and disabled vendor placeholders.
+- Durable full and incremental imports with retry, restart, cancellation, provenance, and quality reports.
+- Corporate-action models, XNYS exchange sessions, APIs, and governance UI.
+
+## Recommended Sprint 4
+
+- Implement one licensed provider adapter with sandbox credentials and contract tests.
+- Replace the finite holiday table with a maintained calendar feed.
+- Add a durable worker and scheduler lease model, observability, authentication, rate limiting, and provider license controls.

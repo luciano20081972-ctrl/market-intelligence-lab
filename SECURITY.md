@@ -2,7 +2,7 @@
 
 ## Deliberate trust boundary
 
-Market Intelligence Lab v0.2.0 is a local research and simulation application. It must not be used as a brokerage gateway or real-money execution system.
+Market Intelligence Lab v0.3.0 is a local research and simulation application. It must not be used as a brokerage gateway or real-money execution system.
 
 - No real brokerage access or Fidelity integration.
 - No collection or storage of brokerage usernames, passwords, session cookies, API credentials, or two-factor codes.
@@ -36,3 +36,9 @@ Sprint 1 has no upload endpoint. Future uploads must use size and type allowlist
 ## Reporting
 
 Do not open a public issue containing secrets or exploit details. Contact the repository owner privately with affected version, reproduction steps, and impact. Do not include real brokerage credentials in any report.
+
+## Market-data provider credentials
+
+Version 0.3.0 stores only environment-variable references in provider_credentials; provider secrets are never returned by the API or persisted in application tables. All external provider placeholders are disabled by default. Enabling a future adapter requires an explicit implementation review covering authentication, request signing, rate limits, license and redistribution terms, TLS verification, response-size limits, timeouts, and log redaction.
+
+Imported payloads are untrusted data. Normalization enforces symbols, timezone-aware provenance, OHLC and volume invariants, exchange sessions, checksums, and duplicate constraints before records become available to research workflows.

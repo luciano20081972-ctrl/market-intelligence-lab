@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import math
 import random
 import uuid
@@ -10,6 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from packages.database.models import Asset, DataIngestionRun, DataSource, PriceBar
+from packages.market_data.platform_seed import provider_id, seed_market_data_platform
 
 DEMO_NAMESPACE = uuid.UUID("f5857027-d790-43ae-8ff0-e334528cd81a")
 DEMO_SOURCE_ID = uuid.uuid5(DEMO_NAMESPACE, "synthetic-demonstration-v1")
@@ -132,6 +134,11 @@ def _bars_for(asset: Asset, source: DataSource, seed_index: int) -> list[PriceBa
         retrieval_time = datetime.combine(
             (event_time + timedelta(days=1)).date(), time(2, 0), tzinfo=UTC
         )
+        canonical = (
+            f"{asset.symbol}|1d|{event_time.isoformat()}|{open_price:.6f}|{high:.6f}|"
+            f"{low:.6f}|{close:.6f}|{int(1_000_000 + rng.random() * 90_000_000)}"
+        )
+        volume = int(canonical.rsplit("|", maxsplit=1)[-1])
         bars.append(
             PriceBar(
                 id=uuid.uuid5(DEMO_NAMESPACE, f"{asset.symbol}:1d:{event_time.isoformat()}"),
@@ -146,8 +153,13 @@ def _bars_for(asset: Asset, source: DataSource, seed_index: int) -> list[PriceBa
                 low=_money(low),
                 close=_money(close),
                 adjusted_close=_money(close),
-                volume=int(1_000_000 + rng.random() * 90_000_000),
+                volume=volume,
                 data_source_id=source.id,
+                provider_id=provider_id("synthetic"),
+                original_symbol=asset.symbol,
+                adjustment_status="unadjusted",
+                checksum=hashlib.sha256(canonical.encode()).hexdigest(),
+                record_version=1,
                 is_demonstration_data=True,
                 created_at=retrieval_time,
             )
@@ -159,6 +171,7 @@ def _bars_for(asset: Asset, source: DataSource, seed_index: int) -> list[PriceBa
 def seed_demonstration_data(session: Session) -> dict[str, int]:
     """Idempotently seed stable, explicitly synthetic research data."""
 
+    seed_market_data_platform(session)
     source = session.get(DataSource, DEMO_SOURCE_ID)
     if source is None:
         source = DataSource(

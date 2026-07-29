@@ -150,3 +150,43 @@ export interface Performance {
   portfolio_id: string; starting_cash: string; current_value: string; total_return: string;
   realized_pnl: string; unrealized_pnl: string; points: Array<Record<string, string>>; warning: string;
 }
+
+export interface PageMeta { page: number; page_size: number; total: number; }
+export interface Provider {
+  id: string; code: string; name: string; capabilities: string[];
+  credential_environment_keys: string[]; is_enabled: boolean; health: string;
+  last_tested_at: string | null; last_successful_import_at: string | null;
+}
+export interface ProviderPage { items: Provider[]; meta: PageMeta; }
+export interface ImportBatch {
+  id: string; sequence: number; status: string; records_processed: number;
+  records_inserted: number; records_skipped: number; checksum: string;
+  validation_report: Record<string, unknown>;
+}
+export interface ImportJob {
+  id: string; provider_id: string; provider_code: string; mode: string; status: string;
+  symbols: string[]; requested_at: string; started_at: string | null; completed_at: string | null;
+  next_retry_at: string | null; attempt: number; max_attempts: number;
+  records_processed: number; records_inserted: number; records_skipped: number;
+  processing_duration_ms: number; error_summary: string | null;
+  validation_report: { batches?: Array<{ symbol: string; valid: boolean; error_count: number; warning_count: number }> };
+  batches: ImportBatch[];
+}
+export interface ImportJobPage { items: ImportJob[]; meta: PageMeta; }
+export interface ImportErrorRecord {
+  id: string; job_id: string; batch_id: string | null; error_code: string; message: string;
+  record_identifier: string | null; is_retryable: boolean; occurred_at: string;
+}
+export interface ImportErrorPage { items: ImportErrorRecord[]; meta: PageMeta; }
+export interface CorporateAction {
+  id: string; symbol: string; provider_code: string; action_type: string;
+  effective_time: string; publication_time: string; ratio: string | null; amount: string | null;
+  currency: string | null; old_symbol: string | null; new_symbol: string | null;
+  adjustment_status: string;
+}
+export interface CorporateActionPage { items: CorporateAction[]; meta: PageMeta; }
+export interface TradingSession {
+  id: string; calendar_code: string; timezone: string; session_date: string;
+  open_time: string; close_time: string; is_early_close: boolean; status: string;
+}
+export interface TradingSessionPage { items: TradingSession[]; meta: PageMeta; }

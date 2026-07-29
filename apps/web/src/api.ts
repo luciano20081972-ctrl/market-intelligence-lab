@@ -1,7 +1,8 @@
 import type {
   Asset, AssetPage, Backtest, BacktestPage, BacktestTrade, DataSource, EquityPoint,
   OrderPayload, OrderPreview, PaperFill, PaperOrder, PaperPortfolio, Performance,
-  Position, PricePage, RiskRule, StrategyPage, SystemInfo, Watchlist,
+  Position, PricePage, RiskRule, StrategyPage, SystemInfo, Watchlist, ProviderPage,
+  ImportJob, ImportJobPage, ImportErrorPage, CorporateActionPage, TradingSessionPage,
 } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -18,8 +19,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { "Content-Type": "application/json", ...init?.headers },
   });
   if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { detail?: string };
-    throw new ApiError(response.status, body.detail ?? `Request failed (${response.status})`);
+    const body = (await response.json().catch(() => ({}))) as {
+      detail?: string | { message?: string };
+    };
+    const message = typeof body.detail === "string" ? body.detail : body.detail?.message;
+    throw new ApiError(response.status, message ?? `Request failed (${response.status})`);
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
@@ -65,4 +69,14 @@ export const api = {
   resumePortfolio: (id: string) => request<PaperPortfolio>(`/api/v1/paper-portfolios/${id}/resume`, { method: "POST" }),
   riskRules: (id: string) => request<RiskRule[]>(`/api/v1/paper-portfolios/${id}/risk-rules`),
   updateRiskRule: (portfolioId: string, ruleId: string, limitValue: string, isEnabled: boolean) => request<RiskRule>(`/api/v1/paper-portfolios/${portfolioId}/risk-rules/${ruleId}`, { method: "PATCH", body: JSON.stringify({ limit_value: limitValue, is_enabled: isEnabled }) }),
+  providers: () => request<ProviderPage>("/api/v1/providers?page_size=100"),
+  testProvider: (providerId: string) => request<{ status: string }>("/api/v1/providers/test", { method: "POST", body: JSON.stringify({ provider_id: providerId }) }),
+  importJobs: () => request<ImportJobPage>("/api/v1/import/jobs?page_size=100"),
+  importJob: (id: string) => request<ImportJob>(`/api/v1/import/jobs/${id}`),
+  createImportJob: (payload: Record<string, unknown>) => request<ImportJob>("/api/v1/import/jobs", { method: "POST", body: JSON.stringify(payload) }),
+  cancelImportJob: (id: string) => request<ImportJob>(`/api/v1/import/jobs/${id}/cancel`, { method: "POST" }),
+  restartImportJob: (id: string) => request<ImportJob>(`/api/v1/import/jobs/${id}/restart`, { method: "POST" }),
+  importErrors: () => request<ImportErrorPage>("/api/v1/import/errors?page_size=100"),
+  corporateActions: () => request<CorporateActionPage>("/api/v1/corporate-actions?page_size=100"),
+  exchangeCalendar: () => request<TradingSessionPage>("/api/v1/exchange-calendar?page_size=100"),
 };

@@ -5,9 +5,15 @@ import { AssetDetail } from "./pages/AssetDetail";
 import { AssetExplorer } from "./pages/AssetExplorer";
 import { BacktestDetail } from "./pages/BacktestDetail";
 import { Backtests } from "./pages/Backtests";
+import { CorporateActions } from "./pages/CorporateActions";
+import { DataQuality } from "./pages/DataQuality";
 import { DataSources } from "./pages/DataSources";
+import { ExchangeCalendar } from "./pages/ExchangeCalendar";
+import { ImportJobDetail } from "./pages/ImportJobDetail";
+import { ImportJobs } from "./pages/ImportJobs";
 import { Documentation } from "./pages/Documentation";
 import { Overview } from "./pages/Overview";
+import { Providers } from "./pages/Providers";
 import { PaperPortfolioDetail } from "./pages/PaperPortfolioDetail";
 import { PaperPortfolios } from "./pages/PaperPortfolios";
 import { RiskSettings } from "./pages/RiskSettings";
@@ -33,6 +39,12 @@ export function App() {
       <Route path="paper-portfolios/:id/order" element={<SimulatedOrderTicket />} />
       <Route path="paper-portfolios/:id/risk" element={<RiskSettings />} />
       <Route path="data-sources" element={<DataSources />} />
+      <Route path="providers" element={<Providers />} />
+      <Route path="imports" element={<ImportJobs />} />
+      <Route path="imports/:id" element={<ImportJobDetail />} />
+      <Route path="data-quality" element={<DataQuality />} />
+      <Route path="corporate-actions" element={<CorporateActions />} />
+      <Route path="exchange-calendar" element={<ExchangeCalendar />} />
       <Route path="status" element={<SystemStatus />} />
       <Route path="docs" element={<Documentation />} />
     </Route>

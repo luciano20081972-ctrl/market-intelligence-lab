@@ -17,7 +17,7 @@ React/Vite -> /api/v1 -> FastAPI routers -> SQLAlchemy sessions -> SQLite/Postgr
 2. **Database constraints are authoritative.** Application validation improves messages; unique, foreign-key, and check constraints protect concurrent writes.
 3. **Explicit transaction ownership.** Read dependencies close sessions. Mutation handlers commit intentionally and roll back integrity failures before returning a conflict.
 4. **UTC and bitemporal-minded provenance.** Event, publication, effective, and retrieval time are distinct. A custom type rejects naive Python timestamps and restores timezone awareness after SQLite reads.
-5. **Provider isolation.** `MarketDataProvider` and `ProviderPriceBar` prevent provider-specific payloads from entering API or persistence layers.
+5. **Provider isolation.** Capability protocols and a registry prevent provider-specific payloads from entering API or persistence layers. Disabled placeholders make configuration state explicit and safe.
 6. **No brokerage execution capability.** Backtests and paper orders are database-only simulations. They cannot authenticate with or submit to a broker.
 7. **Conservative interface.** Dark neutral surfaces and restrained status colors emphasize data density without implying predictive certainty.
 8. **Versioned reproducibility.** A backtest references an immutable strategy version and stores parameters, execution assumptions, risk limits, application version, and source identifiers.
@@ -29,4 +29,12 @@ React/Vite -> /api/v1 -> FastAPI routers -> SQLAlchemy sessions -> SQLite/Postgr
 
 ## Extension points
 
-Future adapters should implement the market-data provider protocol, map raw observations into provenance-complete records, and write them through a dedicated ingestion service. Research strategies should consume normalized read models, not provider payloads or API schemas.
+Production adapters should implement the capability protocols, map raw observations into provenance-complete records, and write them through the ingestion service. Research strategies should consume normalized read models, not provider payloads or API schemas.
+
+## Market-data ingestion flow
+
+ProviderRegistry -> adapter records -> quality validation -> ImportBatch -> normalized models
+
+Each import job is durable and resumes at a symbol cursor. Per-record and per-batch checksums prevent duplicates, while database uniqueness constraints provide a concurrent-write backstop. Exchange sessions are seeded independently and validation rejects bars on closed sessions. Raw close values remain immutable; adjusted values and the adjustment status are stored alongside them.
+
+The current in-memory scheduler is only an orchestration boundary. A later worker can claim the same daily, manual, retry, and failed queues without changing the job model or API.

@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.0 - 2026-07-28
+
+### Added
+
+- Provider registry and disabled placeholders for seven future market-data vendors.
+- Durable full/incremental import jobs with batches, retry/backoff, cancellation, restart cursors, checksums, duplicate prevention, history, and precise errors.
+- Provenance-complete price bars, metadata versions, corporate actions, exchange calendars, and trading sessions.
+- Data-quality validation and reports for symbols, timestamps, OHLC, volume, duplicates, sessions, and freshness.
+- Market-data APIs and six frontend workspaces for providers, imports, quality, actions, and calendars.
+- In-memory scheduler abstraction for daily, manual, retry, and failed queues.
+
+### Safety
+
+- All trading remains simulated. Provider placeholders are disabled and perform no external network calls.
+
 All notable changes follow Keep a Changelog conventions. The project uses semantic versioning.
 
 ## [0.2.0] - 2026-07-28

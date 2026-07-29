@@ -1,6 +1,6 @@
 # Market Intelligence Lab
 
-Market Intelligence Lab is a local-first stock and ETF research workbench for historical data, explainable signals, reproducible backtests, and simulated paper trading. Version 0.2.0 adds transparent strategy definitions, point-in-time shared-cash simulations, and risk-controlled hypothetical portfolios to the v0.1.0 data foundation.
+Market Intelligence Lab is a local-first stock and ETF research workbench for historical data, explainable signals, reproducible backtests, and simulated paper trading. Version 0.3.0 adds a durable, provider-neutral historical market-data platform while retaining transparent backtests and risk-controlled hypothetical portfolios.
 
 > **Synthetic demonstration data — not live market data.** The bundled prices are generated locally from a fixed seed and must never be interpreted as real, current, or licensed market information.
 
@@ -13,7 +13,7 @@ This release has no Fidelity or brokerage integration, brokerage login automatio
 - `apps/api`: FastAPI HTTP application and `/api/v1` routes.
 - `apps/web`: React, TypeScript, Vite, TanStack Query, React Router, and Recharts client.
 - `packages/database`: SQLAlchemy 2 models, UTC-aware types, and transaction helpers.
-- `packages/market_data`: provider protocol and deterministic demonstration seed.
+- `packages/market_data`: provider registry, disabled adapter placeholders, durable ingestion jobs, exchange calendars, corporate-action adjustment, validation, and deterministic demonstration data.
 - `packages/provenance`: append-only application audit events.
 - `packages/strategies`: seven versioned, parameter-validated transparent strategies and technical indicators.
 - `packages/backtesting`: shared-cash, long-only, no-lookahead simulation and performance metrics.
@@ -140,7 +140,7 @@ The frontend is served at `http://127.0.0.1:8080`. Runtime database data lives i
 - Backtests use fixed daily demonstration bars; intraday execution, partial fills, market impact, and liquidity depth are not modeled.
 - Authentication and multi-user isolation are not implemented.
 - SQLite is tested locally; PostgreSQL deployment testing is deferred.
-- Market calendars, splits, dividends, and corporate-action adjustment are not modeled in v0.2.0.
+- The bundled XNYS calendar is finite (2025-2027), and provider placeholders do not yet retrieve licensed external data.
 
 See [the roadmap](docs/roadmap.md) for the planned next increment.
 
@@ -163,3 +163,11 @@ Market Intelligence Lab is research software, not financial advice. Synthetic pr
 - [Security](SECURITY.md)
 - [Roadmap](docs/roadmap.md)
 - [Troubleshooting](docs/troubleshooting.md)
+
+## Historical market-data platform (v0.3.0)
+
+The provider registry exposes capabilities for historical OHLCV, asset metadata, corporate actions, and exchange calendars. Alpha Vantage, Twelve Data, Polygon, Financial Modeling Prep, Tiingo, Stooq, and Yahoo Finance are registered as disabled placeholders; they perform no network requests and cannot be imported until an adapter is implemented and explicitly enabled. The synthetic adapter remains enabled for deterministic local testing only.
+
+Imports support full and incremental modes, exponential retry state, cancellation, restart cursors, per-symbol batches, checksums, duplicate prevention, provenance-complete bars, quality reports, and history/error APIs. The scheduler boundary includes daily, manual, retry, and failed queues without requiring an external worker service.
+
+See the provider framework, data ingestion, data quality, corporate actions, and exchange calendar guides in docs/.

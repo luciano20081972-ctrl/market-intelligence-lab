@@ -36,12 +36,17 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
-        if connection.dialect.name == "sqlite":
-            connection.exec_driver_sql("PRAGMA foreign_keys=ON")
-            connection.commit()
+        is_sqlite = connection.dialect.name == "sqlite"
+        # SQLite batch migrations rebuild tables. Keep enforcement disabled on
+        # this migration-only connection so referenced tables can be replaced;
+        # application connections enable it in create_database_engine().
         context.configure(connection=connection, target_metadata=target_metadata, compare_type=True)
         with context.begin_transaction():
             context.run_migrations()
+        if is_sqlite:
+            violations = connection.exec_driver_sql("PRAGMA foreign_key_check").fetchall()
+            if violations:
+                raise RuntimeError(f"SQLite foreign-key violations after migration: {violations}")
 
 
 if context.is_offline_mode():
