@@ -8,3 +8,7 @@ Conflicting imports preserve the existing canonical record, record both checksum
 python scripts/operations.py reconcile
 python scripts/operations.py reconcile --record
 ```
+
+## Cross-provider quorum
+
+`POST /api/v1/reconciliation/provider-comparison` aligns overlapping sessions from two explicit providers and records relative OHLC/volume differences, missing/duplicate sessions, adjustment/checksum/freshness differences, tolerances, and unavailable corporate-action comparison. Outcomes are agreed, within tolerance, conflict, or unresolved; accepted-primary, accepted-secondary, and excluded require an explicit resolution reason and audit event. Comparison never overwrites a bar or selects the more favorable value.

@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { AssetDetail } from "./pages/AssetDetail";
@@ -25,12 +25,25 @@ import { SimulatedOrderTicket } from "./pages/SimulatedOrderTicket";
 import { StrategyLab } from "./pages/StrategyLab";
 import { SystemStatus } from "./pages/SystemStatus";
 import { Watchlists } from "./pages/Watchlists";
+import { AuthProvider, ProtectedRoute } from "./auth";
+import { queryClient } from "./queryClient";
+import { SignIn } from "./pages/SignIn";
+import { PasswordReset } from "./pages/PasswordReset";
+import { UserProfile } from "./pages/UserProfile";
+import { WorkspaceSettings } from "./pages/WorkspaceSettings";
+import { AuditLog } from "./pages/AuditLog";
+import { InfrastructureServices } from "./pages/InfrastructureServices";
+import { ProviderComparisons } from "./pages/ProviderComparisons";
+import { BacktestManifest } from "./pages/BacktestManifest";
+import { BacktestValidation } from "./pages/BacktestValidation";
 
-export const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 30_000 } } });
+export { queryClient };
 
 export function App() {
-  return <QueryClientProvider client={queryClient}><BrowserRouter><Routes>
-    <Route element={<Layout />}>
+  return <QueryClientProvider client={queryClient}><BrowserRouter><AuthProvider><Routes>
+    <Route path="sign-in" element={<SignIn />} />
+    <Route path="reset-password" element={<PasswordReset />} />
+    <Route element={<ProtectedRoute />}><Route element={<Layout />}>
       <Route index element={<Overview />} />
       <Route path="watchlists" element={<Watchlists />} />
       <Route path="assets" element={<AssetExplorer />} />
@@ -38,6 +51,8 @@ export function App() {
       <Route path="strategies" element={<StrategyLab />} />
       <Route path="backtests" element={<Backtests />} />
       <Route path="backtests/:id" element={<BacktestDetail />} />
+      <Route path="backtests/:id/manifest" element={<BacktestManifest />} />
+      <Route path="backtests/:id/validation" element={<BacktestValidation />} />
       <Route path="paper-portfolios" element={<PaperPortfolios />} />
       <Route path="paper-portfolios/:id" element={<PaperPortfolioDetail />} />
       <Route path="paper-portfolios/:id/order" element={<SimulatedOrderTicket />} />
@@ -50,11 +65,16 @@ export function App() {
       <Route path="operations" element={<Operations />} />
       <Route path="schedules" element={<Schedules />} />
       <Route path="reconciliation" element={<Reconciliation />} />
+      <Route path="provider-comparisons" element={<ProviderComparisons />} />
+      <Route path="infrastructure" element={<InfrastructureServices />} />
+      <Route path="profile" element={<UserProfile />} />
+      <Route path="workspace" element={<WorkspaceSettings />} />
+      <Route path="audit" element={<AuditLog />} />
       <Route path="data-quality" element={<DataQuality />} />
       <Route path="corporate-actions" element={<CorporateActions />} />
       <Route path="exchange-calendar" element={<ExchangeCalendar />} />
       <Route path="status" element={<SystemStatus />} />
       <Route path="docs" element={<Documentation />} />
-    </Route>
-  </Routes></BrowserRouter></QueryClientProvider>;
+    </Route></Route>
+  </Routes></AuthProvider></BrowserRouter></QueryClientProvider>;
 }

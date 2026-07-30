@@ -10,6 +10,7 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from packages.auth.bootstrap import ensure_legacy_workspace
 from packages.database.models import Asset, DataIngestionRun, DataSource, PriceBar
 from packages.market_data.platform_seed import provider_id, seed_market_data_platform
 
@@ -176,6 +177,7 @@ def seed_demonstration_data(
 ) -> dict[str, int]:
     """Idempotently seed stable, explicitly synthetic research data."""
 
+    ensure_legacy_workspace(session)
     seed_market_data_platform(session, calendar_start=calendar_start, calendar_end=calendar_end)
     source = session.get(DataSource, DEMO_SOURCE_ID)
     if source is None:

@@ -17,8 +17,10 @@ from packages.backtesting.service import run_backtest
 from packages.backtesting.types import BacktestConfig
 from packages.database.models import (
     BacktestDailySnapshot,
+    BacktestReproducibilityManifest,
     BacktestRun,
     BacktestTrade,
+    BacktestValidationReport,
     StrategyVersion,
 )
 from packages.provenance import record_audit_event
@@ -225,3 +227,47 @@ def get_drawdown(run_id: UUID, session: Session = Depends(get_db)) -> list[dict[
         {"event_time": point.event_time, "drawdown": point.drawdown}
         for point in _curve(session, run_id)
     ]
+
+
+@router.get("/{run_id}/manifest", response_model=dict[str, object])
+def get_manifest(run_id: UUID, session: Session = Depends(get_db)) -> dict[str, object]:
+    _find_run(session, run_id)
+    value = session.scalar(
+        select(BacktestReproducibilityManifest).where(
+            BacktestReproducibilityManifest.backtest_run_id == run_id
+        )
+    )
+    if value is None:
+        return {
+            "backtest_run_id": str(run_id),
+            "status": "legacy_unavailable",
+            "manifest": {"unavailable": True},
+        }
+    return {
+        "backtest_run_id": str(run_id),
+        "status": "available",
+        "checksum": value.manifest_checksum,
+        "manifest": value.manifest,
+    }
+
+
+@router.get("/{run_id}/validation-report", response_model=dict[str, object])
+def get_validation_report(run_id: UUID, session: Session = Depends(get_db)) -> dict[str, object]:
+    _find_run(session, run_id)
+    value = session.scalar(
+        select(BacktestValidationReport).where(BacktestValidationReport.backtest_run_id == run_id)
+    )
+    if value is None:
+        return {
+            "backtest_run_id": str(run_id),
+            "overall_status": "not_evaluated",
+            "is_validated": False,
+            "rules": [],
+        }
+    return {
+        "backtest_run_id": str(run_id),
+        "overall_status": value.overall_status,
+        "is_validated": value.is_validated,
+        "rules": value.rules,
+        "generated_at": value.generated_at,
+    }

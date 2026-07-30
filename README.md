@@ -1,6 +1,6 @@
 # Market Intelligence Lab
 
-Market Intelligence Lab is a local-first stock and ETF research workbench for historical data, explainable signals, reproducible backtests, and simulated paper trading. Version 0.4.1 stabilizes the read-only Stooq integration with strict response classification, safe provider diagnostics, deterministic fixture-backed imports, and external-import preflight protection while retaining the v0.4.0 durable worker, scheduling, reconciliation, and synthetic demonstrations.
+Market Intelligence Lab is a workspace-isolated stock and ETF research workbench for historical data, explainable signals, reproducible backtests, and simulated paper trading. Version 0.5.0 adds Supabase-compatible authentication, centralized authorization, legacy-data migration, a fixture-tested Twelve Data adapter, cross-provider comparison, backtest manifests/validation, and production-governance workflows.
 
 > **Research data and simulated trading only.** Bundled prices are synthetic. External Stooq history is read-only, is not bundled, may be delayed or incomplete, and requires an independent terms/licensing review before production or redistribution use.
 
@@ -13,7 +13,8 @@ This release has no Fidelity or brokerage integration, brokerage login automatio
 - `apps/api`: FastAPI HTTP application and `/api/v1` routes.
 - `apps/web`: React, TypeScript, Vite, TanStack Query, React Router, and Recharts client.
 - `packages/database`: SQLAlchemy 2 models, UTC-aware types, and transaction helpers.
-- `packages/market_data`: operational Stooq and synthetic adapters, durable jobs and leases, worker/schedules, maintained exchange calendars, reconciliation, validation, and observability.
+- `packages/auth` and `packages/security`: provider-neutral identity, Supabase JWT verification, workspace roles, and tenant query/write guards.
+- `packages/market_data`: Stooq, Twelve Data, and synthetic adapters, durable jobs and leases, worker/schedules, calendars, comparison, validation, and observability.
 - `packages/provenance`: append-only application audit events.
 - `packages/strategies`: seven versioned, parameter-validated transparent strategies and technical indicators.
 - `packages/backtesting`: shared-cash, long-only, no-lookahead simulation and performance metrics.
@@ -52,7 +53,7 @@ Set-Location ../..
 
 ## Environment setup
 
-Copy `.env.example` to `.env` and adjust only local, non-secret values. `.env` is ignored by Git. The application reads variables prefixed with `MIL_`; the browser reads `VITE_API_BASE_URL` at build time. Never put brokerage or production credentials in either file.
+Copy `.env.example` to `.env` and adjust only local, non-secret values. `.env` is ignored by Git. The application reads variables prefixed with `MIL_`; the browser reads `VITE_` configuration at build time. `MIL_AUTH_MODE=disabled` is local/test only and production refuses it. Supabase mode requires its URL/audience and the browser's public publishable key. Twelve Data uses backend-only `MIL_TWELVE_DATA_API_KEY`. Never expose a Supabase service-role key or provider key to the browser.
 
 ```powershell
 Copy-Item .env.example .env
@@ -109,6 +110,7 @@ pnpm run dev
 ruff check .
 mypy apps packages scripts
 pytest
+pytest --cov=apps --cov=packages --cov-report=term-missing --cov-report=xml
 python scripts/verify.py
 ```
 
@@ -147,9 +149,11 @@ The frontend is served at `http://127.0.0.1:8080`. Runtime database data lives i
 - Stooq may return a reachable HTML verification/access page instead of CSV; v0.4.1 reports that state as degraded and blocks the external import rather than accepting or exposing the body.
 - No SEC, macroeconomic, congressional-disclosure, political-event, or regulatory-event ingestion yet.
 - Backtests use fixed daily demonstration bars; intraday execution, partial fills, market impact, and liquidity depth are not modeled.
-- Authentication and multi-user isolation are not implemented.
-- SQLite is tested locally; PostgreSQL deployment testing is deferred.
-- Authentication and distributed/multi-host worker coordination are deferred; the current rate limiter and worker target a single application instance.
+- Supabase integration is fixture/unit tested; no real Supabase project was contacted and application-managed immediate session revocation is limited by provider support.
+- Application-layer workspace isolation is implemented; PostgreSQL RLS remains a documented pre-v1.0 hardening item and is not claimed.
+- PostgreSQL verification runs in CI and is skipped locally unless `MIL_POSTGRES_TEST_DATABASE_URL` points to a disposable database.
+- Twelve Data is fixture-tested only; no live request was run, and no commercial redistribution right is claimed.
+- Distributed/multi-host rate limiting and worker coordination remain deferred; the current limiter and worker target one application instance.
 
 See [the roadmap](docs/roadmap.md) for the planned next increment.
 
@@ -173,9 +177,9 @@ Market Intelligence Lab is research software, not financial advice. Synthetic pr
 - [Roadmap](docs/roadmap.md)
 - [Troubleshooting](docs/troubleshooting.md)
 
-## Real market-data operations (v0.4.1)
+## Real market-data operations (v0.5.0)
 
-Stooq is enabled as the first operational external adapter because its fixed HTTPS endpoint requires no API key and can provide bounded daily OHLCV requests. The adapter never accepts user-controlled URLs, follows no redirects, limits response size, maps simple U.S. stock/ETF symbols such as `AAPL`, `MSFT`, and `SPY` to the `.us` suffix, and accepts only UTF-8/ASCII-compatible comma-delimited data with the canonical `Date,Open,High,Low,Close,Volume` fields. BOMs, header capitalization, surrounding header whitespace, and CRLF/LF are normalized; HTML, plaintext errors, unsupported delimiters, unknown/duplicate schemas, missing values, invalid dates/numbers/OHLC, and negative volume are rejected. No claim of commercial redistribution rights is made. Other external providers remain disabled placeholders; synthetic data remains enabled for offline tests.
+Stooq retains its strict fixed-host CSV adapter and honest degraded/unknown status. Twelve Data is the second documented adapter: it uses a fixed HTTPS host, header credential, bounded daily JSON requests, response limits, normalized errors, checksums, and strict OHLCV validation. It is disabled without its environment key and fixture-tested rather than live-verified. Synthetic data remains enabled for offline tests. No provider redistribution right is claimed.
 
 The v0.4.1 diagnostic distinguishes healthy compatible CSV, reachable-but-invalid responses, no data, rate/access responses, and network unavailability without storing or displaying a remote response body. A live diagnostic on 2026-07-29 reached `stooq.com` over HTTPS with HTTP 200 but returned `text/html` verification content, so that environment was correctly classified `html_access_page`, not healthy. External imports remain disabled until the exact request passes preview validation.
 

@@ -66,6 +66,7 @@ def create_import_job(
     dry_run: bool = False,
     idempotency_key: str | None = None,
     queue_name: str = "manual",
+    workspace_id: UUID | None = None,
 ) -> ImportJob:
     provider = session.scalar(select(Provider).where(Provider.code == provider_code.lower()))
     if provider is None:
@@ -91,6 +92,7 @@ def create_import_job(
         if existing is not None:
             return existing
     job = ImportJob(
+        workspace_id=workspace_id or session.info.get("workspace_id"),
         provider_id=provider.id,
         mode=mode,
         status="queued",

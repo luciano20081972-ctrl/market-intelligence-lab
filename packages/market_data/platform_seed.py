@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import uuid
 from datetime import UTC, date, datetime
 
@@ -50,9 +51,16 @@ def seed_market_data_platform(
             session.add(provider)
             session.flush()
             inserted_providers += 1
-        elif registered.code == "stooq":
+        else:
+            # Reconcile safe registry metadata on upgrades without replacing the
+            # provider row or its operational history.
+            provider.name = registered.name
             provider.adapter_type = type(registered.adapter).__name__
             provider.capabilities = list(registered.adapter.capabilities)
+            provider.credential_environment_keys = list(
+                registered.credential_environment_keys
+            )
+        if registered.code == "stooq":
             provider.configuration = {
                 "network_enabled": True,
                 "base_url": "https://stooq.com/q/d/l/",
@@ -62,6 +70,19 @@ def seed_market_data_platform(
             provider.is_enabled = True
             if provider.health == "disabled":
                 provider.health = "unknown"
+        if registered.code == "twelve_data":
+            configured = bool(os.getenv("MIL_TWELVE_DATA_API_KEY"))
+            provider.adapter_type = type(registered.adapter).__name__
+            provider.capabilities = list(registered.adapter.capabilities)
+            provider.configuration = {
+                "network_enabled": configured,
+                "base_url": "https://api.twelvedata.com",
+                "authentication_required": True,
+                "commercial_redistribution_licensed": False,
+                "live_verified": False,
+            }
+            provider.is_enabled = configured
+            provider.health = "unknown" if configured else "unconfigured"
         for environment_key in registered.credential_environment_keys:
             exists = session.scalar(
                 select(ProviderCredential).where(
@@ -75,10 +96,12 @@ def seed_market_data_platform(
                         provider_id=provider.id,
                         key_name=environment_key,
                         secret_reference=f"environment:{environment_key}",
-                        is_configured=False,
+                        is_configured=bool(os.getenv(environment_key)),
                     )
                 )
                 inserted_credentials += 1
+            else:
+                exists.is_configured = bool(os.getenv(environment_key))
 
     calendar = session.scalar(select(ExchangeCalendar).where(ExchangeCalendar.code == "XNYS"))
     if calendar is None:

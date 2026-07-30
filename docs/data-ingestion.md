@@ -24,3 +24,7 @@ Stooq values are never imputed. Provider/calendar disagreement, malformed values
 The browser requires a successful preview for the exact external-provider payload before enabling queue submission. Provider, symbols, mode, dates, interval, adjustment preference, and dry-run state are part of that boundary; changing any field invalidates the prior preview. Synthetic demonstration jobs remain queueable offline. Server-side ingestion still revalidates every response, so UI preflight is a usability guard rather than a trust boundary.
 
 Stooq-shaped deterministic fixtures exercise the normal `ImportJob`/`ImportBatch` path, provider symbol mapping, source records, row and batch checksums, non-demonstration classification, duplicate skipping, reconciliation, and imported-mode backtesting. A fixture passing these checks is not evidence that live Stooq connectivity is currently available.
+
+## v0.5 Twelve Data and ownership
+
+Twelve Data uses `Authorization: apikey …` to the allowlisted API host. Daily requests use explicit start/end dates and `adjust=all`, validate JSON/OHLCV/session bounds, cap bodies, normalize errors, and preserve provider symbols, checksum, retrieval time, and the fact that provider publication time is unavailable. User-submitted jobs and schedules carry workspace IDs; scheduled jobs copy the schedule scope. Keys never enter job configuration or metadata.

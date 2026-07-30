@@ -1,7 +1,7 @@
 {
   "name": "@market-intelligence-lab/web",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.5.0",
   "packageManager": "pnpm@11.9.0",
   "type": "module",
   "scripts": {
@@ -13,10 +13,12 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@sentry/react": "^9.1.0",
+    "@supabase/supabase-js": "^2.49.1",
     "@tanstack/react-query": "^5.66.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.1.5",
+    "react-router-dom": "^7.18.2",
     "recharts": "^3.10.1"
   },
   "devDependencies": {
@@ -26,6 +28,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
+    "@vitest/coverage-v8": "^3.0.5",
     "@vitejs/plugin-react": "^4.3.4",
     "jsdom": "^26.0.0",
     "typescript": "~5.7.3",

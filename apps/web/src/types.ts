@@ -241,3 +241,13 @@ export interface ReconciliationReport {
   issue_count: number; conflict_count?: number; started_at?: string;
   issues?: ReconciliationIssue[] | Array<{ type: string; severity: string; record: string }>;
 }
+
+export interface CurrentUser { id: string; email: string; email_verified: boolean; display_name: string; provider: string }
+export interface WorkspaceSummary { id: string; name: string; slug: string; role: "owner" | "admin" | "member" | "viewer"; created_at: string; updated_at: string }
+export interface AuditEvent { id: string; timestamp: string; actor_user_id: string | null; workspace_id: string; action: string; resource_type: string; resource_id: string; result: string; metadata: Record<string, unknown>; correlation_id: string | null }
+export interface AuditPage { items: AuditEvent[]; page: number; page_size: number; total: number }
+export interface InfrastructureService { service_name: string; purpose: string; status: string; verification_date: string; free_tier_summary: string; free_tier_limits: string; production_criticality: string; replacement_options: string; failure_effect: string; vendor_lock_in_risk: string }
+export interface InfrastructureRegistry { items: InfrastructureService[]; total: number; contains_secrets: boolean }
+export interface ProviderComparison { id: string; primary_provider_id: string; secondary_provider_id: string; summary: Record<string, unknown>; disagreements: Array<Record<string, unknown>>; resolution_status: string; resolution_reason: string | null; compared_at: string }
+export interface BacktestManifest { backtest_run_id: string; status: string; checksum?: string; manifest: Record<string, unknown> }
+export interface BacktestValidation { backtest_run_id: string; overall_status: string; is_validated: boolean; rules: Array<{ name: string; status: string; critical: boolean; message: string }> }

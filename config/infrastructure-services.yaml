@@ -1,0 +1,142 @@
+schema_version: 1
+services:
+  - service_name: GitHub
+    purpose: Source control, pull requests, CI, dependency automation, and release artifacts
+    status: active
+    official_documentation_url: https://docs.github.com/
+    official_pricing_url: https://github.com/pricing
+    verification_date: 2026-07-30
+    free_tier_summary: Public repositories include core collaboration and Actions usage subject to GitHub terms.
+    free_tier_limits: Limits vary by repository visibility, runner, storage, and product; recheck before deployment.
+    expected_monthly_usage: One private or public repository with bounded CI runs.
+    data_classification: source-code-and-ci-metadata
+    credentials_required: true
+    production_criticality: high
+    export_capability: Git clone, release downloads, issues and API exports.
+    replacement_options: GitLab, Codeberg, self-hosted Forgejo
+    failure_effect: Source collaboration and hosted CI unavailable; local application continues.
+    vendor_lock_in_risk: low
+    commercial_use_notes: Repository visibility and Actions terms must be reviewed for the deployment model.
+    retention_behavior: Controlled by repository, Actions, and artifact retention settings.
+    budget_alert_threshold: 80 percent of included Actions and storage allowance
+    owner: engineering
+  - service_name: Supabase
+    purpose: Authentication provider and optional managed PostgreSQL platform
+    status: evaluating
+    official_documentation_url: https://supabase.com/docs
+    official_pricing_url: https://supabase.com/pricing
+    verification_date: 2026-07-30
+    free_tier_summary: Free plan currently documents bounded MAU, database, egress, and storage quotas.
+    free_tier_limits: 50000 MAU, 500 MB database, 5 GB egress, 1 GB storage; projects may pause and limits can change.
+    expected_monthly_usage: Private beta below 100 users and 250 MB application data.
+    data_classification: identity-and-application-data
+    credentials_required: true
+    production_criticality: high
+    export_capability: PostgreSQL dump, Auth user export subject to supported administrative APIs.
+    replacement_options: Self-hosted PostgreSQL plus Keycloak, Auth0, Clerk, or another OIDC provider
+    failure_effect: New sessions and managed data access may be unavailable; existing local test mode is unaffected.
+    vendor_lock_in_risk: medium
+    commercial_use_notes: Financial-data licenses remain separate; verify plan and Auth email limits before launch.
+    retention_behavior: Project lifecycle, backups, and Auth logs follow the selected plan and configuration.
+    budget_alert_threshold: 70 percent of any free-tier storage, egress, or MAU quota
+    owner: platform-security
+  - service_name: Cloudflare
+    purpose: Optional DNS, TLS, CDN, DDoS controls, Tunnel, and archive storage
+    status: proposed
+    official_documentation_url: https://developers.cloudflare.com/
+    official_pricing_url: https://www.cloudflare.com/plans/
+    verification_date: 2026-07-30
+    free_tier_summary: Free capabilities vary by DNS, CDN, security, Tunnel, and R2 product.
+    free_tier_limits: Product-specific request, storage, operation, and feature limits; verify before activation.
+    expected_monthly_usage: Development tunnel only; no production account provisioned.
+    data_classification: network-metadata-and-optional-encrypted-archives
+    credentials_required: true
+    production_criticality: medium
+    export_capability: DNS zone export; archive objects downloadable through standard APIs.
+    replacement_options: Route 53, Fastly, managed load balancer, Tailscale Funnel, S3-compatible storage
+    failure_effect: Edge protection or development tunnel unavailable; origin service may remain reachable.
+    vendor_lock_in_risk: medium
+    commercial_use_notes: Review caching and storage of licensed financial data separately.
+    retention_behavior: Logs and object retention depend on enabled products and lifecycle rules.
+    budget_alert_threshold: 70 percent of R2 operations, storage, or paid feature allowance
+    owner: platform-operations
+  - service_name: Sentry
+    purpose: Optional scrubbed backend and frontend exception telemetry
+    status: deferred
+    official_documentation_url: https://docs.sentry.io/
+    official_pricing_url: https://sentry.io/pricing/
+    verification_date: 2026-07-30
+    free_tier_summary: Developer plan limits errors, replays, transactions, and retention; exact quotas may change.
+    free_tier_limits: Event and retention limits are plan-specific and must be reverified before enablement.
+    expected_monthly_usage: Disabled by default; under 1000 scrubbed error events during private beta.
+    data_classification: scrubbed-operational-telemetry
+    credentials_required: true
+    production_criticality: low
+    export_capability: Event export and vendor APIs; local structured logs remain canonical.
+    replacement_options: OpenTelemetry collector, GlitchTip, self-hosted error tracking
+    failure_effect: Error aggregation unavailable; application and local logs continue.
+    vendor_lock_in_risk: low
+    commercial_use_notes: PII and financial payload capture are disabled by policy.
+    retention_behavior: Vendor plan retention applies only after explicit enablement.
+    budget_alert_threshold: 70 percent of event allowance
+    owner: platform-operations
+  - service_name: Better Stack
+    purpose: Optional external liveness, readiness, worker, and queue monitoring
+    status: proposed
+    official_documentation_url: https://betterstack.com/docs/
+    official_pricing_url: https://betterstack.com/pricing
+    verification_date: 2026-07-30
+    free_tier_summary: Free monitoring and telemetry quotas vary by product and retention.
+    free_tier_limits: Monitor count, check frequency, ingestion, and retention must be verified before use.
+    expected_monthly_usage: Four low-frequency health monitors; no log ingestion planned.
+    data_classification: public-health-and-operational-metadata
+    credentials_required: true
+    production_criticality: low
+    export_capability: Monitor configuration and incident export through supported APIs.
+    replacement_options: Uptime Kuma, Grafana Cloud, Prometheus Alertmanager
+    failure_effect: External alerting unavailable; service health endpoints continue.
+    vendor_lock_in_risk: low
+    commercial_use_notes: Do not transmit provider credentials, user data, or financial payloads.
+    retention_behavior: Incident and telemetry retention follow the configured product plan.
+    budget_alert_threshold: 70 percent of monitor or telemetry allowance
+    owner: platform-operations
+  - service_name: Codecov
+    purpose: Optional pull-request coverage visualization
+    status: proposed
+    official_documentation_url: https://docs.codecov.com/
+    official_pricing_url: https://about.codecov.io/pricing/
+    verification_date: 2026-07-30
+    free_tier_summary: Public/open-source and limited private-repository terms vary; local coverage is authoritative.
+    free_tier_limits: User, repository, upload, and retention limits must be verified for repository visibility.
+    expected_monthly_usage: One repository and one upload per CI test matrix run.
+    data_classification: source-coverage-metadata
+    credentials_required: false
+    production_criticality: low
+    export_capability: Local XML, LCOV, and HTML coverage artifacts.
+    replacement_options: GitHub job summaries, Coveralls, SonarCloud
+    failure_effect: Hosted coverage annotations unavailable; CI retains local threshold enforcement.
+    vendor_lock_in_risk: low
+    commercial_use_notes: Repository visibility and upload authentication affect eligibility.
+    retention_behavior: Coverage history retention follows the Codecov plan.
+    budget_alert_threshold: 80 percent of any uploader or seat allowance
+    owner: engineering-quality
+  - service_name: Resend
+    purpose: Potential transactional email beyond Supabase-managed Auth email
+    status: deferred
+    official_documentation_url: https://resend.com/docs
+    official_pricing_url: https://resend.com/pricing
+    verification_date: 2026-07-30
+    free_tier_summary: Free sending quotas and domain requirements may change.
+    free_tier_limits: Monthly and daily email caps must be verified before activation.
+    expected_monthly_usage: Zero; Supabase Auth handles current verification and reset messages.
+    data_classification: email-addresses-and-transactional-metadata
+    credentials_required: true
+    production_criticality: low
+    export_capability: Templates are maintained in source; delivery logs export through supported APIs.
+    replacement_options: Postmark, Amazon SES, Mailgun, self-hosted SMTP relay
+    failure_effect: Custom transactional email unavailable; Auth provider email flow remains separate.
+    vendor_lock_in_risk: low
+    commercial_use_notes: Consent, deliverability, and privacy obligations require review before use.
+    retention_behavior: Delivery and recipient metadata retention follows vendor policy.
+    budget_alert_threshold: 70 percent of monthly send allowance
+    owner: product-platform

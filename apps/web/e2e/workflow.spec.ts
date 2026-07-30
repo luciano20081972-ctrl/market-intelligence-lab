@@ -1,14 +1,19 @@
 import { expect, test } from "@playwright/test";
 
-test("seeded research workflow has no severe console errors", async ({ page }) => {
+test("authenticated workspace research workflow has no severe console errors", async ({ page }) => {
   const severe: string[] = [];
   page.on("console", message => { if (message.type() === "error") severe.push(message.text()); });
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Market overview" })).toBeVisible();
+  await page.getByLabel("Workspace", { exact: true }).selectOption({
+    label: "Legacy Development Workspace",
+  });
+  await expect(page.getByText(/Simulation only · owner/)).toBeVisible();
   await page.getByRole("link", { name: "Providers" }).click();
   await expect(page.getByRole("heading", { name: "Providers" })).toBeVisible();
   await expect(page.getByText("Deterministic Synthetic Demonstration Provider")).toBeVisible();
   await expect(page.getByText("Stooq Historical Daily Data")).toBeVisible();
+  await expect(page.getByText("Twelve Data Historical Daily Data")).toBeVisible();
   await page.getByRole("link", { name: "Stooq Historical Daily Data" }).click();
   await expect(page.getByRole("heading", { name: "Stooq Historical Daily Data" })).toBeVisible();
   await expect(page.getByText("No API key required")).toBeVisible();
@@ -47,6 +52,11 @@ test("seeded research workflow has no severe console errors", async ({ page }) =
   await page.getByRole("button", { name: "Run backtest" }).click();
   await expect(page.getByText(/Hypothetical results · imported data/)).toBeVisible();
   await expect(page.getByText("imported", { exact: true }).first()).toBeVisible();
+  await page.getByRole("link", { name: "Reproducibility manifest" }).click();
+  await expect(page.getByRole("heading", { name: "Reproducibility manifest" })).toBeVisible();
+  await page.goBack();
+  await page.getByRole("link", { name: "Validation report" }).click();
+  await expect(page.getByRole("heading", { name: "Bias and leakage validation" })).toBeVisible();
   await page.getByRole("link", { name: "Queue & Workers" }).click();
   await expect(page.getByRole("heading", { name: "Queue dashboard" })).toBeVisible();
   await page.getByRole("link", { name: "Schedules" }).click();
@@ -76,5 +86,26 @@ test("seeded research workflow has no severe console errors", async ({ page }) =
   await expect(page.getByText("All enabled portfolio risk checks passed.")).toBeVisible();
   await page.getByRole("button", { name: "Submit simulated order" }).click();
   await expect(page.getByText("Simulation recorded")).toBeVisible();
+  const workspaceName = `E2E Workspace B ${Date.now()}`;
+  const workspaceResponse = await page.request.post("http://127.0.0.1:8000/api/v1/workspaces", {
+    data: { name: workspaceName, slug: `e2e-workspace-b-${Date.now()}` },
+  });
+  expect(workspaceResponse.ok()).toBeTruthy();
+  await page.reload();
+  await page.getByLabel("Workspace", { exact: true }).selectOption({ label: workspaceName });
+  await page.getByRole("link", { name: "Watchlists" }).click();
+  await expect(page.getByText(watchlistName)).not.toBeVisible();
+  await page.getByLabel("New watchlist name").fill("Workspace B Private Watchlist");
+  await page.getByRole("button", { name: "Create watchlist" }).click();
+  await expect(page.getByText("Workspace B Private Watchlist")).toBeVisible();
+  await page.getByLabel("Workspace", { exact: true }).selectOption({ label: "Legacy Development Workspace" });
+  await expect(page.getByText("Workspace B Private Watchlist")).not.toBeVisible();
+  await page.getByRole("link", { name: "Providers" }).click();
+  await page.getByRole("link", { name: "Twelve Data Historical Daily Data" }).click();
+  await expect(page.getByText(/fixture-tested, not live-verified/i)).toBeVisible();
+  await page.getByRole("link", { name: "Infrastructure" }).click();
+  await expect(page.getByRole("heading", { name: "Infrastructure services" })).toBeVisible();
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
   expect(severe).toEqual([]);
 });

@@ -12,3 +12,7 @@ Stooq implements daily historical OHLCV and symbol-only asset metadata. It requi
 Version 0.4.1 validates the response envelope before CSV parsing. Accepted data is UTF-8/ASCII-compatible, optionally BOM-prefixed, and comma-delimited with exactly `date`, `open`, `high`, `low`, `close`, and `volume`; header case, surrounding header whitespace, and CRLF/LF are normalized. Semicolon data is not accepted because it was not observed or documented during this sprint. HTML, unknown content types, known plaintext errors, duplicate/incomplete/unknown columns, missing fields, invalid dates, non-finite or nonpositive prices, inconsistent OHLC, fractional/negative volume, duplicate dates, out-of-range dates, redirects, and oversized bodies fail closed.
 
 The provider does not expose reliable adjustment semantics through this adapter, corporate actions, or an exchange calendar. Adjusted-only requests are therefore rejected rather than mislabeled. Licensing and redistribution must be reviewed independently; enabling the adapter is not a licensing assertion. Other external registrations remain disabled placeholders.
+
+## Twelve Data adapter
+
+ADR 0005 selects Twelve Data based on its documented API, recommended header authentication, JSON daily OHLCV, adjustment modes, bounded free plan, and replaceable interface. It is enabled only when `MIL_TWELVE_DATA_API_KEY` exists. Fixture tests validate schema, rate/access/no-data errors, checksums, and provenance; no live request was run and commercial display/redistribution rights are not asserted.

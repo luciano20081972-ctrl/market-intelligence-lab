@@ -23,6 +23,75 @@ from packages.core.time import utc_now
 from packages.database.base import Base
 from packages.database.types import UTCDateTime
 
+LEGACY_USER_ID = uuid.UUID("00000000-0000-4000-8000-000000000001")
+LEGACY_WORKSPACE_ID = uuid.UUID("00000000-0000-4000-8000-000000000002")
+
+
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    auth_subject: Mapped[str] = mapped_column(String(160), unique=True, index=True)
+    email: Mapped[str] = mapped_column(String(320), index=True)
+    display_name: Mapped[str] = mapped_column(String(120), default="")
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_disabled: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+
+class Workspace(Base):
+    __tablename__ = "workspaces"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(120))
+    slug: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    created_by_user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user_profiles.id", ondelete="RESTRICT"), index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+
+class WorkspaceMembership(Base):
+    __tablename__ = "workspace_memberships"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "user_id", name="uq_workspace_membership_user"),
+        CheckConstraint("role IN ('owner','admin','member','viewer')", name="membership_role"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user_profiles.id", ondelete="CASCADE"), index=True
+    )
+    role: Mapped[str] = mapped_column(String(16), index=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+
+class WorkspaceInvitation(Base):
+    __tablename__ = "workspace_invitations"
+    __table_args__ = (
+        CheckConstraint("role IN ('admin','member','viewer')", name="invitation_role"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    email: Mapped[str] = mapped_column(String(320), index=True)
+    role: Mapped[str] = mapped_column(String(16))
+    token_digest: Mapped[str] = mapped_column(String(64), unique=True)
+    status: Mapped[str] = mapped_column(String(24), default="pending", index=True)
+    invited_by_user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user_profiles.id", ondelete="RESTRICT"), index=True
+    )
+    expires_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
 
 class Asset(Base):
     __tablename__ = "assets"
@@ -142,9 +211,13 @@ class PriceBar(Base):
 
 class Watchlist(Base):
     __tablename__ = "watchlists"
+    __table_args__ = (UniqueConstraint("workspace_id", "name", name="uq_watchlist_workspace_name"),)
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    name: Mapped[str] = mapped_column(String(100), unique=True)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), default=LEGACY_WORKSPACE_ID, index=True
+    )
+    name: Mapped[str] = mapped_column(String(100))
     description: Mapped[str | None] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
@@ -175,18 +248,32 @@ class AuditEvent(Base):
     __tablename__ = "audit_events"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    actor_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("user_profiles.id", ondelete="SET NULL"), index=True
+    )
+    workspace_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="SET NULL"), index=True
+    )
     action: Mapped[str] = mapped_column(String(80), index=True)
     entity_type: Mapped[str] = mapped_column(String(80), index=True)
     entity_id: Mapped[str] = mapped_column(String(64), index=True)
     details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    result: Mapped[str] = mapped_column(String(24), default="success")
+    correlation_id: Mapped[str | None] = mapped_column(String(80), index=True)
+    ip_metadata: Mapped[str | None] = mapped_column(String(80))
+    user_agent_summary: Mapped[str | None] = mapped_column(String(160))
     occurred_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
 
 
 class Strategy(Base):
     __tablename__ = "strategies"
+    __table_args__ = (UniqueConstraint("workspace_id", "name", name="uq_strategy_workspace_name"),)
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    name: Mapped[str] = mapped_column(String(120), unique=True)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), default=LEGACY_WORKSPACE_ID, index=True
+    )
+    name: Mapped[str] = mapped_column(String(120))
     strategy_type: Mapped[str] = mapped_column(String(64), index=True)
     description: Mapped[str] = mapped_column(Text)
     is_builtin: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -222,6 +309,9 @@ class BacktestRun(Base):
     __tablename__ = "backtest_runs"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), default=LEGACY_WORKSPACE_ID, index=True
+    )
     strategy_version_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("strategy_versions.id", ondelete="RESTRICT"), index=True
     )
@@ -319,9 +409,13 @@ class BacktestDailySnapshot(Base):
 
 class PaperPortfolio(Base):
     __tablename__ = "paper_portfolios"
+    __table_args__ = (UniqueConstraint("workspace_id", "name", name="uq_portfolio_workspace_name"),)
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    name: Mapped[str] = mapped_column(String(120), unique=True)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), default=LEGACY_WORKSPACE_ID, index=True
+    )
+    name: Mapped[str] = mapped_column(String(120))
     currency: Mapped[str] = mapped_column(String(3), default="USD")
     starting_cash: Mapped[Decimal] = mapped_column(Numeric(20, 6))
     cash_balance: Mapped[Decimal] = mapped_column(Numeric(20, 6))
@@ -565,6 +659,7 @@ class ProviderCredential(Base):
 class ImportJob(Base):
     __tablename__ = "import_jobs"
     __table_args__ = (
+        UniqueConstraint("workspace_id", "idempotency_key", name="uq_import_job_workspace_key"),
         CheckConstraint("max_attempts > 0", name="import_job_max_attempts_positive"),
         CheckConstraint("records_processed >= 0", name="import_job_processed_nonnegative"),
         CheckConstraint("records_inserted >= 0", name="import_job_inserted_nonnegative"),
@@ -572,6 +667,9 @@ class ImportJob(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), default=LEGACY_WORKSPACE_ID, index=True
+    )
     provider_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("providers.id", ondelete="RESTRICT"), index=True
     )
@@ -593,7 +691,7 @@ class ImportJob(Base):
     processing_duration_ms: Mapped[int] = mapped_column(Integer, default=0)
     error_summary: Mapped[str | None] = mapped_column(Text)
     validation_report: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-    idempotency_key: Mapped[str | None] = mapped_column(String(128), unique=True, index=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(128), index=True)
     dry_run: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     adjustment_preference: Mapped[str] = mapped_column(
         String(24), default="unadjusted", server_default="unadjusted"
@@ -798,10 +896,15 @@ class JobEvent(Base):
 class ImportSchedule(Base):
     __tablename__ = "import_schedules"
     __table_args__ = (
-        UniqueConstraint("provider_id", "name", name="uq_import_schedule_provider_name"),
+        UniqueConstraint(
+            "workspace_id", "provider_id", "name", name="uq_import_schedule_workspace_provider_name"
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), default=LEGACY_WORKSPACE_ID, index=True
+    )
     provider_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("providers.id", ondelete="RESTRICT"), index=True
     )
@@ -944,3 +1047,58 @@ class ProviderHealthSnapshot(Base):
     quota: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     checked_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+
+
+class ProviderComparison(Base):
+    __tablename__ = "provider_comparisons"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="RESTRICT"), index=True
+    )
+    primary_provider_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("providers.id", ondelete="RESTRICT"), index=True
+    )
+    secondary_provider_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("providers.id", ondelete="RESTRICT"), index=True
+    )
+    start_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    end_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    tolerance_configuration: Mapped[dict[str, Any]] = mapped_column(JSON)
+    summary: Mapped[dict[str, Any]] = mapped_column(JSON)
+    disagreements: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    resolution_status: Mapped[str] = mapped_column(String(32), default="unresolved", index=True)
+    resolution_reason: Mapped[str | None] = mapped_column(Text)
+    resolved_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("user_profiles.id", ondelete="SET NULL"), index=True
+    )
+    compared_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+
+class BacktestReproducibilityManifest(Base):
+    __tablename__ = "backtest_reproducibility_manifests"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    backtest_run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("backtest_runs.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    manifest: Mapped[dict[str, Any]] = mapped_column(JSON)
+    manifest_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    generated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class BacktestValidationReport(Base):
+    __tablename__ = "backtest_validation_reports"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    backtest_run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("backtest_runs.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    overall_status: Mapped[str] = mapped_column(String(24), index=True)
+    is_validated: Mapped[bool] = mapped_column(Boolean, default=False)
+    rules: Mapped[list[dict[str, Any]]] = mapped_column(JSON)
+    generated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)

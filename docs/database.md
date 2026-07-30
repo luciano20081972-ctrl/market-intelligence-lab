@@ -33,3 +33,9 @@ Revisions `0001_foundation` and `0002_backtesting_paper_trading` are authoritati
 Alembic revision `1a52c2d25013` additively introduces `worker_instances`, `job_leases`, `job_events`, `import_schedules`, `schedule_runs`, `provider_rate_limit_states`, `provider_symbol_mappings`, `reconciliation_runs`, `reconciliation_issues`, `operational_metrics`, and `provider_health_snapshots`.
 
 `import_jobs` gains a unique idempotency key, dry-run and adjustment preferences, and queue name. `price_bars` gains an optional import-job foreign key and non-secret provider metadata. `backtest_runs` records data classification, provider/import identifiers, adjustment states, and calendar code. Existing v0.3 rows receive safe server defaults; price provenance and restrictive foreign keys are preserved. Clean and populated-v0.3 upgrade rehearsals plus `alembic check` are automated.
+
+## v0.5 ownership migration
+
+Revision `18cca98a50d5` adds users, workspaces, memberships, invitations, provider comparisons, backtest manifests, and validation reports. It creates deterministic legacy user/workspace IDs, assigns all existing watchlists, strategies, backtests, paper portfolios, import jobs, and schedules, then makes workspace foreign keys non-null and changes names/idempotency uniqueness to include workspace. Canonical assets/bars/providers/calendars remain shared. Existing audit events are attributed to the legacy context and enriched columns remain append-only through the API.
+
+PostgreSQL is the production database. CI uses PostgreSQL 17 for clean migration, drift, UUID/decimal/timezone, rollback, uniqueness, claim concurrency, and session-context checks. SQLite remains the lightweight local/test path.

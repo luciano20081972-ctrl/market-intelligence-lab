@@ -23,5 +23,16 @@ export default defineConfig({
     setupFiles: "./src/test/setup.ts",
     include: ["src/**/*.test.{ts,tsx}"],
     css: true,
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov", "json-summary"],
+      reportsDirectory: "coverage",
+      thresholds: {
+        statements: 60,
+        branches: 65,
+        functions: 55,
+        lines: 60,
+      },
+    },
   },
 });

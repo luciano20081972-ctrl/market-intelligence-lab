@@ -172,9 +172,7 @@ class StooqAdapter:
             return {
                 **self.health(),
                 "status": "degraded" if reachable else "unavailable",
-                "connectivity": (
-                    "reachable_no_data" if no_data else "reachable_invalid"
-                )
+                "connectivity": ("reachable_no_data" if no_data else "reachable_invalid")
                 if reachable
                 else "unavailable",
                 "reachable": reachable,
@@ -208,7 +206,7 @@ class StooqAdapter:
                 timeout=httpx.Timeout(self.timeout_seconds),
                 transport=self.transport,
                 follow_redirects=False,
-                headers={"User-Agent": "Market-Intelligence-Lab/0.4.1"},
+                headers={"User-Agent": "Market-Intelligence-Lab/0.5.0"},
             ) as client:
                 response = client.get(self.base_url, params=params)
         except httpx.RequestError as exc:
@@ -217,9 +215,7 @@ class StooqAdapter:
             raise ProviderAccessDeniedError("Stooq returned an unexpected response location")
         body = response.content
         if len(body) > self.max_response_bytes:
-            raise ProviderResponseTooLargeError(
-                "Stooq response exceeded the configured size limit"
-            )
+            raise ProviderResponseTooLargeError("Stooq response exceeded the configured size limit")
         if response.status_code == 429:
             raise ProviderRateLimitError("Stooq rate limit reached; retry later")
         if response.status_code >= 500:
@@ -343,9 +339,7 @@ class StooqAdapter:
                 try:
                     value = Decimal(values[field])
                 except InvalidOperation as exc:
-                    raise ProviderDataError(
-                        "Stooq CSV contained an invalid market value"
-                    ) from exc
+                    raise ProviderDataError("Stooq CSV contained an invalid market value") from exc
                 if not value.is_finite() or value <= 0:
                     raise ProviderDataError("Stooq CSV contained an invalid market value")
                 prices[field] = value
@@ -370,10 +364,7 @@ class StooqAdapter:
                 session_date, datetime.min.time(), tzinfo=timezone
             ) + timedelta(hours=16)
             event_time = close_local.astimezone(UTC)
-            source_row = {
-                name.title(): values[name]
-                for name in required
-            }
+            source_row = {name.title(): values[name] for name in required}
             checksum = hashlib.sha256(
                 json.dumps(source_row, sort_keys=True, separators=(",", ":")).encode()
             ).hexdigest()
@@ -435,6 +426,201 @@ class StooqAdapter:
     ) -> list[CorporateActionRecord]:
         del symbol, start, end
         return []
+
+    def fetch_exchange_calendar(
+        self, exchange: str, start: datetime, end: datetime
+    ) -> list[CalendarSessionRecord]:
+        del exchange, start, end
+        return []
+
+
+class TwelveDataAdapter:
+    """Documented Twelve Data daily OHLCV adapter with fail-closed validation."""
+
+    code = "twelve_data"
+    name = "Twelve Data Historical Daily Data"
+    capabilities: tuple[str, ...] = ("historical_ohlcv", "asset_metadata")
+    base_url = "https://api.twelvedata.com/time_series"
+    allowed_host = "api.twelvedata.com"
+    max_response_bytes = 2_000_000
+    max_range_days = 3_650
+
+    def __init__(
+        self,
+        api_key: str | None = None,
+        *,
+        transport: httpx.BaseTransport | None = None,
+        timeout_seconds: float = 10,
+    ) -> None:
+        self._api_key = api_key or os.getenv("MIL_TWELVE_DATA_API_KEY")
+        self.transport = transport
+        if timeout_seconds < 1 or timeout_seconds > 60:
+            raise ValueError("Twelve Data timeout must be between 1 and 60 seconds")
+        self.timeout_seconds = timeout_seconds
+
+    @staticmethod
+    def normalize_symbol(symbol: str) -> str:
+        normalized = symbol.strip().upper()
+        if not re.fullmatch(r"[A-Z][A-Z0-9.-]{0,15}", normalized):
+            raise ProviderUnsupportedSymbolError("Unsupported Twelve Data symbol format")
+        return normalized
+
+    def health(self) -> dict[str, object]:
+        return {
+            "status": "unknown" if self._api_key else "unconfigured",
+            "configured": bool(self._api_key),
+            "connectivity": "not_tested",
+            "provider": self.code,
+            "authentication_required": True,
+            "live_verified": False,
+        }
+
+    def _request(self, params: dict[str, str]) -> bytes:
+        if not self._api_key:
+            raise ProviderDisabledError("Twelve Data is not configured")
+        try:
+            with httpx.Client(
+                timeout=httpx.Timeout(self.timeout_seconds),
+                transport=self.transport,
+                follow_redirects=False,
+                headers={
+                    "Authorization": f"apikey {self._api_key}",
+                    "User-Agent": "Market-Intelligence-Lab/0.5.0",
+                    "Accept": "application/json",
+                },
+            ) as client:
+                response = client.get(self.base_url, params=params)
+        except httpx.RequestError as exc:
+            raise ProviderNetworkError("Twelve Data request timed out or was unavailable") from exc
+        if response.url.scheme != "https" or response.url.host != self.allowed_host:
+            raise ProviderAccessDeniedError("Twelve Data returned an unexpected response location")
+        if len(response.content) > self.max_response_bytes:
+            raise ProviderResponseTooLargeError("Twelve Data response exceeded the size limit")
+        if response.status_code == 429:
+            raise ProviderRateLimitError("Twelve Data rate limit reached; retry later")
+        if response.status_code in {401, 403}:
+            raise ProviderAccessDeniedError("Twelve Data rejected the configured credential")
+        if response.status_code >= 500:
+            raise ProviderTemporaryError("Twelve Data is temporarily unavailable")
+        if response.status_code != 200:
+            raise ProviderRejectedRequestError("Twelve Data rejected the bounded request")
+        content_type = response.headers.get("content-type", "").split(";", 1)[0].lower()
+        if content_type not in {"application/json", "text/json", ""}:
+            raise ProviderContentTypeError("Twelve Data returned a non-JSON response")
+        return response.content
+
+    def fetch_historical_bars(
+        self, symbol: str, start: datetime, end: datetime, interval: str = "1d"
+    ) -> list[HistoricalBarRecord]:
+        if interval != "1d":
+            raise ProviderInvalidDateRangeError("Twelve Data adapter supports daily bars only")
+        if start.tzinfo is None or end.tzinfo is None or start >= end:
+            raise ProviderInvalidDateRangeError("Date range must be timezone-aware and ordered")
+        if (end - start).days > self.max_range_days:
+            raise ProviderInvalidDateRangeError(
+                f"Twelve Data date range cannot exceed {self.max_range_days} days"
+            )
+        canonical = self.normalize_symbol(symbol)
+        body = self._request(
+            {
+                "symbol": canonical,
+                "interval": "1day",
+                "start_date": start.date().isoformat(),
+                "end_date": end.date().isoformat(),
+                "order": "ASC",
+                "timezone": "America/New_York",
+                "adjust": "all",
+            }
+        )
+        try:
+            payload = json.loads(body)
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ProviderSchemaError("Twelve Data returned malformed JSON") from exc
+        if not isinstance(payload, dict):
+            raise ProviderSchemaError("Twelve Data response root was not an object")
+        if payload.get("status") == "error" or "code" in payload and "values" not in payload:
+            code = int(payload.get("code", 0) or 0)
+            if code == 429:
+                raise ProviderRateLimitError("Twelve Data rate limit reached; retry later")
+            if code in {401, 403}:
+                raise ProviderAccessDeniedError("Twelve Data rejected the configured credential")
+            raise ProviderRejectedRequestError("Twelve Data returned a provider error")
+        values = payload.get("values")
+        if values in (None, []):
+            raise ProviderNoDataError("Twelve Data returned no bars for the bounded request")
+        if not isinstance(values, list) or len(values) > 10_000:
+            raise ProviderSchemaError("Twelve Data returned an invalid values collection")
+        retrieved = datetime.now(UTC)
+        timezone = ZoneInfo("America/New_York")
+        records: list[HistoricalBarRecord] = []
+        seen: set[str] = set()
+        for row in values:
+            if not isinstance(row, dict):
+                raise ProviderSchemaError("Twelve Data returned a malformed bar")
+            required = {"datetime", "open", "high", "low", "close", "volume"}
+            if not required.issubset(row):
+                raise ProviderSchemaError("Twelve Data bar omitted required OHLCV fields")
+            date_text = str(row["datetime"])
+            try:
+                session_date = datetime.strptime(date_text, "%Y-%m-%d").date()
+                prices = {
+                    name: Decimal(str(row[name])) for name in ("open", "high", "low", "close")
+                }
+                volume_decimal = Decimal(str(row["volume"]))
+            except (ValueError, InvalidOperation) as exc:
+                raise ProviderDataError("Twelve Data bar contained an invalid value") from exc
+            if date_text in seen or session_date < start.date() or session_date > end.date():
+                raise ProviderDataError("Twelve Data returned duplicate or out-of-range sessions")
+            seen.add(date_text)
+            if any(not value.is_finite() or value <= 0 for value in prices.values()):
+                raise ProviderDataError("Twelve Data bar contained a non-positive price")
+            if prices["high"] < max(prices["open"], prices["close"]) or prices["low"] > min(
+                prices["open"], prices["close"]
+            ):
+                raise ProviderDataError("Twelve Data bar contained inconsistent OHLC values")
+            if volume_decimal < 0 or volume_decimal != volume_decimal.to_integral_value():
+                raise ProviderDataError("Twelve Data bar contained invalid volume")
+            event_time = (
+                datetime.combine(session_date, datetime.min.time(), tzinfo=timezone)
+                + timedelta(hours=16)
+            ).astimezone(UTC)
+            normalized_row = {key: str(row[key]) for key in sorted(required)}
+            checksum = hashlib.sha256(
+                json.dumps(normalized_row, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+            records.append(
+                HistoricalBarRecord(
+                    symbol=canonical,
+                    interval="1d",
+                    event_time=event_time,
+                    publication_time=retrieved,
+                    effective_time=event_time,
+                    retrieval_time=retrieved,
+                    open=prices["open"],
+                    high=prices["high"],
+                    low=prices["low"],
+                    close=prices["close"],
+                    adjusted_close=prices["close"],
+                    volume=int(volume_decimal),
+                    adjustment_status="provider_adjusted",
+                    checksum=checksum,
+                    provider_symbol=canonical,
+                    raw_metadata={
+                        "provider_timezone": "America/New_York",
+                        "publication_time": "not_provided; retrieval time retained",
+                    },
+                )
+            )
+        return records
+
+    def fetch_corporate_actions(
+        self, symbol: str, start: datetime, end: datetime
+    ) -> list[CorporateActionRecord]:
+        del symbol, start, end
+        return []
+
+    def fetch_asset_metadata(self, symbol: str) -> AssetMetadataRecord:
+        raise ProviderDisabledError("Twelve Data metadata retrieval is not enabled in this sprint")
 
     def fetch_exchange_calendar(
         self, exchange: str, start: datetime, end: datetime

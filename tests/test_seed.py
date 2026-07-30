@@ -4,7 +4,7 @@ from pathlib import Path
 from sqlalchemy import select
 
 from packages.database.base import Base
-from packages.database.models import Asset, PriceBar
+from packages.database.models import Asset, PriceBar, Provider
 from packages.database.session import create_database_engine, make_session_factory, session_scope
 from packages.market_data.seed import BAR_COUNT_PER_ASSET, seed_demonstration_data
 
@@ -33,3 +33,22 @@ def test_seed_is_deterministic_and_idempotent(tmp_path: Path) -> None:
     assert digest_a == digest_b
     assert first == {"assets_inserted": 9, "bars_inserted": 9 * BAR_COUNT_PER_ASSET}
     assert second == {"assets_inserted": 0, "bars_inserted": 0}
+
+
+def test_seed_reconciles_existing_provider_registry_metadata(tmp_path: Path) -> None:
+    engine = create_database_engine(f"sqlite:///{(tmp_path / 'providers.db').as_posix()}")
+    Base.metadata.create_all(engine)
+    factory = make_session_factory(engine)
+    with session_scope(factory) as session:
+        seed_demonstration_data(session)
+        twelve_data = session.scalar(select(Provider).where(Provider.code == "twelve_data"))
+        assert twelve_data is not None
+        twelve_data.name = "Twelve Data"
+        twelve_data.credential_environment_keys = ["TWELVE_DATA_API_KEY"]
+    with session_scope(factory) as session:
+        seed_demonstration_data(session)
+        twelve_data = session.scalar(select(Provider).where(Provider.code == "twelve_data"))
+        assert twelve_data is not None
+        assert twelve_data.name == "Twelve Data Historical Daily Data"
+        assert twelve_data.credential_environment_keys == ["MIL_TWELVE_DATA_API_KEY"]
+    engine.dispose()

@@ -16,11 +16,20 @@ vi.mock("../api", () => ({ api: {
   deleteWatchlist: vi.fn(), addAsset: vi.fn(), removeAsset: vi.fn(),
 }}));
 
+vi.mock("../auth", () => ({
+  useAuth: () => ({
+    workspace: { id: "legacy", name: "Research workspace", role: "owner" },
+    workspaces: [{ id: "legacy", name: "Research workspace", role: "owner" }],
+    switchWorkspace: vi.fn(),
+    signOut: vi.fn(),
+  }),
+}));
+
 const mocked = vi.mocked(api);
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocked.health.mockResolvedValue({ status: "healthy", database: "healthy", version: "0.4.1" });
+  mocked.health.mockResolvedValue({ status: "healthy", database: "healthy", version: "0.5.0" });
   mocked.systemInfo.mockResolvedValue(systemInfo);
   mocked.dataSources.mockResolvedValue([]);
   mocked.watchlists.mockResolvedValue([]);

@@ -269,18 +269,15 @@ def test_stooq_rejects_unsupported_encoding_and_oversized_response() -> None:
 def test_stooq_rejects_unexpected_content_type_and_redirect() -> None:
     dates = (datetime(2026, 7, 1, tzinfo=UTC), datetime(2026, 7, 10, tzinfo=UTC))
     with pytest.raises(ProviderContentTypeError):
-        StooqAdapter(
-            transport=_transport(content_type="application/json")
-        ).fetch_historical_bars("AAPL", *dates)
+        StooqAdapter(transport=_transport(content_type="application/json")).fetch_historical_bars(
+            "AAPL", *dates
+        )
     with pytest.raises(ProviderRejectedRequestError):
         StooqAdapter(transport=_transport(status=302)).fetch_historical_bars("AAPL", *dates)
 
 
 def test_stooq_health_distinguishes_valid_invalid_no_data_and_unavailable() -> None:
-    health_csv = (
-        b"Date,Open,High,Low,Close,Volume\n"
-        b"2024-01-02,100,105,99,104,12345\n"
-    )
+    health_csv = b"Date,Open,High,Low,Close,Volume\n2024-01-02,100,105,99,104,12345\n"
     healthy = StooqAdapter(transport=_transport(content=health_csv)).test_connectivity()
     html = StooqAdapter(
         transport=_transport(
@@ -548,13 +545,11 @@ def test_operations_api_health_events_schedules_and_reconciliation(client) -> No
     health = client.get("/api/v1/operations/health")
     assert health.status_code == 200
     assert health.json()["database"] == "healthy"
-    assert client.get("/health/live").json()["version"] == "0.4.1"
+    assert client.get("/health/live").json()["version"] == "0.5.0"
     assert client.get("/health/ready").json()["database"] == "healthy"
 
 
-def test_stooq_fixture_import_is_idempotent_reconciled_and_backtestable(
-    client, engine
-) -> None:  # type: ignore[no-untyped-def]
+def test_stooq_fixture_import_is_idempotent_reconciled_and_backtestable(client, engine) -> None:  # type: ignore[no-untyped-def]
     def history(request: httpx.Request) -> httpx.Response:
         provider_symbol = request.url.params["s"]
         current = datetime.strptime(request.url.params["d1"], "%Y%m%d").date()
@@ -579,9 +574,7 @@ def test_stooq_fixture_import_is_idempotent_reconciled_and_backtestable(
         )
 
     registry = ProviderRegistry()
-    registry.register(
-        StooqAdapter(transport=httpx.MockTransport(history)), enabled_by_default=True
-    )
+    registry.register(StooqAdapter(transport=httpx.MockTransport(history)), enabled_by_default=True)
     factory = make_session_factory(engine)
     start = datetime(2026, 7, 6, tzinfo=UTC)
     end = datetime(2026, 8, 14, 23, 59, tzinfo=UTC)

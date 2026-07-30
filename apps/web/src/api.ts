@@ -5,9 +5,18 @@ import type {
   ImportJob, ImportJobPage, ImportErrorPage, CorporateActionPage, TradingSessionPage,
   ImportPreview, ImportSchedule, JobEvent, Provider, ProviderStatus, QueueSummary,
   ProviderDiagnostic, ReconciliationReport, WorkerPage,
+  CurrentUser, WorkspaceSummary, AuditPage, InfrastructureRegistry, ProviderComparison,
+  BacktestManifest, BacktestValidation,
 } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+let accessToken: string | null = null;
+let workspaceId: string | null = null;
+
+export function configureRequestContext(token: string | null, workspace: string | null) {
+  accessToken = token;
+  workspaceId = workspace;
+}
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -16,10 +25,14 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const authHeaders: Record<string, string> = {};
+  if (accessToken) authHeaders.Authorization = `Bearer ${accessToken}`;
+  if (workspaceId) authHeaders["X-Workspace-ID"] = workspaceId;
   const response = await fetch(`${BASE_URL}${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    headers: { "Content-Type": "application/json", ...authHeaders, ...init?.headers },
   });
+  if (response.status === 401) window.dispatchEvent(new Event("mil:session-expired"));
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as {
       detail?: string | { message?: string };
@@ -32,6 +45,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  currentUser: () => request<CurrentUser>("/api/v1/auth/me"),
+  authHealth: () => request<{ status: string; mode: string; provider_configured: boolean }>("/api/v1/auth/health"),
+  auditAuth: (action: string, result: "success" | "failure") => request<{ recorded: boolean }>("/api/v1/auth/events", { method: "POST", body: JSON.stringify({ action, result }) }),
+  updateCurrentUser: (displayName: string) => request<CurrentUser>("/api/v1/users/me", { method: "PATCH", body: JSON.stringify({ display_name: displayName }) }),
+  workspaces: () => request<WorkspaceSummary[]>("/api/v1/workspaces"),
+  workspace: (id: string) => request<WorkspaceSummary>(`/api/v1/workspaces/${id}`),
+  workspaceMembers: (id: string) => request<Array<Record<string, string>>>(`/api/v1/workspaces/${id}/members`),
+  inviteMember: (id: string, email: string, role: string) => request<Record<string, string>>(`/api/v1/workspaces/${id}/invitations`, { method: "POST", body: JSON.stringify({ email, role }) }),
+  auditEvents: (id: string) => request<AuditPage>(`/api/v1/workspaces/${id}/audit-events`),
+  infrastructureServices: () => request<InfrastructureRegistry>("/api/v1/operations/infrastructure-services"),
+  providerComparisons: () => request<{ items: ProviderComparison[]; total: number }>("/api/v1/reconciliation/provider-comparisons"),
+  createProviderComparison: (payload: Record<string, unknown>) => request<ProviderComparison>("/api/v1/reconciliation/provider-comparisons", { method: "POST", body: JSON.stringify(payload) }),
+  resolveProviderComparison: (id: string, resolution: string, reason: string) => request<ProviderComparison>(`/api/v1/reconciliation/provider-comparisons/${id}/resolve`, { method: "POST", body: JSON.stringify({ status: resolution, reason }) }),
+  backtestManifest: (id: string) => request<BacktestManifest>(`/api/v1/backtests/${id}/manifest`),
+  backtestValidation: (id: string) => request<BacktestValidation>(`/api/v1/backtests/${id}/validation-report`),
   health: () => request<{ status: string; database: string; version: string }>("/health"),
   systemInfo: () => request<SystemInfo>("/api/v1/system/info"),
   dataSources: () => request<DataSource[]>("/api/v1/system/data-sources"),

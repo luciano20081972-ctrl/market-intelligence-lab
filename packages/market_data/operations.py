@@ -294,6 +294,7 @@ def process_due_schedules(session: Session, *, now: datetime | None = None) -> l
             adjustment_preference=schedule.adjustment_preference,
             idempotency_key=hashlib.sha256(key_payload.encode()).hexdigest(),
             queue_name="daily",
+            workspace_id=schedule.workspace_id,
         )
         session.add(
             ScheduleRun(

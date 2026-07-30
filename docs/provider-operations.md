@@ -14,3 +14,5 @@ Failures are classified as retryable timeout/network/HTTP 429/5xx or permanent r
 - `unavailable` means the endpoint could not be reached. A pre-request validation error never establishes reachability.
 
 Snapshots include reachable, valid-response, schema-compatible, data-available, degraded/unavailable flags, an allowlisted response classification, a static safe diagnostic message, and timestamp. They never include the response body, cookies, headers, credentials, or environment values. The provider-detail UI displays the same safe classification. An external import can be queued only after the exact current request passes preview validation; changing any request field invalidates that approval.
+
+Twelve Data starts `unconfigured`, becomes `unknown/not_tested` only when its environment key exists, and may become healthy only after a valid live response imports bars. Fixture success is displayed separately. Stooq is never promoted based on fixtures. Provider management requires workspace provider permission; definitions remain system-shared.

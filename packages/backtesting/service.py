@@ -8,7 +8,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from packages.backtesting.engine import BacktestEngine
+from packages.backtesting.manifest import create_manifest
 from packages.backtesting.types import BacktestConfig, HistoricalBar
+from packages.backtesting.validation import create_validation_report
 from packages.core.config import Settings
 from packages.core.time import utc_now
 from packages.database.models import (
@@ -68,6 +70,7 @@ def run_backtest(
     provider_identifiers: set[str] = set()
     import_job_identifiers: set[str] = set()
     adjustment_statuses: set[str] = set()
+    dataset_checksums: set[str] = set()
     coverage_warnings: list[str] = []
     for symbol in symbols:
         asset = assets[symbol]
@@ -97,6 +100,7 @@ def run_backtest(
         provider_identifiers.update(str(bar.provider_id) for bar in bars if bar.provider_id)
         import_job_identifiers.update(str(bar.import_job_id) for bar in bars if bar.import_job_id)
         adjustment_statuses.update(bar.adjustment_status for bar in bars)
+        dataset_checksums.update(bar.checksum for bar in bars if bar.checksum)
         if config.adjustment_preference == "adjusted" and any(
             bar.adjustment_status in {"unadjusted", "provider_unspecified"} for bar in bars
         ):
@@ -157,6 +161,7 @@ def run_backtest(
             "adjustment_preference": config.adjustment_preference,
             "calendar": "XNYS",
             "coverage_warnings": coverage_warnings,
+            "dataset_checksums": sorted(dataset_checksums),
         },
         source_data_identifiers=result.source_data_identifiers,
         data_source_identifiers=result.data_source_identifiers,
@@ -230,5 +235,7 @@ def run_backtest(
                 for name, value in generated.factors.items()
             ]
         )
+    create_manifest(session, run)
+    create_validation_report(session, run)
     session.flush()
     return run

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.5.0 - 2026-07-30
+
+### Added
+
+- Provider-neutral authentication with Supabase asymmetric-JWKS verification, supported frontend session/reset flows, production refusal of disabled auth, and safe redaction boundaries.
+- Deterministic legacy user/workspace migration, memberships/invitations, owner/admin/member/viewer permissions, centralized tenant scoping, negative isolation tests, and enriched immutable audit events.
+- Fixture-tested Twelve Data daily OHLCV adapter and ADR, cross-provider tolerance comparison with explicit conflict resolution, and honest Stooq live limitation.
+- Per-backtest reproducibility manifests and deterministic bias/leakage reports; critical publication leakage prevents validated status.
+- Seven-service infrastructure registry, safe administrative UI/API, security/threat/exit/cost documentation, optional scrubbed Sentry wiring, Codecov-compatible reports, Dependabot, SBOM, license, vulnerability, and PostgreSQL CI jobs.
+- Alembic revision `18cca98a50d5` preserving existing records in the deterministic legacy workspace.
+
+### Limitations
+
+- PostgreSQL RLS is not implemented or claimed; application scoping is mandatory and RLS remains pre-v1.0 hardening.
+- Twelve Data and Supabase are not live-verified. Optional vendor accounts were not provisioned.
+- Trading remains simulated; no brokerage, Fidelity, real-money, options, margin, short selling, withdrawals, or autonomous trading were added.
+
 ## 0.4.1 - 2026-07-29
 
 ### Fixed

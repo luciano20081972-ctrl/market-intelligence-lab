@@ -139,6 +139,7 @@ class SystemInfoResponse(BaseModel):
     environment: str
     database_engine: str
     demonstration_mode: bool
+    authentication_mode: str
     database_health: str
     tracked_assets: int
     watchlists: int

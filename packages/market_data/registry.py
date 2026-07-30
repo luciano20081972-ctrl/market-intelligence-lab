@@ -8,6 +8,7 @@ from packages.market_data.adapters import (
     DisabledProviderAdapter,
     StooqAdapter,
     SyntheticHistoricalAdapter,
+    TwelveDataAdapter,
 )
 from packages.market_data.types import MarketDataAdapter
 
@@ -60,9 +61,14 @@ def build_default_registry() -> ProviderRegistry:
     registry = ProviderRegistry()
     registry.register(SyntheticHistoricalAdapter(), enabled_by_default=True)
     registry.register(StooqAdapter(), enabled_by_default=True)
+    registry.register(
+        TwelveDataAdapter(),
+        enabled_by_default=False,
+        credential_environment_keys=("MIL_TWELVE_DATA_API_KEY",),
+    )
     for definition in PROVIDER_DEFINITIONS:
         code = str(definition["code"])
-        if code == "stooq":
+        if code in {"stooq", "twelve_data"}:
             continue
         name = str(definition["name"])
         environment_keys = tuple(cast(list[str], definition["env"]))

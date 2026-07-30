@@ -1,5 +1,16 @@
 # Roadmap
 
+## Release sequence (updated 2026-07-30)
+
+- **v0.5 — implemented/fixture-verified:** secure multi-user and production foundation. Supabase/Twelve Data live verification and PostgreSQL RLS are deferred; PostgreSQL checks run when the disposable service is available.
+- **v0.6 — planned:** SEC, FRED/ALFRED, and government-event intelligence with point-in-time provenance.
+- **v0.7 — planned:** portfolio optimization, advanced validation, and reporting.
+- **v0.8 — planned:** explainable signal and model research laboratory.
+- **v0.9 — planned:** deployment, alerts, backups, monitoring, and private beta.
+- **v1.0 — planned:** security review, data-license review, performance hardening, complete RLS decision, and first complete release.
+
+Estimates are one focused sprint per listed minor release, subject to provider licensing and security review. “Fixture-tested” never means “live-verified.”
+
 ## Sprint 1 — v0.1.0 foundation
 
 Database, migrations, synthetic provenance-complete prices, asset/watchlist API, responsive research UI, tests, CI, Docker, and security documentation.
@@ -36,4 +47,4 @@ This sprint should not add brokerage connectivity or trading.
 
 Sprint 4 completes the first operational historical provider, maintained XNYS calendar, durable single-process queue/worker, daily schedules, health/observability, reconciliation, and imported-data backtests. Version 0.4.1 stabilizes Stooq response classification and strict parsing, persists honest health states, and prevents unvalidated external imports. Fixture-backed behavior is complete; live availability remains environment/provider dependent and Stooq still has no SLA or authoritative adjustment/publication semantics.
 
-Recommended Sprint 5 priorities are complete authentication and authorization, multi-user isolation, distributed rate limiting/worker coordination, provider-terms governance and retention controls, a second independently sourced provider for reconciliation, schedule policies tied to exchange close, and production PostgreSQL concurrency/deployment validation. Brokerage connectivity and real-money execution remain out of scope.
+Sprint 5 implements authentication/authorization, workspace isolation, provider/infrastructure governance, a fixture-tested second provider, non-destructive quorum comparison, manifests, validation reports, and PostgreSQL CI. Recommended Sprint 6 is SEC, FRED/ALFRED, and government-event intelligence with point-in-time release/vintage semantics. Brokerage connectivity and real-money execution remain out of scope.

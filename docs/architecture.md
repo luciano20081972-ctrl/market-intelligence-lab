@@ -42,4 +42,8 @@ The current in-memory scheduler is only an orchestration boundary. A later worke
 
 The API only validates and persists import requests. An explicit `packages.market_data.worker` process owns execution; it polls the same database, creates schedules, recovers expired leases, conditionally claims one job, renews ownership, and writes bars/events/metrics in transactions. No worker thread starts during API import or tests.
 
-Stooq is the only operational external adapter and can reach only its fixed HTTPS CSV endpoint. `exchange-calendars` supplies maintained XNYS schedules, which remain persisted in the existing normalized calendar tables. Reconciliation reads canonical bars and writes separate non-destructive findings. This release targets one API instance and one worker; distributed brokers, authentication, and multi-tenant isolation are outside the topology.
+Stooq retains its fixed HTTPS CSV endpoint and honest degraded classification. Twelve Data adds a documented, credentialed, fixed-host JSON adapter that remains disabled when unconfigured and fixture-tested rather than live-verified. `exchange-calendars` supplies maintained XNYS schedules.
+
+# Version 0.5 security topology
+
+The browser's supported Supabase client restores/refreshes sessions and sends a Bearer token. FastAPI verifies asymmetric JWKS claims, resolves an internal user profile and membership, then applies centralized role and workspace policy. Canonical market data stays shared; user research, simulations, schedules, comparisons, and audit views are tenant-scoped. Vendor objects never become canonical domain models. RLS is deliberately not claimed; see the workspace-isolation guide.
