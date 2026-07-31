@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, "fix/**", "feat/**"]
   pull_request:
 
 permissions:
@@ -87,6 +87,8 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12", cache: pip }
       - run: pip install -e ".[dev,postgres]"
+      - run: alembic upgrade 18cca98a50d5
+      - run: alembic upgrade head
       - run: alembic upgrade head
       - run: alembic check
       - run: pytest -m postgres
@@ -109,7 +111,7 @@ jobs:
       - run: pip-licenses --format=json --output-file=python-licenses.json
       - run: pnpm install --frozen-lockfile
         working-directory: apps/web
-      - run: pnpm audit --audit-level critical
+      - run: pnpm audit --audit-level high
         working-directory: apps/web
       - run: pnpm licenses list --json > npm-licenses.json
         working-directory: apps/web

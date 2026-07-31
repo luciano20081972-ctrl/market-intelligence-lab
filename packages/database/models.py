@@ -369,7 +369,7 @@ class BacktestTrade(Base):
         ForeignKey("assets.id", ondelete="RESTRICT"), index=True
     )
     source_price_bar_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("price_bars.id", ondelete="RESTRICT")
+        ForeignKey("price_bars.id", ondelete="RESTRICT"), index=True
     )
     symbol: Mapped[str] = mapped_column(String(16), index=True)
     side: Mapped[str] = mapped_column(String(8))
@@ -491,7 +491,7 @@ class PaperOrder(Base):
     estimated_fees: Mapped[Decimal | None] = mapped_column(Numeric(20, 6))
     assumptions: Mapped[dict[str, Any]] = mapped_column(JSON)
     source_price_bar_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("price_bars.id", ondelete="RESTRICT")
+        ForeignKey("price_bars.id", ondelete="RESTRICT"), index=True
     )
     submitted_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
@@ -519,7 +519,7 @@ class PaperFill(Base):
         ForeignKey("assets.id", ondelete="RESTRICT"), index=True
     )
     source_price_bar_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("price_bars.id", ondelete="RESTRICT")
+        ForeignKey("price_bars.id", ondelete="RESTRICT"), index=True
     )
     side: Mapped[str] = mapped_column(String(8))
     quantity: Mapped[Decimal] = mapped_column(Numeric(20, 8))
@@ -585,7 +585,7 @@ class Signal(Base):
         ForeignKey("assets.id", ondelete="RESTRICT"), index=True
     )
     source_price_bar_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("price_bars.id", ondelete="RESTRICT")
+        ForeignKey("price_bars.id", ondelete="RESTRICT"), index=True
     )
     generated_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
     eligible_after: Mapped[datetime] = mapped_column(UTCDateTime())

@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { FormEvent, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router";
 import { api } from "../api";
 import { ErrorState } from "../components/States";
 import type { OrderPayload } from "../types";

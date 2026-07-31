@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.1 - 2026-07-30
+
+- Added Alembic revision `cba31be9f005` to enable deny-by-default RLS on every application table, revoke direct `anon`/`authenticated` table and function privileges, and harden default privileges without changing Supabase-managed schemas.
+- Added Alembic revision `4a2523700bdb` to index all four `source_price_bar_id` foreign keys identified by the staging schema audit.
+- Added connector-transport deployment documentation that maps every controlled staging SQL batch back to the canonical Alembic chain while the direct session-pooler login remains unresolved.
+- Added schema-aware staging/production readiness, separate migration/runtime URLs, explicit psycopg v3 URL normalization, and secret-free Supabase validation settings.
+- Live-verified temporary Supabase password identities, asymmetric JWT claims, refresh/sign-out revocation, identity endpoints, Data API denial, workspace authorization, audit redaction, and complete temporary-user cleanup.
+- Expanded SQLite upgrade rehearsals and disposable PostgreSQL 17 CI coverage for the v0.5-to-v0.5.1 transition, RLS state, workspace guards, leases, concurrency, UUID, decimal, timezone, rollback, and drift.
+- Remediated frontend dependency advisories by moving to React Router 8.3.0 and the compatible Vitest/coverage 4.1.10 toolchain; the release audit reports no known npm vulnerabilities.
+- Updated Supabase staging, authentication, workspace-isolation, database, backup, and security documentation. No brokerage connectivity or real-money execution was added.
+
 ## 0.5.0 - 2026-07-30
 
 ### Added

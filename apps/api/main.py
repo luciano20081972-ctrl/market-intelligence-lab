@@ -103,6 +103,33 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
                 status_code=503,
                 detail={"code": "database_unavailable", "message": "Database is unavailable"},
             ) from exc
+        if app_settings.environment.lower() in {"staging", "production"}:
+            try:
+                schema_revision = session.scalar(text("SELECT version_num FROM alembic_version"))
+            except SQLAlchemyError as exc:
+                raise HTTPException(
+                    status_code=503,
+                    detail={
+                        "code": "schema_unavailable",
+                        "message": "Database schema version is unavailable",
+                    },
+                ) from exc
+            if schema_revision != app_settings.expected_schema_revision:
+                raise HTTPException(
+                    status_code=503,
+                    detail={
+                        "code": "schema_outdated",
+                        "message": "Database schema is not at the required revision",
+                    },
+                )
+            if app_settings.auth_mode == "supabase" and not app_settings.supabase_url:
+                raise HTTPException(
+                    status_code=503,
+                    detail={
+                        "code": "authentication_unconfigured",
+                        "message": "Authentication is not configured",
+                    },
+                )
         return {"status": "healthy", "database": "healthy", "version": app_settings.version}
 
     @app.get("/", include_in_schema=False)

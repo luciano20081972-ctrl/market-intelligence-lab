@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { api } from "../api";
 import { EmptyState, ErrorState, LoadingState } from "../components/States";
 

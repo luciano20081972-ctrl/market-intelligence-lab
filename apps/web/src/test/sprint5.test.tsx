@@ -35,7 +35,7 @@ beforeEach(() => {
   mocked.auditEvents.mockResolvedValue({ items: [{ id: "audit-a", timestamp: "2026-07-30T00:00:00Z", actor_user_id: "user-a", workspace_id: "workspace-a", action: "backtest.completed", resource_type: "backtest", resource_id: "run-a", result: "success", metadata: {}, correlation_id: "corr-a" }], page: 1, page_size: 50, total: 1 });
   mocked.infrastructureServices.mockResolvedValue({ contains_secrets: false, total: 1, items: [{ service_name: "Supabase", purpose: "Authentication", status: "evaluating", verification_date: "2026-07-30", free_tier_summary: "Bounded free plan", free_tier_limits: "Limits can change", production_criticality: "high", replacement_options: "OIDC provider", failure_effect: "New sign-ins unavailable", vendor_lock_in_risk: "medium" }] });
   mocked.providerComparisons.mockResolvedValue({ items: [{ id: "comparison-a", primary_provider_id: "one", secondary_provider_id: "two", summary: { conflicts: 1 }, disagreements: [{ type: "close_conflict" }], resolution_status: "conflict", resolution_reason: null, compared_at: "2026-07-30T00:00:00Z" }], total: 1 });
-  mocked.backtestManifest.mockResolvedValue({ backtest_run_id: "run-a", status: "available", checksum: "abc", manifest: { application_version: "0.5.0", git_commit_sha: "deadbeef" } });
+  mocked.backtestManifest.mockResolvedValue({ backtest_run_id: "run-a", status: "available", checksum: "abc", manifest: { application_version: "0.5.1", git_commit_sha: "deadbeef" } });
   mocked.backtestValidation.mockResolvedValue({ backtest_run_id: "run-a", overall_status: "failed", is_validated: false, rules: [{ name: "publication_time_leakage", status: "failed", critical: true, message: "Publication timestamps checked." }] });
 });
 
@@ -84,7 +84,7 @@ describe("Sprint 5 secure multi-user workflows", () => {
 
   it("renders reproducibility and critical validation results", async () => {
     renderPage(<><BacktestManifest /><BacktestValidation /></>, "/backtests/run-a/manifest", "/backtests/:id/manifest");
-    expect(await screen.findByText(/"application_version": "0.5.0"/)).toBeInTheDocument();
+    expect(await screen.findByText(/"application_version": "0.5.1"/)).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText(/Overall:/)).toHaveTextContent("failed"));
     expect(screen.getByRole("heading", { name: /publication_time_leakage: failed/ })).toBeInTheDocument();
   });

@@ -6,6 +6,16 @@ from pathlib import Path
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+EXPECTED_SCHEMA_REVISION = "4a2523700bdb"
+
+
+def normalize_database_url(value: str) -> str:
+    """Select the installed psycopg v3 SQLAlchemy dialect without exposing the URL."""
+
+    if value.startswith("postgresql://"):
+        return value.replace("postgresql://", "postgresql+psycopg://", 1)
+    return value
+
 
 class Settings(BaseSettings):
     """Environment-only configuration; secret values are never exposed by the API."""
@@ -15,9 +25,11 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Market Intelligence Lab"
-    version: str = "0.5.0"
+    version: str = "0.5.1"
     environment: str = "development"
     database_url: str = "sqlite:///./data/market_intelligence.db"
+    migration_database_url: str | None = None
+    expected_schema_revision: str = EXPECTED_SCHEMA_REVISION
     api_host: str = "127.0.0.1"
     api_port: int = Field(default=8000, ge=1, le=65535)
     web_host: str = "127.0.0.1"
@@ -30,20 +42,32 @@ class Settings(BaseSettings):
     json_logs: bool = False
     expensive_request_limit_per_minute: int = Field(default=10, ge=1, le=1000)
     auth_mode: str = "disabled"
+    supabase_project_ref: str | None = None
     supabase_url: str | None = None
     supabase_jwt_audience: str = "authenticated"
     supabase_publishable_key: str | None = None
+    supabase_secret_key: str | None = None
+    run_live_supabase_tests: bool = False
     twelve_data_api_key: str | None = None
     trusted_hosts: list[str] = ["127.0.0.1", "localhost", "testserver"]
     max_request_bytes: int = Field(default=1_000_000, ge=1_024, le=10_000_000)
     sentry_dsn: str | None = None
     sentry_traces_sample_rate: float = Field(default=0.0, ge=0, le=1)
 
-    @field_validator("database_url")
+    @field_validator("database_url", "migration_database_url")
     @classmethod
-    def validate_database_url(cls, value: str) -> str:
+    def validate_database_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         if not value.startswith(("sqlite://", "postgresql://", "postgresql+psycopg://")):
-            raise ValueError("MIL_DATABASE_URL must use SQLite or PostgreSQL")
+            raise ValueError("Database URLs must use SQLite or PostgreSQL")
+        return normalize_database_url(value)
+
+    @field_validator("supabase_url")
+    @classmethod
+    def validate_supabase_url(cls, value: str | None) -> str | None:
+        if value is not None and not value.startswith("https://"):
+            raise ValueError("MIL_SUPABASE_URL must use HTTPS")
         return value
 
     @field_validator("auth_mode")
@@ -77,7 +101,9 @@ class Settings(BaseSettings):
             "app_name": self.app_name,
             "version": self.version,
             "environment": self.environment,
-            "database_engine": self.database_url.split(":", maxsplit=1)[0],
+            "database_engine": self.database_url.split(":", maxsplit=1)[0].split("+", maxsplit=1)[
+                0
+            ],
             "demonstration_mode": self.seed_demo_data,
             "authentication_mode": self.auth_mode,
         }

@@ -1,6 +1,6 @@
 import { createClient, type Session, type SupabaseClient } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router";
 import { queryClient } from "./queryClient";
 import { api, configureRequestContext } from "./api";
 import type { CurrentUser, WorkspaceSummary } from "./types";

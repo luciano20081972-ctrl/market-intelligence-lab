@@ -1,6 +1,12 @@
 # Market Intelligence Lab
 
-Market Intelligence Lab is a workspace-isolated stock and ETF research workbench for historical data, explainable signals, reproducible backtests, and simulated paper trading. Version 0.5.0 adds Supabase-compatible authentication, centralized authorization, legacy-data migration, a fixture-tested Twelve Data adapter, cross-provider comparison, backtest manifests/validation, and production-governance workflows.
+Market Intelligence Lab is a workspace-isolated stock and ETF research workbench for historical data, explainable signals, reproducible backtests, and simulated paper trading. Version 0.5.1 validates the Supabase/PostgreSQL deployment path, adds schema-aware readiness, selects psycopg v3 explicitly, and locks browser-facing Data API roles out of application tables while preserving the v0.5 authentication and authorization platform.
+
+The validated staging schema is at Alembic revision `4a2523700bdb`. Supabase
+Auth/JWKS and deny-by-default PostgREST behavior were live-verified with
+temporary users that were removed after the rehearsal. Direct
+FastAPI-to-staging PostgreSQL runtime connectivity remains unverified because
+the workstation's session-pooler authentication is unresolved.
 
 > **Research data and simulated trading only.** Bundled prices are synthetic. External Stooq history is read-only, is not bundled, may be delayed or incomplete, and requires an independent terms/licensing review before production or redistribution use.
 
@@ -112,6 +118,7 @@ mypy apps packages scripts
 pytest
 pytest --cov=apps --cov=packages --cov-report=term-missing --cov-report=xml
 python scripts/verify.py
+python scripts/validate_supabase_staging.py  # opt-in staging configuration only
 ```
 
 ```powershell
@@ -150,7 +157,7 @@ The frontend is served at `http://127.0.0.1:8080`. Runtime database data lives i
 - No SEC, macroeconomic, congressional-disclosure, political-event, or regulatory-event ingestion yet.
 - Backtests use fixed daily demonstration bars; intraday execution, partial fills, market impact, and liquidity depth are not modeled.
 - Supabase integration is fixture/unit tested; no real Supabase project was contacted and application-managed immediate session revocation is limited by provider support.
-- Application-layer workspace isolation is implemented; PostgreSQL RLS remains a documented pre-v1.0 hardening item and is not claimed.
+- Application-layer workspace isolation is implemented and tested. PostgreSQL RLS is enabled as deny-by-default defense in depth with no browser-facing policies; complete workspace-aware database policies are not claimed.
 - PostgreSQL verification runs in CI and is skipped locally unless `MIL_POSTGRES_TEST_DATABASE_URL` points to a disposable database.
 - Twelve Data is fixture-tested only; no live request was run, and no commercial redistribution right is claimed.
 - Distributed/multi-host rate limiting and worker coordination remain deferred; the current limiter and worker target one application instance.

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Navigate, Link } from "react-router-dom";
+import { Link, Navigate } from "react-router";
 import { useAuth } from "../auth";
 
 export function SignIn() {

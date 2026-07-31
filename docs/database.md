@@ -39,3 +39,11 @@ Alembic revision `1a52c2d25013` additively introduces `worker_instances`, `job_l
 Revision `18cca98a50d5` adds users, workspaces, memberships, invitations, provider comparisons, backtest manifests, and validation reports. It creates deterministic legacy user/workspace IDs, assigns all existing watchlists, strategies, backtests, paper portfolios, import jobs, and schedules, then makes workspace foreign keys non-null and changes names/idempotency uniqueness to include workspace. Canonical assets/bars/providers/calendars remain shared. Existing audit events are attributed to the legacy context and enriched columns remain append-only through the API.
 
 PostgreSQL is the production database. CI uses PostgreSQL 17 for clean migration, drift, UUID/decimal/timezone, rollback, uniqueness, claim concurrency, and session-context checks. SQLite remains the lightweight local/test path.
+
+## v0.5.1 Data API lockdown
+
+Revision `cba31be9f005` is PostgreSQL-only and additive. It enables RLS on all 47 application tables, revokes application-table/sequence/function privileges from Supabase `anon` and `authenticated` roles when those roles exist, revokes unsafe public function execution, and configures restrictive default privileges for future objects created by the migration owner. SQLite is intentionally unchanged.
+
+There are no RLS policies in v0.5.1. Non-owner roles therefore receive deny-by-default behavior; the PostgreSQL table owner used by FastAPI/Alembic retains owner access and is not subject to these policies. This is PostgREST exposure lockdown, not workspace-aware database authorization. Privilege revocations are not guessed back into existence by downgrade because the previous grants are deployment-specific.
+
+Revision `4a2523700bdb` adds indexes for the `source_price_bar_id` foreign keys on backtest trades, paper fills, paper orders, and signals. The staging foreign-key audit therefore has no unindexed application foreign keys.

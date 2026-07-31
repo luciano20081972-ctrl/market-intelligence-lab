@@ -31,4 +31,11 @@ Frontend tests cover healthy, reachable-invalid, unavailable, schema-mismatch, a
 
 Backend tests cover JWT claim/signature failures, production config refusal, disabled users, workspace list/ID isolation, viewer denial, audits, Twelve Data fixtures/errors, provider conflict recording, manifests, critical validation, and safe infrastructure metadata. `pytest -m postgres` is skipped unless a disposable PostgreSQL URL is explicit; CI supplies one. Frontend tests cover login/error/expiry, permission-aware membership actions, audits, comparisons, manifests, validation, and infrastructure.
 
-Coverage emits XML and LCOV; local thresholds are authoritative and Codecov upload is optional. Supply-chain CI runs lock verification, `pip-audit`, critical-level npm audit, CycloneDX generation, and Python/npm license reports. Live Supabase/provider calls remain opt-in and are never ordinary-test dependencies.
+Coverage emits XML and LCOV; local thresholds are authoritative and Codecov upload is optional. Supply-chain CI runs lock verification, `pip-audit`, high-level npm audit, CycloneDX generation, and Python/npm license reports. Live Supabase/provider calls remain opt-in and are never ordinary-test dependencies.
+
+For v0.5.1, `scripts/validate_supabase_staging.py` is the bounded live Auth
+rehearsal. It requires the ignored staging file, exact project reference, HTTPS,
+both backend/public keys, and `MIL_RUN_LIVE_SUPABASE_TESTS=true`; it reports
+booleans only and deletes temporary users in a `finally` cleanup path. Ordinary
+tests never load this configuration. Supply-chain CI rejects high and critical
+npm advisories.
