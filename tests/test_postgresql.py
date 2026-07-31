@@ -203,5 +203,5 @@ def test_postgres_expired_lease_recovery(postgres_factory) -> None:  # type: ign
         assert claimed is not None and claimed[0].id == job.id
     with session_scope(postgres_factory) as session:
         assert recover_abandoned_jobs(session, now=current) == [job.id]
-        assert session.scalar(select(ImportJob.status).where(ImportJob.id == job.id)) == "queued"
+        assert session.scalar(select(ImportJob.status).where(ImportJob.id == job.id)) == "retrying"
         assert session.scalar(select(func.count(JobLease.id)).where(JobLease.job_id == job.id)) == 0
