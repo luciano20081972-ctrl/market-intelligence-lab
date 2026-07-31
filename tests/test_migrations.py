@@ -118,6 +118,11 @@ def test_postgresql_offline_sql_contains_only_public_application_lockdown(
     assert 'ALTER TABLE public."assets" ENABLE ROW LEVEL SECURITY' in rendered
     assert "REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC" in rendered
     assert "ALTER DEFAULT PRIVILEGES IN SCHEMA public" in rendered
+    assert "::VARCHAR" not in rendered
+    assert (
+        "UPDATE watchlists SET workspace_id = "
+        "'00000000-0000-4000-8000-000000000002'" in rendered
+    )
     for index_name in (
         "ix_backtest_trades_source_price_bar_id",
         "ix_paper_fills_source_price_bar_id",

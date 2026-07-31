@@ -44,7 +44,7 @@ def _add_workspace_scope(
         )
     op.execute(
         sa.text(f"UPDATE {table_name} SET workspace_id = :workspace_id").bindparams(
-            workspace_id=stored_id
+            sa.bindparam("workspace_id", value=LEGACY_WORKSPACE_ID, type_=sa.Uuid())
         )
     )
     with op.batch_alter_table(table_name) as batch:
@@ -238,16 +238,14 @@ def upgrade() -> None:
             ["id"],
             ondelete="SET NULL",
         )
-    bind = op.get_bind()
-    stored_user = LEGACY_USER_ID.hex if bind.dialect.name == "sqlite" else str(LEGACY_USER_ID)
-    stored_workspace = (
-        LEGACY_WORKSPACE_ID.hex if bind.dialect.name == "sqlite" else str(LEGACY_WORKSPACE_ID)
-    )
     op.execute(
         sa.text(
             "UPDATE audit_events SET actor_user_id=:user_id, workspace_id=:workspace_id "
             "WHERE actor_user_id IS NULL"
-        ).bindparams(user_id=stored_user, workspace_id=stored_workspace)
+        ).bindparams(
+            sa.bindparam("user_id", value=LEGACY_USER_ID, type_=sa.Uuid()),
+            sa.bindparam("workspace_id", value=LEGACY_WORKSPACE_ID, type_=sa.Uuid()),
+        )
     )
 
     op.create_table(
