@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "market-intelligence-lab"
-version = "0.6.0"
+version = "0.7.0"
 description = "Historical market-data research, backtesting, and simulated paper-trading platform"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -53,6 +53,7 @@ markers = [
   "postgres: requires an explicitly configured disposable PostgreSQL database",
   "live_provider: performs one explicitly enabled bounded provider request",
   "live_sec: performs one explicitly enabled bounded SEC request",
+  "live_world_data: performs an explicitly enabled bounded FRED, ALFRED, or EIA request",
 ]
 
 [tool.coverage.run]

@@ -45,3 +45,6 @@ both backend/public keys, and `MIL_RUN_LIVE_SUPABASE_TESTS=true`; it reports
 booleans only and deletes temporary users in a `finally` cleanup path. Ordinary
 tests never load this configuration. Supply-chain CI rejects high and critical
 npm advisories.
+# v0.7 temporal validation
+
+The world-data suite covers UTC normalization, naive-time rejection, publication/retrieval/revision eligibility floors, future-vintage exclusion, immutable manifests and raw objects, registry completeness, SEC identifier/amendment normalization, missing FRED values, ALFRED leakage prevention, EIA units/geography, idempotency, protected APIs, clean migration, upgrade from v0.6, drift, PostgreSQL 17, and opt-in bounded live probes. Fixture success must never be described as live verification.

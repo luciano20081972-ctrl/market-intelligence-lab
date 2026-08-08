@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.7.0 - 2026-08-07
+
+- Added the immutable seven-clock Temporal Truth envelope and strict simulation-eligibility invariant for point-in-time research.
+- Added immutable source manifests, content-addressed raw-object storage, durable dataset checkpoints, quality flags, health metadata, and a machine-readable official-source registry.
+- Added direct SEC submissions/companyfacts and bulk foundations, FRED latest-revised parsing, ALFRED vintage-aware as-of selection, and an EIA monthly retail-electricity-price pilot.
+- Added source-specific macro and energy tables sharing temporal/provenance columns, protected world-data APIs, and six administrative/explorer views.
+- Added Alembic revision `7f4af62df2fe`, fixture-first temporal leakage coverage, and storage/provider documentation.
+
+### Limitations
+
+- FRED, ALFRED, EIA, and SEC network calls require explicit configuration and opt-in; fixture verification is not a claim of live availability.
+- FRED-series licensing is source-specific. Operators must review each series before use or redistribution.
+- EIA publication timestamps are not supplied consistently by the pilot endpoint; retrieval time is the conservative simulation-eligibility floor and ambiguity is flagged where applicable.
+- Local raw-object storage is implemented. S3, R2, and Supabase Storage are compatibility contracts, not live-verified adapters.
+
 ## 0.6.0 - 2026-07-30
 
 - Added machine-validated upstream license, dependency, notice, and provenance governance for seven evaluated projects and every direct Python/frontend dependency.

@@ -22,3 +22,7 @@ SEC and analytical libraries are not market-price providers. They use separate p
 the same operational principles: normalized errors, pinned versions, capability/health reports,
 provenance, deterministic fixtures, bounded opt-in network calls, and graceful unavailability.
 EdgarTools objects never cross the SEC adapter boundary.
+
+## Official world-data providers
+
+`config/datasets.yaml` is the machine-readable registry for direct SEC, FRED, ALFRED, and EIA datasets. `OfficialJsonClient` provides bounded HTTPS acquisition; provider parsers produce internal temporal records. API keys stay in backend-only environment variables. Live requests are opt-in, while sanitized fixtures are canonical CI inputs. FRED latest-revised observations are never presented as point-in-time safe; ALFRED vintages are filtered by `simulation_eligible_time` before revision selection.

@@ -45,6 +45,11 @@ import { SecInsiderTransactions } from "./pages/SecInsiderTransactions";
 import { SecInstitutionalHoldings } from "./pages/SecInstitutionalHoldings";
 import { UpstreamIntegrations } from "./pages/UpstreamIntegrations";
 import { UpstreamLicenseInventory } from "./pages/UpstreamLicenseInventory";
+import { WorldDataSources } from "./pages/WorldDataSources";
+import { WorldDataSourceDetail } from "./pages/WorldDataSourceDetail";
+import { DataManifests, DataManifestDetail } from "./pages/DataManifests";
+import { MacroExplorer } from "./pages/MacroExplorer";
+import { EnergyExplorer } from "./pages/EnergyExplorer";
 
 export { queryClient };
 
@@ -67,6 +72,12 @@ export function App() {
       <Route path="paper-portfolios/:id/order" element={<SimulatedOrderTicket />} />
       <Route path="paper-portfolios/:id/risk" element={<RiskSettings />} />
       <Route path="data-sources" element={<DataSources />} />
+      <Route path="world-data" element={<WorldDataSources />} />
+      <Route path="world-data/sources/:id" element={<WorldDataSourceDetail />} />
+      <Route path="world-data/manifests" element={<DataManifests />} />
+      <Route path="world-data/manifests/:id" element={<DataManifestDetail />} />
+      <Route path="world-data/macro" element={<MacroExplorer />} />
+      <Route path="world-data/energy" element={<EnergyExplorer />} />
       <Route path="providers" element={<Providers />} />
       <Route path="providers/:id" element={<ProviderDetail />} />
       <Route path="imports" element={<ImportJobs />} />

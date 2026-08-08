@@ -104,6 +104,40 @@ def test_v05_to_v051_lockdown_upgrade_preserves_existing_data(
     get_settings.cache_clear()
 
 
+def test_v06_to_v07_upgrade_preserves_sec_data(tmp_path: Path, monkeypatch: object) -> None:
+    database = tmp_path / "v06-upgrade.db"
+    database_url = f"sqlite:///{database.as_posix()}"
+    monkeypatch.setenv("MIL_DATABASE_URL", database_url)  # type: ignore[attr-defined]
+    get_settings.cache_clear()
+    config = Config("alembic.ini")
+    command.upgrade(config, "6b8d9e0f1a2b")
+    engine = create_engine(database_url)
+    company_id = "cccccccccccccccccccccccccccccccc"
+    checksum = "a" * 64
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO sec_companies "
+                "(id,cik,name,tickers,submissions_url,facts_url,retrieved_at,source_checksum) "
+                "VALUES (:id,'0000320193','Preserved SEC','[]','https://data.sec.gov/a',"
+                "'https://data.sec.gov/b','2026-08-01',:checksum)"
+            ),
+            {"id": company_id, "checksum": checksum},
+        )
+    command.upgrade(config, "head")
+    command.upgrade(config, "head")
+    with engine.connect() as connection:
+        assert connection.scalar(
+            text("SELECT name FROM sec_companies WHERE id=:id"), {"id": company_id}
+        ) == "Preserved SEC"
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == (
+            EXPECTED_SCHEMA_REVISION
+        )
+    command.check(config)
+    engine.dispose()
+    get_settings.cache_clear()
+
+
 def test_postgresql_offline_sql_contains_only_public_application_lockdown(
     monkeypatch: object,
 ) -> None:

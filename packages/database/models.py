@@ -657,6 +657,167 @@ class ProviderCredential(Base):
     provider: Mapped[Provider] = relationship(back_populates="credentials")
 
 
+class DataManifest(Base):
+    """Immutable provenance envelope for one acquired dataset object."""
+
+    __tablename__ = "data_manifests"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_id", "dataset_id", "checksum", name="uq_manifest_dataset_checksum"
+        ),
+        CheckConstraint("record_count >= 0", name="manifest_record_count_nonnegative"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    source_id: Mapped[str] = mapped_column(String(64), index=True)
+    dataset_id: Mapped[str] = mapped_column(String(96), index=True)
+    source_version: Mapped[str | None] = mapped_column(String(80))
+    schema_version: Mapped[str] = mapped_column(String(32), default="1")
+    parser_version: Mapped[str] = mapped_column(String(40))
+    retrieval_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    source_updated_time: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    temporal_coverage_start: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    temporal_coverage_end: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    raw_object_reference: Mapped[str] = mapped_column(String(700))
+    checksum: Mapped[str] = mapped_column(String(64), index=True)
+    checksum_algorithm: Mapped[str] = mapped_column(String(16), default="sha256")
+    byte_count: Mapped[int] = mapped_column(Integer, default=0)
+    record_count: Mapped[int] = mapped_column(Integer, default=0)
+    accepted_count: Mapped[int] = mapped_column(Integer, default=0)
+    rejected_count: Mapped[int] = mapped_column(Integer, default=0)
+    quality_summary: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    license_identifier: Mapped[str] = mapped_column(String(120))
+    job_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("import_jobs.id", ondelete="SET NULL"), index=True
+    )
+    parent_manifest_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("data_manifests.id", ondelete="RESTRICT"), index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class RawDataObject(Base):
+    __tablename__ = "raw_data_objects"
+
+    key: Mapped[str] = mapped_column(String(700), primary_key=True)
+    checksum: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    byte_count: Mapped[int] = mapped_column(Integer)
+    media_type: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class MacroSeries(Base):
+    __tablename__ = "macro_series"
+    __table_args__ = (
+        UniqueConstraint("source_id", "external_id", name="uq_macro_source_external"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    source_id: Mapped[str] = mapped_column(String(64), index=True)
+    external_id: Mapped[str] = mapped_column(String(120), index=True)
+    title: Mapped[str] = mapped_column(String(300))
+    units: Mapped[str] = mapped_column(String(120))
+    frequency: Mapped[str] = mapped_column(String(80))
+    seasonal_adjustment: Mapped[str | None] = mapped_column(String(120))
+    release_id: Mapped[str | None] = mapped_column(String(120))
+    notes: Mapped[str] = mapped_column(Text, default="")
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    retrieved_at: Mapped[datetime] = mapped_column(UTCDateTime())
+
+
+class MacroObservation(Base):
+    __tablename__ = "macro_observations"
+    __table_args__ = (
+        UniqueConstraint(
+            "series_id", "observation_time", "revision_time", "source_value",
+            name="uq_macro_observation_vintage",
+        ),
+        Index("ix_macro_as_of", "series_id", "observation_time", "simulation_eligible_time"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    series_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("macro_series.id", ondelete="CASCADE"), index=True
+    )
+    source_value: Mapped[str] = mapped_column(String(120))
+    numeric_value: Mapped[Decimal | None] = mapped_column(Numeric(28, 10))
+    event_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    observation_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    publication_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    retrieval_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    effective_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    revision_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    simulation_eligible_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    realtime_end: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    time_precision: Mapped[str] = mapped_column(String(24), default="day")
+    source_time_zone: Mapped[str] = mapped_column(String(64), default="UTC")
+    quality_flags: Mapped[list[str]] = mapped_column(JSON, default=list)
+    manifest_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("data_manifests.id", ondelete="RESTRICT"), index=True
+    )
+
+
+class EnergySeries(Base):
+    __tablename__ = "energy_series"
+    __table_args__ = (
+        UniqueConstraint("source_id", "external_id", name="uq_energy_source_external"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    source_id: Mapped[str] = mapped_column(String(64), index=True)
+    external_id: Mapped[str] = mapped_column(String(180), index=True)
+    title: Mapped[str] = mapped_column(String(300))
+    units: Mapped[str] = mapped_column(String(120))
+    frequency: Mapped[str] = mapped_column(String(80))
+    geography: Mapped[str] = mapped_column(String(120))
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    retrieved_at: Mapped[datetime] = mapped_column(UTCDateTime())
+
+
+class EnergyObservation(Base):
+    __tablename__ = "energy_observations"
+    __table_args__ = (
+        UniqueConstraint(
+            "series_id", "observation_time", "source_value", name="uq_energy_observation"
+        ),
+        Index("ix_energy_series_observation", "series_id", "observation_time"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    series_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("energy_series.id", ondelete="CASCADE"), index=True
+    )
+    source_value: Mapped[str] = mapped_column(String(120))
+    numeric_value: Mapped[Decimal | None] = mapped_column(Numeric(28, 10))
+    event_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    observation_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    publication_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    retrieval_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    effective_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    revision_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    simulation_eligible_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    time_precision: Mapped[str] = mapped_column(String(24), default="month")
+    source_time_zone: Mapped[str] = mapped_column(String(64), default="UTC")
+    quality_flags: Mapped[list[str]] = mapped_column(JSON, default=list)
+    manifest_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("data_manifests.id", ondelete="RESTRICT"), index=True
+    )
+
+
+class IngestionCheckpoint(Base):
+    __tablename__ = "ingestion_checkpoints"
+    __table_args__ = (UniqueConstraint("source_id", "dataset_id", name="uq_checkpoint_dataset"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    source_id: Mapped[str] = mapped_column(String(64), index=True)
+    dataset_id: Mapped[str] = mapped_column(String(96), index=True)
+    cursor_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    last_manifest_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("data_manifests.id", ondelete="SET NULL")
+    )
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+
 class ImportJob(Base):
     __tablename__ = "import_jobs"
     __table_args__ = (

@@ -123,6 +123,16 @@ test("authenticated workspace research workflow has no severe console errors", a
   await page.getByRole("link", { name: "Upstream Integrations" }).click();
   await expect(page.getByRole("heading", { name: "Upstream integrations status" })).toBeVisible();
   await expect(page.getByText(/optional dependency unavailable/).first()).toBeVisible();
+  await page.getByRole("link", { name: "World Data Registry" }).click();
+  await expect(page.getByRole("heading", { name: "World data sources" })).toBeVisible();
+  await expect(page.getByText("FRED latest revised observations")).toBeVisible();
+  await page.getByRole("link", { name: "Macro & Vintages" }).click();
+  await expect(page.getByRole("heading", { name: "Macro & vintage explorer" })).toBeVisible();
+  await expect(page.getByText("PIT safe")).toBeVisible();
+  await page.getByRole("link", { name: "EIA Pilot" }).click();
+  await expect(page.getByRole("heading", { name: "Retail electricity prices" })).toBeVisible();
+  await page.getByRole("link", { name: "Data Manifests" }).click();
+  await expect(page.getByRole("heading", { name: "Data manifests" })).toBeVisible();
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
   expect(severe).toEqual([]);

@@ -6,6 +6,8 @@ Effort uses focused engineer-weeks and assumes one experienced developer with Co
 
 ### v0.7 — Temporal Truth and high-density world-data foundation
 
+**Status: implemented on the v0.7 feature branch.** Live provider verification and object-storage cloud adapters remain operational follow-ups, not hidden release claims.
+
 - **Scope:** canonical temporal envelope and eligibility policies; immutable source/object manifests; point-in-time query/test harness; SEC bulk submissions/companyfacts; FRED/ALFRED; one agency pilot (EIA recommended); distributed budget/watermark extensions to existing jobs; bounded live rehearsals.
 - **Reuse:** existing providers/jobs/provenance/migrations; SEC APIs, EdgarTools parser, FRED/ALFRED and EIA APIs.
 - **Build:** temporal policy registry, revision model, object references, source manifests, point-in-time fixtures and feature-input contract.

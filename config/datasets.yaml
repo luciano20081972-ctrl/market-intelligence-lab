@@ -1,0 +1,50 @@
+schema_version: "1"
+datasets:
+  - id: sec.submissions
+    provider: sec
+    title: SEC company submissions
+    transport: https-json
+    official_url: https://data.sec.gov/submissions/
+    expected_frequency: daily
+    license: US-PUBLIC-DOMAIN
+    temporal_mode: accepted-at
+  - id: sec.companyfacts
+    provider: sec
+    title: SEC XBRL company facts
+    transport: https-json
+    official_url: https://data.sec.gov/api/xbrl/companyfacts/
+    expected_frequency: daily
+    license: US-PUBLIC-DOMAIN
+    temporal_mode: filed-at
+  - id: sec.bulk
+    provider: sec
+    title: SEC bulk archives
+    transport: https-archive
+    official_url: https://www.sec.gov/Archives/edgar/daily-index/xbrl/
+    expected_frequency: daily
+    license: US-PUBLIC-DOMAIN
+    temporal_mode: accepted-at
+  - id: fred.observations
+    provider: fred
+    title: FRED latest revised observations
+    transport: https-json
+    official_url: https://api.stlouisfed.org/fred/series/observations
+    expected_frequency: source-defined
+    license: FRED-SERIES-SPECIFIC
+    temporal_mode: latest-revised
+  - id: alfred.vintages
+    provider: alfred
+    title: ALFRED vintage observations
+    transport: https-json
+    official_url: https://api.stlouisfed.org/fred/series/observations
+    expected_frequency: source-defined
+    license: FRED-SERIES-SPECIFIC
+    temporal_mode: point-in-time
+  - id: eia.electricity.retail-price
+    provider: eia
+    title: EIA monthly retail electricity price pilot
+    transport: https-json
+    official_url: https://api.eia.gov/v2/electricity/retail-sales/data/
+    expected_frequency: monthly
+    license: US-PUBLIC-DOMAIN
+    temporal_mode: retrieved-at

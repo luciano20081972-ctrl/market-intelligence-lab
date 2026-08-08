@@ -9,6 +9,7 @@ import type {
   BacktestManifest, BacktestValidation,
   AnalyticsComparisonResult, OptimizationResult, SecCompany, SecFiling,
   SecInsiderTransaction, SecInstitutionalHolding, UpstreamHealth, UpstreamProject,
+  WorldDataSource, DataManifestRecord, WorldSeries, WorldObservation,
 } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -169,4 +170,14 @@ export const api = {
       initial_cash: "10000", fee_per_order: "1", slippage_bps: "5", live_mode: false,
     }),
   }),
+  worldDataSources: () => request<WorldDataSource[]>("/api/v1/data-sources"),
+  worldDataSource: (id: string) => request<WorldDataSource>(`/api/v1/data-sources/${encodeURIComponent(id)}`),
+  worldDataSourceHealth: (id: string) => request<Record<string, unknown>>(`/api/v1/data-sources/${encodeURIComponent(id)}/health`),
+  dataManifests: () => request<{ items: DataManifestRecord[]; total: number }>("/api/v1/data-manifests"),
+  dataManifest: (id: string) => request<DataManifestRecord>(`/api/v1/data-manifests/${id}`),
+  macroSeries: () => request<{ items: WorldSeries[]; total: number }>("/api/v1/macro/series"),
+  macroObservations: (id: string) => request<{ items: WorldObservation[]; total: number }>(`/api/v1/macro/series/${id}/observations`),
+  macroAsOf: (id: string, asOf: string) => request<{ items: WorldObservation[]; total: number; point_in_time_safe: boolean }>(`/api/v1/macro/series/${id}/as-of?as_of=${encodeURIComponent(asOf)}`),
+  energySeries: () => request<{ items: WorldSeries[]; total: number }>("/api/v1/energy/series"),
+  energyObservations: (id: string) => request<{ items: WorldObservation[]; total: number }>(`/api/v1/energy/series/${id}/observations`),
 };

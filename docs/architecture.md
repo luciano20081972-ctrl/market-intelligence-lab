@@ -14,7 +14,7 @@ AI works on bounded, cited evidence packets selected from durable structured dat
 
 The controlling design is [world-intelligence.md](architecture/world-intelligence.md). Detailed decisions cover [Temporal Truth](architecture/temporal-truth.md), the [economic driver graph](architecture/economic-driver-graph.md), [relevance routing](architecture/data-relevance-router.md), [progressive resolution](architecture/progressive-resolution.md), the [hypothesis factory](architecture/hypothesis-factory.md), [research memory](architecture/research-memory.md), [divergence](architecture/divergence-engine.md), [signal independence](architecture/signal-independence.md), [scenarios](architecture/scenario-engine.md), [runtime AI](architecture/runtime-ai.md), and [information value](architecture/information-value.md).
 
-This is an approved planning boundary only. No v0.7 production subsystem is implemented by these documents.
+Version 0.7 implements the first bounded slice: Temporal Truth, immutable manifests/raw objects, dataset checkpoints, and direct official SEC/FRED/ALFRED/EIA adapters. Entity graphs and relevance routing remain v0.8 work and are not started here.
 
 ## Shape
 
@@ -38,6 +38,8 @@ React/Vite -> /api/v1 -> FastAPI routers -> SQLAlchemy sessions -> SQLite/Postgr
 7. **Conservative interface.** Dark neutral surfaces and restrained status colors emphasize data density without implying predictive certainty.
 8. **Versioned reproducibility.** A backtest references an immutable strategy version and stores parameters, execution assumptions, risk limits, application version, and source identifiers.
 9. **Point-in-time eligibility.** A signal cannot execute before a later bar after its effective/publication time and configured delay. Assets compete for shared cash in deterministic symbol order.
+10. **Seven-clock world data.** Event, observation, publication, retrieval, effective, revision, and simulation-eligible time remain distinct; as-of reads filter on eligibility before selecting the newest visible revision.
+11. **Immutable raw acquisition.** Content-addressed logical keys and manifests preserve the exact acquired bytes. Normalized rows reference a manifest; raw provider payloads never become API contracts.
 
 ## Runtime lifecycle
 

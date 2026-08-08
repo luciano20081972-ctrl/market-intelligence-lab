@@ -1,8 +1,8 @@
 # Market Intelligence Lab
 
-Market Intelligence Lab is a workspace-isolated stock and ETF research workbench for historical data, explainable signals, reproducible backtests, simulated paper trading, SEC filing intelligence, portfolio analytics, and constrained optimization. Version 0.6.0 adds governed, replaceable upstream adapters without adding brokerage or real-money execution.
+Market Intelligence Lab is a workspace-isolated research workbench for historical market and official world data, explainable signals, reproducible backtests, simulated paper trading, SEC filing intelligence, portfolio analytics, and constrained optimization. Version 0.7.0 adds Temporal Truth, immutable manifests, FRED/ALFRED macro vintages, direct SEC foundations, and a narrow EIA pilot without adding brokerage or real-money execution.
 
-The v0.6 application schema is at Alembic revision `6b8d9e0f1a2b`. The v0.5.1 Supabase
+The v0.7 application schema is at Alembic revision `7f4af62df2fe`. The v0.5.1 Supabase
 Auth/JWKS and deny-by-default PostgREST behavior were live-verified with
 temporary users that were removed after the rehearsal. Direct
 FastAPI-to-staging PostgreSQL runtime connectivity remains unverified because
@@ -28,6 +28,7 @@ This release has no Fidelity or brokerage integration, brokerage login automatio
 - `packages/sec_intelligence`: normalized, fixture-first EdgarTools boundary and SEC provenance.
 - `packages/analytics` and `packages/optimization`: QuantStats reconciliation and skfolio-compatible constrained experiments.
 - `packages/upstream` and `packages/external_engines`: license governance, stable protocols, and disabled-by-default LEAN prototype.
+- `packages/world_data`: seven-clock temporal truth, source manifests, raw-object storage, official dataset registry, direct adapters, idempotent persistence, and point-in-time selection.
 - `migrations`: authoritative Alembic schema history.
 
 SQLite is the default local database. UUID keys, explicit constraints, portable column types, and SQLAlchemy abstractions keep the schema PostgreSQL-compatible.

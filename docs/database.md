@@ -62,3 +62,6 @@ timestamps, numeric facts/holdings retain fixed precision, and input/result chec
 reproducibility. All new PostgreSQL tables receive the same deny-by-default RLS flag and
 conditional Supabase `anon`/`authenticated` revocations as the v0.5.1 application schema.
 No Supabase-managed schema is modified.
+# v0.7 temporal world-data schema
+
+Alembic revision `7f4af62df2fe` extends `6b8d9e0f1a2b` without rewriting history. `data_manifests`, `raw_data_objects`, and `ingestion_checkpoints` provide immutable provenance and resumability. `macro_series`/`macro_observations` and `energy_series`/`energy_observations` avoid a generic EAV table while sharing the same seven temporal columns, manifest foreign key, quality flags, source timezone, and precision. Composite indexes support series range and point-in-time eligibility queries.

@@ -27,6 +27,7 @@ from apps.api.routers import (
     system,
     upstream,
     watchlists,
+    world_data,
 )
 from apps.api.schemas import HealthResponse
 from packages.core.config import Settings, get_settings
@@ -156,6 +157,7 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.include_router(analytics.router, prefix="/api/v1", dependencies=protected)
     app.include_router(optimization.router, prefix="/api/v1", dependencies=protected)
     app.include_router(upstream.router, prefix="/api/v1", dependencies=protected)
+    app.include_router(world_data.router, prefix="/api/v1", dependencies=protected)
     return app
 
 

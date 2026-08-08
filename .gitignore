@@ -24,6 +24,8 @@ htmlcov/
 
 # Runtime data
 data/
+!docs/data/
+!docs/data/*.md
 runtime/
 uploads/
 logs/

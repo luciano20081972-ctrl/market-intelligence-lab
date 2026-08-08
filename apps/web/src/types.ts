@@ -295,3 +295,21 @@ export interface OptimizationResult {
   objective_values: Record<string, number>; risk_metrics: Record<string, number>;
   constraints: Record<string, unknown>; optimizer_version: string; warnings: string[];
 }
+
+export interface WorldDataSource {
+  id: string; provider: string; title: string; transport: string; official_url: string;
+  expected_frequency: string; license: string; temporal_mode: string; configured: boolean;
+}
+export interface DataManifestRecord {
+  id: string; source_id: string; dataset_id: string; retrieval_time: string;
+  raw_object_reference: string; checksum: string; record_count: number;
+  accepted_count: number; rejected_count: number; quality_summary: Record<string, number>;
+}
+export interface WorldSeries {
+  id: string; source_id: string; external_id: string; title: string; units: string;
+  frequency: string; geography?: string;
+}
+export interface WorldObservation {
+  id: string; source_value: string; numeric_value: string | null; observation_time: string;
+  revision_time: string; simulation_eligible_time: string; quality_flags: string[];
+}

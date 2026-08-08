@@ -206,7 +206,7 @@ class StooqAdapter:
                 timeout=httpx.Timeout(self.timeout_seconds),
                 transport=self.transport,
                 follow_redirects=False,
-                headers={"User-Agent": "Market-Intelligence-Lab/0.6.0"},
+                headers={"User-Agent": "Market-Intelligence-Lab/0.7.0"},
             ) as client:
                 response = client.get(self.base_url, params=params)
         except httpx.RequestError as exc:
@@ -485,7 +485,7 @@ class TwelveDataAdapter:
                 follow_redirects=False,
                 headers={
                     "Authorization": f"apikey {self._api_key}",
-                    "User-Agent": "Market-Intelligence-Lab/0.6.0",
+                    "User-Agent": "Market-Intelligence-Lab/0.7.0",
                     "Accept": "application/json",
                 },
             ) as client:
