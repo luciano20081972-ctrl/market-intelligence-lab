@@ -3,8 +3,14 @@
 ## Release sequence (updated 2026-07-30)
 
 - **v0.5 — implemented/fixture-verified:** secure multi-user and production foundation. Supabase/Twelve Data live verification and PostgreSQL RLS are deferred; PostgreSQL checks run when the disposable service is available.
-- **v0.6 — planned:** SEC, FRED/ALFRED, and government-event intelligence with point-in-time provenance.
-- **v0.7 — planned:** portfolio optimization, advanced validation, and reporting.
+- **v0.6 — implemented/fixture-verified:** upstream license governance, normalized SEC entities,
+  analytics reconciliation, constrained optimization, and optional LEAN contracts. Live SEC and
+  actual LEAN process execution remain explicit future validation.
+- **v0.7 — recommended:** bounded cached SEC worker/live rehearsal, XBRL taxonomy expansion,
+  production object-store references, actual isolated LEAN container conformance, and
+  workspace-aware PostgreSQL RLS policies. No real-money execution.
+- **Later intelligence scope:** FRED/ALFRED and government-event ingestion with point-in-time provenance.
+- **Later research scope:** advanced validation and reporting beyond the v0.6 analytics and optimization foundation.
 - **v0.8 — planned:** explainable signal and model research laboratory.
 - **v0.9 — planned:** deployment, alerts, backups, monitoring, and private beta.
 - **v1.0 — planned:** security review, data-license review, performance hardening, complete RLS decision, and first complete release.

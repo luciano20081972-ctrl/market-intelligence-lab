@@ -46,4 +46,15 @@ Stooq retains its fixed HTTPS CSV endpoint and honest degraded classification. T
 
 # Version 0.5 security topology
 
-The browser's supported Supabase client restores/refreshes sessions and sends a Bearer token. FastAPI verifies asymmetric JWKS claims, resolves an internal user profile and membership, then applies centralized role and workspace policy. Canonical market data stays shared; user research, simulations, schedules, comparisons, and audit views are tenant-scoped. Vendor objects never become canonical domain models. RLS is deliberately not claimed; see the workspace-isolation guide.
+The browser's supported Supabase client restores/refreshes sessions and sends a Bearer token. FastAPI verifies asymmetric JWKS claims, resolves an internal user profile and membership, then applies centralized role and workspace policy. Canonical market data stays shared; user research, simulations, schedules, comparisons, and audit views are tenant-scoped. Vendor objects never become canonical domain models. PostgreSQL RLS is enabled as deny-by-default defense in depth without browser-facing policies; workspace-aware database policies are not claimed. See the workspace-isolation guide.
+# v0.6 upstream adapter boundary
+
+External libraries sit behind `SecFilingsProvider`, `PortfolioAnalyticsEngine`,
+`PortfolioOptimizer`, and `ExternalBacktestEngine`. Adapters normalize capability, version,
+health, timeout/error, provenance, and fixture behavior. Their objects never become API or
+database contracts.
+
+EdgarTools, QuantStats, and skfolio are pinned optional dependencies. LEAN is an optional local
+process/container design and remains disabled. OpenBB and Fincept are reference-only; no source
+or visual expression was copied. Core research, authentication, and simulation continue when
+any optional adapter is unavailable.

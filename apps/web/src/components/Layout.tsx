@@ -17,6 +17,10 @@ const links: Array<{ to: string; label: string }> = [
   { to: "/reconciliation", label: "Reconciliation" },
   { to: "/provider-comparisons", label: "Provider Comparison" },
   { to: "/infrastructure", label: "Infrastructure" },
+  { to: "/sec", label: "SEC Intelligence" },
+  { to: "/analytics", label: "Analytics Comparison" },
+  { to: "/optimization", label: "Optimization" },
+  { to: "/upstream", label: "Upstream Integrations" },
   { to: "/audit", label: "Audit Log" },
   { to: "/workspace", label: "Workspace Settings" },
   { to: "/profile", label: "Profile" },
@@ -31,7 +35,7 @@ export function Layout() {
   const auth = useAuth();
   return <div className="app-shell">
     <aside className="sidebar">
-      <div className="brand"><span className="brand-mark">MIL</span><div>Market Intelligence<small>Research Lab · v0.5.1</small></div></div>
+      <div className="brand"><span className="brand-mark">MIL</span><div>Market Intelligence<small>Research Lab · v0.6.0</small></div></div>
       <nav aria-label="Primary navigation">
         {links.map(({ to, label }) => <NavLink key={to} to={to} end={to === "/"}>{label}</NavLink>)}
       </nav>
@@ -40,7 +44,7 @@ export function Layout() {
     <div className="main-column">
       <header className="topbar"><div><b>{auth.workspace?.name ?? "Research workspace"}</b><span>Simulation only · {auth.workspace?.role}</span></div>
         <select aria-label="Workspace" value={auth.workspace?.id ?? ""} onChange={(event) => auth.switchWorkspace(event.target.value)}>{auth.workspaces.map((workspace) => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}</select>
-        <button onClick={() => void auth.signOut()}>Sign out</button><span className="version-chip">v0.5.1</span></header>
+        <button onClick={() => void auth.signOut()}>Sign out</button><span className="version-chip">v0.6.0</span></header>
       <DemoWarning />
       <main><Outlet /></main>
     </div>

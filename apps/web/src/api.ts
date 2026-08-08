@@ -7,6 +7,8 @@ import type {
   ProviderDiagnostic, ReconciliationReport, WorkerPage,
   CurrentUser, WorkspaceSummary, AuditPage, InfrastructureRegistry, ProviderComparison,
   BacktestManifest, BacktestValidation,
+  AnalyticsComparisonResult, OptimizationResult, SecCompany, SecFiling,
+  SecInsiderTransaction, SecInstitutionalHolding, UpstreamHealth, UpstreamProject,
 } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -127,4 +129,44 @@ export const api = {
   importErrors: () => request<ImportErrorPage>("/api/v1/import/errors?page_size=100"),
   corporateActions: () => request<CorporateActionPage>("/api/v1/corporate-actions?page_size=100"),
   exchangeCalendar: () => request<TradingSessionPage>("/api/v1/exchange-calendar?page_size=100"),
+  secCompanies: () => request<{ items: SecCompany[]; total: number }>("/api/v1/sec/companies"),
+  secFilings: () => request<{ items: SecFiling[]; total: number }>("/api/v1/sec/filings"),
+  secFiling: (id: string) => request<SecFiling>(`/api/v1/sec/filings/${id}`),
+  secInsiderTransactions: () => request<{ items: SecInsiderTransaction[]; total: number }>("/api/v1/sec/insider-transactions"),
+  secInstitutionalHoldings: () => request<{ items: SecInstitutionalHolding[]; total: number }>("/api/v1/sec/institutional-holdings"),
+  importSecFixture: () => request<Record<string, unknown>>("/api/v1/sec/imports", {
+    method: "POST",
+    body: JSON.stringify({ cik: "320193", forms: ["10-K", "4", "13F-HR"], mode: "fixture", idempotency_key: "frontend-sec-fixture-v06" }),
+  }),
+  analyticsComparison: () => request<AnalyticsComparisonResult>("/api/v1/analytics/compare", {
+    method: "POST",
+    body: JSON.stringify({
+      returns: [0.01, -0.005, 0.007, 0.002, -0.001, 0.004],
+      benchmark_returns: [0.005, -0.002, 0.004, 0.001, 0, 0.002],
+      period_start: "2026-01-01", period_end: "2026-06-30", benchmark: "SPY",
+      tolerance: 0.000001,
+    }),
+  }),
+  optimizationExperiment: () => request<OptimizationResult>("/api/v1/optimization/experiments", {
+    method: "POST",
+    body: JSON.stringify({
+      model: "minimum_variance",
+      asset_returns: {
+        AAPL: [0.01, -0.005, 0.007, 0.002, -0.001, 0.004],
+        SPY: [0.005, -0.002, 0.004, 0.001, 0, 0.002],
+      },
+      training_start: "2025-01-01", training_end: "2025-09-30",
+      validation_start: "2025-10-01", validation_end: "2025-12-31",
+    }),
+  }),
+  upstreamIntegrations: () => request<{ items: Record<string, UpstreamHealth>; contains_secrets: boolean }>("/api/v1/upstream/integrations"),
+  upstreamLicenses: () => request<{ items: UpstreamProject[]; policy_version: string; contains_source_code: boolean }>("/api/v1/upstream/licenses"),
+  leanStatus: () => request<UpstreamHealth>("/api/v1/upstream/engines/lean"),
+  leanFixture: () => request<Record<string, unknown>>("/api/v1/upstream/engines/lean/fixture", {
+    method: "POST",
+    body: JSON.stringify({
+      strategy: "buy_and_hold", symbols: ["AAPL"], start: "2025-01-01", end: "2025-12-31",
+      initial_cash: "10000", fee_per_order: "1", slippage_bps: "5", live_mode: false,
+    }),
+  }),
 };

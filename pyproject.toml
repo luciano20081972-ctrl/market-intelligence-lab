@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "market-intelligence-lab"
-version = "0.5.1"
+version = "0.6.0"
 description = "Historical market-data research, backtesting, and simulated paper-trading platform"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -36,6 +36,11 @@ dev = [
 ]
 postgres = ["psycopg[binary]>=3.2,<4"]
 observability = ["sentry-sdk[fastapi]>=2,<3"]
+integrations = [
+  "edgartools==5.43.1",
+  "quantstats==0.0.81",
+  "skfolio==0.20.1",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -44,7 +49,11 @@ include = ["apps*", "packages*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"
-markers = ["postgres: requires an explicitly configured disposable PostgreSQL database", "live_provider: performs one explicitly enabled bounded provider request"]
+markers = [
+  "postgres: requires an explicitly configured disposable PostgreSQL database",
+  "live_provider: performs one explicitly enabled bounded provider request",
+  "live_sec: performs one explicitly enabled bounded SEC request",
+]
 
 [tool.coverage.run]
 branch = true

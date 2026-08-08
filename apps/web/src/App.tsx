@@ -36,6 +36,15 @@ import { InfrastructureServices } from "./pages/InfrastructureServices";
 import { ProviderComparisons } from "./pages/ProviderComparisons";
 import { BacktestManifest } from "./pages/BacktestManifest";
 import { BacktestValidation } from "./pages/BacktestValidation";
+import { AnalyticsComparison } from "./pages/AnalyticsComparison";
+import { OptionalEngineStatus } from "./pages/OptionalEngineStatus";
+import { OptimizationExperiment } from "./pages/OptimizationExperiment";
+import { SecFilingDetail } from "./pages/SecFilingDetail";
+import { SecFilings } from "./pages/SecFilings";
+import { SecInsiderTransactions } from "./pages/SecInsiderTransactions";
+import { SecInstitutionalHoldings } from "./pages/SecInstitutionalHoldings";
+import { UpstreamIntegrations } from "./pages/UpstreamIntegrations";
+import { UpstreamLicenseInventory } from "./pages/UpstreamLicenseInventory";
 
 export { queryClient };
 
@@ -67,6 +76,15 @@ export function App() {
       <Route path="reconciliation" element={<Reconciliation />} />
       <Route path="provider-comparisons" element={<ProviderComparisons />} />
       <Route path="infrastructure" element={<InfrastructureServices />} />
+      <Route path="sec" element={<SecFilings />} />
+      <Route path="sec/filings/:id" element={<SecFilingDetail />} />
+      <Route path="sec/insiders" element={<SecInsiderTransactions />} />
+      <Route path="sec/holdings" element={<SecInstitutionalHoldings />} />
+      <Route path="analytics" element={<AnalyticsComparison />} />
+      <Route path="optimization" element={<OptimizationExperiment />} />
+      <Route path="upstream" element={<UpstreamIntegrations />} />
+      <Route path="upstream/licenses" element={<UpstreamLicenseInventory />} />
+      <Route path="upstream/engines" element={<OptionalEngineStatus />} />
       <Route path="profile" element={<UserProfile />} />
       <Route path="workspace" element={<WorkspaceSettings />} />
       <Route path="audit" element={<AuditLog />} />

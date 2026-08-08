@@ -1,0 +1,208 @@
+policy_version: "1.0"
+reviewed_at: "2026-07-30"
+projects:
+  - name: QuantConnect/Lean
+    repository_url: https://github.com/QuantConnect/Lean
+    reviewed_revision: 962fcd6b58a56d7a52cf7178a42b965ff3681115
+    reviewed_release: v2.4.0.1
+    license: Apache-2.0
+    license_file_url: https://github.com/QuantConnect/Lean/blob/962fcd6b58a56d7a52cf7178a42b965ff3681115/LICENSE
+    copyright_holder: QuantConnect Corporation
+    integration_category: optional_engine
+    approved_use: Isolated local process/container adapter and conformance reference.
+    prohibited_use: Wholesale vendoring, cloud coupling, live trading, or brokerage credentials.
+    attribution_requirements: Preserve Apache-2.0 license, notices, modification notices, and patent terms.
+    source_files_used: []
+    source_file_hashes: {}
+    modifications_made: No upstream source copied or modified.
+    dependency_version: null
+    replacement_strategy: Disable the adapter or replace it with another ExternalBacktestEngine.
+    maintenance_status: active
+    last_review_date: "2026-07-30"
+    security_status: Metadata and public documentation reviewed; isolated execution remains disabled.
+    commercial_use_status: Permitted under Apache-2.0 subject to its conditions.
+    network_service_obligations: None under Apache-2.0.
+    patent_provisions: Express patent license and patent-litigation termination apply.
+    trademark_restrictions: No license to QuantConnect or LEAN marks beyond nominative attribution.
+  - name: dgunning/edgartools
+    repository_url: https://github.com/dgunning/edgartools
+    reviewed_revision: 6ac6f4e585fbb0db0b30a2e9b8aec036b881f268
+    reviewed_release: v5.43.1
+    license: MIT
+    license_file_url: https://github.com/dgunning/edgartools/blob/6ac6f4e585fbb0db0b30a2e9b8aec036b881f268/LICENSE
+    copyright_holder: Dwight Gunning and contributors
+    integration_category: dependency
+    approved_use: Optional SEC parsing dependency behind SecFilingsProvider.
+    prohibited_use: Direct persistence or API exposure of EdgarTools objects; unbounded SEC scraping.
+    attribution_requirements: Preserve the MIT copyright and license notice.
+    source_files_used: []
+    source_file_hashes: {}
+    modifications_made: No upstream source copied or modified.
+    dependency_version: 5.43.1
+    replacement_strategy: Replace the adapter while retaining normalized SEC entities and fixtures.
+    maintenance_status: active
+    last_review_date: "2026-07-30"
+    security_status: Pinned optional dependency; ordinary tests do not access the network.
+    commercial_use_status: Permitted under MIT.
+    network_service_obligations: SEC fair-access identity, caching, bounded rates, and retries are application obligations.
+    patent_provisions: No express patent license in MIT.
+    trademark_restrictions: No trademark rights granted.
+  - name: skfolio/skfolio
+    repository_url: https://github.com/skfolio/skfolio
+    reviewed_revision: c06db8406385cf4bce83577d0f0710ee5a27e67e
+    reviewed_release: v0.20.1
+    license: BSD-3-Clause
+    license_file_url: https://github.com/skfolio/skfolio/blob/c06db8406385cf4bce83577d0f0710ee5a27e67e/LICENSE
+    copyright_holder: skfolio authors and contributors
+    integration_category: dependency
+    approved_use: Optional portfolio optimization dependency behind PortfolioOptimizer.
+    prohibited_use: External models as canonical persistence objects or unconstrained leverage/shorting.
+    attribution_requirements: Preserve BSD copyright, conditions, and non-endorsement clause.
+    source_files_used: []
+    source_file_hashes: {}
+    modifications_made: No upstream source copied or modified.
+    dependency_version: 0.20.1
+    replacement_strategy: Replace adapter and retain normalized experiment inputs/results.
+    maintenance_status: active
+    last_review_date: "2026-07-30"
+    security_status: Pinned optional dependency with deterministic compatibility fixtures.
+    commercial_use_status: Permitted under BSD-3-Clause.
+    network_service_obligations: None.
+    patent_provisions: No express patent license.
+    trademark_restrictions: Names may not be used to endorse derived products.
+  - name: ranaroussi/quantstats
+    repository_url: https://github.com/ranaroussi/quantstats
+    reviewed_revision: fbd10daed0227aa0d10da6513f1b15e7e98d7fae
+    reviewed_release: v0.0.81
+    license: Apache-2.0
+    license_file_url: https://github.com/ranaroussi/quantstats/blob/fbd10daed0227aa0d10da6513f1b15e7e98d7fae/LICENSE.txt
+    copyright_holder: Ran Aroussi and contributors
+    integration_category: dependency
+    approved_use: Optional independent return-series analytics and sanitized reports.
+    prohibited_use: Silent replacement of canonical metrics or mismatched trade/return comparisons.
+    attribution_requirements: Preserve Apache-2.0 license/notices, modification notices, and patent terms.
+    source_files_used: []
+    source_file_hashes: {}
+    modifications_made: No upstream source copied or modified.
+    dependency_version: 0.0.81
+    replacement_strategy: Replace adapter; reconciliation records remain engine-neutral.
+    maintenance_status: active
+    last_review_date: "2026-07-30"
+    security_status: Pinned optional dependency; HTML generation is sanitized and opt-in.
+    commercial_use_status: Permitted under Apache-2.0 subject to its conditions.
+    network_service_obligations: None.
+    patent_provisions: Express Apache-2.0 patent license and termination.
+    trademark_restrictions: No trademark rights granted.
+  - name: nautechsystems/nautilus_trader
+    repository_url: https://github.com/nautechsystems/nautilus_trader
+    reviewed_revision: af8d4d5bbf653d4c0677c3a50783c86cb1ff2ef1
+    reviewed_release: v1.230.0
+    license: LGPL-3.0-only
+    license_file_url: https://github.com/nautechsystems/nautilus_trader/blob/af8d4d5bbf653d4c0677c3a50783c86cb1ff2ef1/LICENSE
+    copyright_holder: Nautech Systems Pty Ltd and contributors
+    integration_category: optional_engine
+    approved_use: Future replaceable dynamic dependency or isolated process after legal review.
+    prohibited_use: Copying internals into core or implying endorsement.
+    attribution_requirements: Preserve LGPL terms, notices, source/relinking rights, and trademark policy.
+    source_files_used: []
+    source_file_hashes: {}
+    modifications_made: No upstream source copied or modified.
+    dependency_version: null
+    replacement_strategy: Keep boundary at ExternalBacktestEngine and omit dependency.
+    maintenance_status: evaluated_only
+    last_review_date: "2026-07-30"
+    security_status: Not installed; metadata and public documentation only.
+    commercial_use_status: Possible subject to LGPL compliance and legal review.
+    network_service_obligations: No AGPL network clause; library distribution obligations remain.
+    patent_provisions: LGPL/GPL patent provisions apply.
+    trademark_restrictions: NautilusTrader marks are governed by a separate trademark policy.
+  - name: OpenBB-finance/OpenBB
+    repository_url: https://github.com/OpenBB-finance/OpenBB
+    reviewed_revision: 3e071fcc2cd9f891cac6040ae60296dba76dab46
+    reviewed_release: ODP
+    license: AGPL-3.0-only
+    license_file_url: https://github.com/OpenBB-finance/OpenBB/blob/3e071fcc2cd9f891cac6040ae60296dba76dab46/LICENSE
+    copyright_holder: OpenBB and contributors
+    integration_category: reference_only
+    approved_use: Public behavior/documentation study of provider taxonomy and extensions.
+    prohibited_use: Copying, adapting, vendoring, or network-service deployment of source.
+    attribution_requirements: Nominative citation in the independent feature study only.
+    source_files_used: []
+    source_file_hashes: {}
+    modifications_made: No source reviewed for derivation, copied, or modified.
+    dependency_version: null
+    replacement_strategy: Independently implement concepts from requirements and public behavior.
+    maintenance_status: reference_only
+    last_review_date: "2026-07-30"
+    security_status: Not installed or executed.
+    commercial_use_status: Reference only; commercial use requires separate legal analysis.
+    network_service_obligations: AGPL source-offer obligations would apply to modified network services.
+    patent_provisions: AGPL/GPL patent provisions apply.
+    trademark_restrictions: OpenBB names and branding are not used.
+  - name: Fincept-Corporation/FinceptTerminal
+    repository_url: https://github.com/Fincept-Corporation/FinceptTerminal
+    reviewed_revision: 823f63848084f3869e4c9a487663f41f44d55989
+    reviewed_release: v4.3.0
+    license: AGPL-3.0
+    license_file_url: https://github.com/Fincept-Corporation/FinceptTerminal/blob/823f63848084f3869e4c9a487663f41f44d55989/LICENSE
+    copyright_holder: Fincept Corporation
+    integration_category: reference_only
+    approved_use: Public feature/workflow taxonomy study only.
+    prohibited_use: Copying code, wording, screen designs, assets, branding, or protected expression.
+    attribution_requirements: Nominative citation in the independent feature study only.
+    source_files_used: []
+    source_file_hashes: {}
+    modifications_made: No source reviewed for derivation, copied, or modified.
+    dependency_version: null
+    replacement_strategy: Independently design workflows from MIL requirements.
+    maintenance_status: reference_only
+    last_review_date: "2026-07-30"
+    security_status: Not installed or executed.
+    commercial_use_status: Dual AGPL/commercial terms; reference only absent explicit commercial review.
+    network_service_obligations: AGPL obligations apply to the open-source option.
+    patent_provisions: AGPL/GPL patent provisions apply; commercial terms may differ.
+    trademark_restrictions: Fincept names, logos, and visual assets are not used.
+
+direct_dependencies:
+  - { ecosystem: python, name: alembic, version: ">=1.14,<2", license: MIT }
+  - { ecosystem: python, name: fastapi, version: ">=0.115,<1", license: MIT }
+  - { ecosystem: python, name: exchange-calendars, version: ">=4.13,<5", license: Apache-2.0 }
+  - { ecosystem: python, name: httpx, version: ">=0.28,<1", license: BSD-3-Clause }
+  - { ecosystem: python, name: pydantic-settings, version: ">=2.7,<3", license: MIT }
+  - { ecosystem: python, name: PyJWT, version: ">=2.10,<3", license: MIT }
+  - { ecosystem: python, name: PyYAML, version: ">=6.0,<7", license: MIT }
+  - { ecosystem: python, name: sqlalchemy, version: ">=2.0,<3", license: MIT }
+  - { ecosystem: python, name: tzdata, version: ">=2026.1", license: Apache-2.0 }
+  - { ecosystem: python, name: uvicorn, version: ">=0.34,<1", license: BSD-3-Clause }
+  - { ecosystem: python, name: cyclonedx-bom, version: ">=7,<8", license: Apache-2.0 }
+  - { ecosystem: python, name: mypy, version: ">=1.14,<2", license: MIT }
+  - { ecosystem: python, name: pip-audit, version: ">=2.9,<3", license: Apache-2.0 }
+  - { ecosystem: python, name: pip-licenses, version: ">=5,<6", license: MIT }
+  - { ecosystem: python, name: pytest, version: ">=9.0.3,<10", license: MIT }
+  - { ecosystem: python, name: pytest-cov, version: ">=6,<7", license: MIT }
+  - { ecosystem: python, name: ruff, version: ">=0.9,<1", license: MIT }
+  - { ecosystem: python, name: types-PyYAML, version: ">=6.0,<7", license: Apache-2.0 }
+  - { ecosystem: python, name: psycopg, version: ">=3.2,<4", license: LGPL-3.0-only }
+  - { ecosystem: python, name: sentry-sdk, version: ">=2,<3", license: BSD-2-Clause }
+  - { ecosystem: python, name: edgartools, version: "5.43.1", license: MIT }
+  - { ecosystem: python, name: quantstats, version: "0.0.81", license: Apache-2.0 }
+  - { ecosystem: python, name: skfolio, version: "0.20.1", license: BSD-3-Clause }
+  - { ecosystem: npm, name: "@sentry/react", version: "^9.1.0", license: BSD-3-Clause }
+  - { ecosystem: npm, name: "@supabase/supabase-js", version: "^2.49.1", license: MIT }
+  - { ecosystem: npm, name: "@tanstack/react-query", version: "^5.66.0", license: MIT }
+  - { ecosystem: npm, name: react, version: "^19.0.0", license: MIT }
+  - { ecosystem: npm, name: react-dom, version: "^19.0.0", license: MIT }
+  - { ecosystem: npm, name: react-router, version: "8.3.0", license: MIT }
+  - { ecosystem: npm, name: recharts, version: "^3.10.1", license: MIT }
+  - { ecosystem: npm, name: "@playwright/test", version: "^1.50.1", license: Apache-2.0 }
+  - { ecosystem: npm, name: "@testing-library/jest-dom", version: "6.9.1", license: MIT }
+  - { ecosystem: npm, name: "@testing-library/react", version: "^16.2.0", license: MIT }
+  - { ecosystem: npm, name: "@testing-library/user-event", version: "^14.6.1", license: MIT }
+  - { ecosystem: npm, name: "@types/react", version: "^19.0.8", license: MIT }
+  - { ecosystem: npm, name: "@types/react-dom", version: "^19.0.3", license: MIT }
+  - { ecosystem: npm, name: "@vitejs/plugin-react", version: "^4.3.4", license: MIT }
+  - { ecosystem: npm, name: "@vitest/coverage-v8", version: "^4.1.10", license: MIT }
+  - { ecosystem: npm, name: jsdom, version: "^26.0.0", license: MIT }
+  - { ecosystem: npm, name: typescript, version: "~5.7.3", license: Apache-2.0 }
+  - { ecosystem: npm, name: vite, version: "^6.1.0", license: MIT }
+  - { ecosystem: npm, name: vitest, version: "^4.1.10", license: MIT }

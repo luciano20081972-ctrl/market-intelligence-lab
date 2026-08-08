@@ -16,3 +16,9 @@ The provider does not expose reliable adjustment semantics through this adapter,
 ## Twelve Data adapter
 
 ADR 0005 selects Twelve Data based on its documented API, recommended header authentication, JSON daily OHLCV, adjustment modes, bounded free plan, and replaceable interface. It is enabled only when `MIL_TWELVE_DATA_API_KEY` exists. Fixture tests validate schema, rate/access/no-data errors, checksums, and provenance; no live request was run and commercial display/redistribution rights are not asserted.
+# Upstream research adapters
+
+SEC and analytical libraries are not market-price providers. They use separate protocols with
+the same operational principles: normalized errors, pinned versions, capability/health reports,
+provenance, deterministic fixtures, bounded opt-in network calls, and graceful unavailability.
+EdgarTools objects never cross the SEC adapter boundary.

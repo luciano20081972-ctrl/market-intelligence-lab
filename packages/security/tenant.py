@@ -4,11 +4,15 @@ from sqlalchemy import event
 from sqlalchemy.orm import Session, with_loader_criteria
 
 from packages.database.models import (
+    AnalyticsComparisonRecord,
     BacktestRun,
+    ExternalEngineRun,
     ImportJob,
     ImportSchedule,
+    OptimizationExperiment,
     PaperPortfolio,
     ProviderComparison,
+    SecIngestionJob,
     Strategy,
     Watchlist,
 )
@@ -21,6 +25,10 @@ WORKSPACE_MODELS = (
     ImportJob,
     ImportSchedule,
     ProviderComparison,
+    AnalyticsComparisonRecord,
+    OptimizationExperiment,
+    ExternalEngineRun,
+    SecIngestionJob,
 )
 
 

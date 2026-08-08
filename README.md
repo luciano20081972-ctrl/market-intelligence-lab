@@ -1,8 +1,8 @@
 # Market Intelligence Lab
 
-Market Intelligence Lab is a workspace-isolated stock and ETF research workbench for historical data, explainable signals, reproducible backtests, and simulated paper trading. Version 0.5.1 validates the Supabase/PostgreSQL deployment path, adds schema-aware readiness, selects psycopg v3 explicitly, and locks browser-facing Data API roles out of application tables while preserving the v0.5 authentication and authorization platform.
+Market Intelligence Lab is a workspace-isolated stock and ETF research workbench for historical data, explainable signals, reproducible backtests, simulated paper trading, SEC filing intelligence, portfolio analytics, and constrained optimization. Version 0.6.0 adds governed, replaceable upstream adapters without adding brokerage or real-money execution.
 
-The validated staging schema is at Alembic revision `4a2523700bdb`. Supabase
+The v0.6 application schema is at Alembic revision `6b8d9e0f1a2b`. The v0.5.1 Supabase
 Auth/JWKS and deny-by-default PostgREST behavior were live-verified with
 temporary users that were removed after the rehearsal. Direct
 FastAPI-to-staging PostgreSQL runtime connectivity remains unverified because
@@ -25,6 +25,9 @@ This release has no Fidelity or brokerage integration, brokerage login automatio
 - `packages/strategies`: seven versioned, parameter-validated transparent strategies and technical indicators.
 - `packages/backtesting`: shared-cash, long-only, no-lookahead simulation and performance metrics.
 - `packages/paper_trading`: deterministic market/limit/stop/stop-limit simulation and portfolio risk rules.
+- `packages/sec_intelligence`: normalized, fixture-first EdgarTools boundary and SEC provenance.
+- `packages/analytics` and `packages/optimization`: QuantStats reconciliation and skfolio-compatible constrained experiments.
+- `packages/upstream` and `packages/external_engines`: license governance, stable protocols, and disabled-by-default LEAN prototype.
 - `migrations`: authoritative Alembic schema history.
 
 SQLite is the default local database. UUID keys, explicit constraints, portable column types, and SQLAlchemy abstractions keep the schema PostgreSQL-compatible.
@@ -45,6 +48,8 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -e ".[dev]"
+# Optional, pinned research adapters:
+pip install -e ".[integrations]"
 ```
 
 On macOS/Linux, activate with `source .venv/bin/activate`.
@@ -119,6 +124,7 @@ pytest
 pytest --cov=apps --cov=packages --cov-report=term-missing --cov-report=xml
 python scripts/verify.py
 python scripts/validate_supabase_staging.py  # opt-in staging configuration only
+python scripts/validate_upstream.py
 ```
 
 ```powershell
@@ -154,13 +160,15 @@ The frontend is served at `http://127.0.0.1:8080`. Runtime database data lives i
 
 - Stooq integration is historical daily OHLCV only; it is not a real-time feed and provides no SLA.
 - Stooq may return a reachable HTML verification/access page instead of CSV; v0.4.1 reports that state as degraded and blocks the external import rather than accepting or exposing the body.
-- No SEC, macroeconomic, congressional-disclosure, political-event, or regulatory-event ingestion yet.
+- SEC ordinary workflows use deterministic fixtures. The bounded live worker transport is opt-in and was not run for this release.
 - Backtests use fixed daily demonstration bars; intraday execution, partial fills, market impact, and liquidity depth are not modeled.
-- Supabase integration is fixture/unit tested; no real Supabase project was contacted and application-managed immediate session revocation is limited by provider support.
+- Supabase Auth and the v0.5.1 staging schema/lockdown were live-verified; direct FastAPI-to-staging PostgreSQL pooler connectivity remains unverified, and application-managed immediate session revocation is limited by provider support.
 - Application-layer workspace isolation is implemented and tested. PostgreSQL RLS is enabled as deny-by-default defense in depth with no browser-facing policies; complete workspace-aware database policies are not claimed.
 - PostgreSQL verification runs in CI and is skipped locally unless `MIL_POSTGRES_TEST_DATABASE_URL` points to a disposable database.
 - Twelve Data is fixture-tested only; no live request was run, and no commercial redistribution right is claimed.
 - Distributed/multi-host rate limiting and worker coordination remain deferred; the current limiter and worker target one application instance.
+- QuantStats, skfolio, and EdgarTools are optional pinned dependencies. Compatibility fixtures keep core functionality available when they are absent.
+- LEAN process/container execution is not enabled; v0.6 provides only detection, normalized contracts, and a deterministic result-package prototype.
 
 See [the roadmap](docs/roadmap.md) for the planned next increment.
 
@@ -173,6 +181,8 @@ Market Intelligence Lab is research software, not financial advice. Synthetic pr
 - [Architecture](docs/architecture.md)
 - [Database](docs/database.md)
 - [Data provenance](docs/data-provenance.md)
+- [SEC intelligence](docs/sec-intelligence.md)
+- [Upstream governance](docs/upstream/README.md)
 - [Backtesting and paper trading](docs/backtesting-paper-trading.md)
 - [Backtesting methodology](docs/backtesting-methodology.md)
 - [Order execution model](docs/order-execution-model.md)

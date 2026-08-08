@@ -62,4 +62,9 @@ def permission_for_request(method: str, path: str) -> str:
         return "schedules.manage"
     if "/providers" in path or "/reconciliation" in path:
         return "providers.manage"
+    if any(
+        segment in path
+        for segment in ("/sec/imports", "/analytics", "/optimization", "/upstream/engines")
+    ):
+        return "research.write"
     return "workspace.read"

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -9,6 +9,7 @@ from sqlalchemy import (
     JSON,
     Boolean,
     CheckConstraint,
+    Date,
     ForeignKey,
     Index,
     Integer,
@@ -1102,3 +1103,223 @@ class BacktestValidationReport(Base):
     is_validated: Mapped[bool] = mapped_column(Boolean, default=False)
     rules: Mapped[list[dict[str, Any]]] = mapped_column(JSON)
     generated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class SecCompany(Base):
+    __tablename__ = "sec_companies"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    cik: Mapped[str] = mapped_column(String(10), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(240), index=True)
+    tickers: Mapped[list[str]] = mapped_column(JSON, default=list)
+    sic: Mapped[str | None] = mapped_column(String(8))
+    submissions_url: Mapped[str] = mapped_column(String(500))
+    facts_url: Mapped[str] = mapped_column(String(500))
+    retrieved_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    source_checksum: Mapped[str] = mapped_column(String(64), index=True)
+
+
+class SecFiling(Base):
+    __tablename__ = "sec_filings"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    company_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("sec_companies.id", ondelete="CASCADE"), index=True
+    )
+    accession_number: Mapped[str] = mapped_column(String(24), unique=True, index=True)
+    form_type: Mapped[str] = mapped_column(String(16), index=True)
+    filing_date: Mapped[date] = mapped_column(Date, index=True)
+    accepted_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    reporting_period: Mapped[date | None] = mapped_column(Date)
+    source_url: Mapped[str] = mapped_column(String(700))
+    retrieved_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    content_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    raw_document_reference: Mapped[str] = mapped_column(String(500))
+    parser_version: Mapped[str] = mapped_column(String(40))
+    edgartools_version: Mapped[str] = mapped_column(String(40))
+    is_amendment: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    simulation_eligible_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+
+
+class SecDocument(Base):
+    __tablename__ = "sec_documents"
+    __table_args__ = (
+        UniqueConstraint("filing_id", "sequence", name="uq_sec_document_filing_sequence"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    filing_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("sec_filings.id", ondelete="CASCADE"), index=True
+    )
+    sequence: Mapped[int] = mapped_column(Integer)
+    document_type: Mapped[str] = mapped_column(String(40), index=True)
+    source_url: Mapped[str] = mapped_column(String(700))
+    content_reference: Mapped[str] = mapped_column(String(500))
+    content_checksum: Mapped[str] = mapped_column(String(64), index=True)
+
+
+class SecFact(Base):
+    __tablename__ = "sec_facts"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    company_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("sec_companies.id", ondelete="CASCADE"), index=True
+    )
+    filing_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("sec_filings.id", ondelete="CASCADE"), index=True
+    )
+    taxonomy: Mapped[str] = mapped_column(String(40), index=True)
+    concept: Mapped[str] = mapped_column(String(160), index=True)
+    unit: Mapped[str] = mapped_column(String(32))
+    numeric_value: Mapped[Decimal | None] = mapped_column(Numeric(28, 8))
+    text_value: Mapped[str | None] = mapped_column(Text)
+    period_start: Mapped[date | None] = mapped_column(Date)
+    period_end: Mapped[date] = mapped_column(Date, index=True)
+    filed_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+
+
+class SecInsiderTransaction(Base):
+    __tablename__ = "sec_insider_transactions"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    company_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("sec_companies.id", ondelete="CASCADE"), index=True
+    )
+    filing_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("sec_filings.id", ondelete="CASCADE"), index=True
+    )
+    owner_name: Mapped[str] = mapped_column(String(240), index=True)
+    relationship: Mapped[str] = mapped_column(String(120))
+    transaction_code: Mapped[str] = mapped_column(String(8))
+    security_title: Mapped[str] = mapped_column(String(160))
+    transaction_date: Mapped[date] = mapped_column(Date, index=True)
+    shares: Mapped[Decimal] = mapped_column(Numeric(24, 8))
+    price: Mapped[Decimal | None] = mapped_column(Numeric(20, 8))
+    acquired_disposed: Mapped[str] = mapped_column(String(1))
+
+
+class SecInstitutionalHolding(Base):
+    __tablename__ = "sec_institutional_holdings"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    filing_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("sec_filings.id", ondelete="CASCADE"), index=True
+    )
+    company_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("sec_companies.id", ondelete="SET NULL"), index=True
+    )
+    issuer_name: Mapped[str] = mapped_column(String(240), index=True)
+    cusip: Mapped[str] = mapped_column(String(12), index=True)
+    as_of_date: Mapped[date] = mapped_column(Date, index=True)
+    shares: Mapped[Decimal] = mapped_column(Numeric(24, 4))
+    value_usd: Mapped[Decimal] = mapped_column(Numeric(24, 2))
+    voting_authority: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+
+
+class SecIngestionJob(Base):
+    __tablename__ = "sec_ingestion_jobs"
+    __table_args__ = (
+        UniqueConstraint(
+            "workspace_id", "idempotency_key", name="uq_sec_ingestion_workspace_idempotency"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    requested_by_user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user_profiles.id", ondelete="RESTRICT"), index=True
+    )
+    cik: Mapped[str] = mapped_column(String(10), index=True)
+    forms: Mapped[list[str]] = mapped_column(JSON, default=list)
+    mode: Mapped[str] = mapped_column(String(20), default="fixture")
+    status: Mapped[str] = mapped_column(String(24), default="queued", index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(120))
+    configuration: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    records_processed: Mapped[int] = mapped_column(Integer, default=0)
+    error_message: Mapped[str | None] = mapped_column(Text)
+    requested_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+
+class SecParseResult(Base):
+    __tablename__ = "sec_parse_results"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    ingestion_job_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("sec_ingestion_jobs.id", ondelete="CASCADE"), index=True
+    )
+    filing_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("sec_filings.id", ondelete="CASCADE"), index=True
+    )
+    status: Mapped[str] = mapped_column(String(24), index=True)
+    parser_version: Mapped[str] = mapped_column(String(40))
+    parser_checksum: Mapped[str] = mapped_column(String(64))
+    warnings: Mapped[list[str]] = mapped_column(JSON, default=list)
+    parsed_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class AnalyticsComparisonRecord(Base):
+    __tablename__ = "analytics_comparison_records"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    return_series_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    benchmark: Mapped[str | None] = mapped_column(String(32))
+    period_start: Mapped[date] = mapped_column(Date)
+    period_end: Mapped[date] = mapped_column(Date)
+    canonical_metrics: Mapped[dict[str, Any]] = mapped_column(JSON)
+    adapter_metrics: Mapped[dict[str, Any]] = mapped_column(JSON)
+    reconciliation: Mapped[list[dict[str, Any]]] = mapped_column(JSON)
+    methodology_notes: Mapped[list[str]] = mapped_column(JSON, default=list)
+    engine_versions: Mapped[dict[str, str]] = mapped_column(JSON)
+    agreement_status: Mapped[str] = mapped_column(String(24), index=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class OptimizationExperiment(Base):
+    __tablename__ = "optimization_experiments"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    model: Mapped[str] = mapped_column(String(48), index=True)
+    hyperparameters: Mapped[dict[str, Any]] = mapped_column(JSON)
+    asset_universe: Mapped[list[str]] = mapped_column(JSON)
+    input_return_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    covariance_estimator: Mapped[dict[str, Any]] = mapped_column(JSON)
+    expected_return_estimator: Mapped[dict[str, Any]] = mapped_column(JSON)
+    constraints: Mapped[dict[str, Any]] = mapped_column(JSON)
+    training_period: Mapped[dict[str, str]] = mapped_column(JSON)
+    validation_period: Mapped[dict[str, str]] = mapped_column(JSON)
+    resulting_weights: Mapped[dict[str, float]] = mapped_column(JSON)
+    objective_values: Mapped[dict[str, float]] = mapped_column(JSON)
+    risk_metrics: Mapped[dict[str, float]] = mapped_column(JSON)
+    optimizer_version: Mapped[str] = mapped_column(String(40))
+    random_seed: Mapped[int] = mapped_column(Integer)
+    warnings: Mapped[list[str]] = mapped_column(JSON, default=list)
+    failure_reason: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class ExternalEngineRun(Base):
+    __tablename__ = "external_engine_runs"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    engine: Mapped[str] = mapped_column(String(40), index=True)
+    engine_version: Mapped[str] = mapped_column(String(80))
+    engine_commit: Mapped[str | None] = mapped_column(String(64))
+    request_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    request_manifest: Mapped[dict[str, Any]] = mapped_column(JSON)
+    result_manifest: Mapped[dict[str, Any]] = mapped_column(JSON)
+    comparison: Mapped[dict[str, Any]] = mapped_column(JSON)
+    status: Mapped[str] = mapped_column(String(24), index=True)
+    started_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())

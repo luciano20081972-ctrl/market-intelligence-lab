@@ -29,7 +29,7 @@ const mocked = vi.mocked(api);
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocked.health.mockResolvedValue({ status: "healthy", database: "healthy", version: "0.5.1" });
+  mocked.health.mockResolvedValue({ status: "healthy", database: "healthy", version: "0.6.0" });
   mocked.systemInfo.mockResolvedValue(systemInfo);
   mocked.dataSources.mockResolvedValue([]);
   mocked.watchlists.mockResolvedValue([]);

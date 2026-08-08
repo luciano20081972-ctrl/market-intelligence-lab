@@ -6,7 +6,7 @@ from pathlib import Path
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-EXPECTED_SCHEMA_REVISION = "4a2523700bdb"
+EXPECTED_SCHEMA_REVISION = "6b8d9e0f1a2b"
 
 
 def normalize_database_url(value: str) -> str:
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Market Intelligence Lab"
-    version: str = "0.5.1"
+    version: str = "0.6.0"
     environment: str = "development"
     database_url: str = "sqlite:///./data/market_intelligence.db"
     migration_database_url: str | None = None
@@ -53,6 +53,11 @@ class Settings(BaseSettings):
     max_request_bytes: int = Field(default=1_000_000, ge=1_024, le=10_000_000)
     sentry_dsn: str | None = None
     sentry_traces_sample_rate: float = Field(default=0.0, ge=0, le=1)
+    sec_user_agent: str = "Market Intelligence Lab research@example.invalid"
+    sec_requests_per_second: float = Field(default=4.0, gt=0, le=10)
+    sec_timeout_seconds: float = Field(default=20.0, ge=1, le=60)
+    run_live_sec_tests: bool = False
+    lean_executable: str | None = None
 
     @field_validator("database_url", "migration_database_url")
     @classmethod

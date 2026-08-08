@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.6.0 - 2026-07-30
+
+- Added machine-validated upstream license, dependency, notice, and provenance governance for seven evaluated projects and every direct Python/frontend dependency.
+- Added internal SEC, analytics, optimization, and external-backtest protocols; no upstream source files were copied.
+- Added fixture-first EdgarTools integration for normalized 10-K, 10-Q, 8-K, Forms 3/4/5, 13F-HR, company submissions, company facts/XBRL, provenance, timestamps, checksums, and idempotent imports.
+- Added QuantStats-compatible metric reconciliation and structured report metadata, plus a skfolio-compatible deterministic constrained optimization foundation with no shorting or leverage by default.
+- Added a disabled-by-default LEAN adapter prototype with installation detection, request validation, reproducibility manifest, normalized fixture result, and internal-versus-LEAN comparison. No live mode, cloud dependency, or brokerage credential path exists.
+- Added Alembic revision `6b8d9e0f1a2b`, protected APIs, nine frontend views, deterministic backend/frontend/Playwright coverage, and PostgreSQL/Data API lockdown for the new application tables.
+- Classified OpenBB and FinceptTerminal as AGPL/reference-only; NautilusTrader remains an evaluated LGPL optional engine. No restricted code, assets, branding, filings, or generated reports are vendored.
+
+### Limitations
+
+- Live SEC retrieval is explicitly gated and not verified in this release environment.
+- Optional third-party libraries may be unavailable; compatibility fixtures remain available.
+- LEAN subprocess/container execution and resource enforcement are design contracts only in v0.6.
+- Trading remains simulated, with no brokerage or real-money execution and no performance guarantee.
+
 ## 0.5.1 - 2026-07-30
 
 - Added Alembic revision `cba31be9f005` to enable deny-by-default RLS on every application table, revoke direct `anon`/`authenticated` table and function privileges, and harden default privileges without changing Supabase-managed schemas.

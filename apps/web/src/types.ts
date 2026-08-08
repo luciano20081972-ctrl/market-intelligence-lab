@@ -251,3 +251,47 @@ export interface InfrastructureRegistry { items: InfrastructureService[]; total:
 export interface ProviderComparison { id: string; primary_provider_id: string; secondary_provider_id: string; summary: Record<string, unknown>; disagreements: Array<Record<string, unknown>>; resolution_status: string; resolution_reason: string | null; compared_at: string }
 export interface BacktestManifest { backtest_run_id: string; status: string; checksum?: string; manifest: Record<string, unknown> }
 export interface BacktestValidation { backtest_run_id: string; overall_status: string; is_validated: boolean; rules: Array<{ name: string; status: string; critical: boolean; message: string }> }
+
+export interface SecCompany {
+  id: string; cik: string; name: string; tickers: string[]; sic: string | null;
+  submissions_url: string; facts_url: string; retrieved_at: string; source_checksum: string;
+}
+export interface SecFiling {
+  id: string; company_id: string; company_name: string | null; cik: string | null;
+  accession_number: string; form_type: string; filing_date: string; accepted_at: string;
+  reporting_period: string | null; source_url: string; retrieved_at: string;
+  content_checksum: string; raw_document_reference: string; parser_version: string;
+  edgartools_version: string; is_amendment: boolean; simulation_eligible_at: string;
+  documents?: Array<Record<string, unknown>>; facts?: Array<Record<string, unknown>>;
+}
+export interface SecInsiderTransaction {
+  id: string; company_id: string; filing_id: string; owner_name: string; relationship: string;
+  transaction_code: string; security_title: string; transaction_date: string; shares: string;
+  price: string | null; acquired_disposed: string;
+}
+export interface SecInstitutionalHolding {
+  id: string; filing_id: string; company_id: string | null; issuer_name: string; cusip: string;
+  as_of_date: string; shares: string; value_usd: string; voting_authority: Record<string, number>;
+}
+export interface UpstreamProject {
+  name: string; repository_url: string; reviewed_revision: string; reviewed_release: string;
+  license: string; integration_category: string; approved_use: string; prohibited_use: string;
+  dependency_version: string | null; maintenance_status: string; security_status: string;
+  commercial_use_status: string;
+}
+export interface UpstreamHealth {
+  status: string; available: boolean; message: string;
+  version: { project: string; adapter_version: string; library_version: string | null; source_commit: string | null };
+  capabilities: Array<{ code: string; description: string; fixture_tested: boolean; live_verified: boolean }>;
+}
+export interface AnalyticsComparisonResult {
+  id: string; canonical_metrics: Record<string, number | null>;
+  quantstats_metrics: Record<string, number | null>;
+  reconciliation: Array<{ metric: string; absolute_difference: number | null; agreement_status: string; methodology_note: string }>;
+  agreement_status: string; engine_versions: Record<string, string>; return_series_checksum: string;
+}
+export interface OptimizationResult {
+  id: string; model: string; asset_universe: string[]; weights: Record<string, number>;
+  objective_values: Record<string, number>; risk_metrics: Record<string, number>;
+  constraints: Record<string, unknown>; optimizer_version: string; warnings: string[];
+}

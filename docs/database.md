@@ -47,3 +47,18 @@ Revision `cba31be9f005` is PostgreSQL-only and additive. It enables RLS on all 4
 There are no RLS policies in v0.5.1. Non-owner roles therefore receive deny-by-default behavior; the PostgreSQL table owner used by FastAPI/Alembic retains owner access and is not subject to these policies. This is PostgREST exposure lockdown, not workspace-aware database authorization. Privilege revocations are not guessed back into existence by downgrade because the previous grants are deployment-specific.
 
 Revision `4a2523700bdb` adds indexes for the `source_price_bar_id` foreign keys on backtest trades, paper fills, paper orders, and signals. The staging foreign-key audit therefore has no unindexed application foreign keys.
+
+## v0.6 upstream and SEC schema
+
+Revision `6b8d9e0f1a2b` adds 11 application tables. `sec_companies`, `sec_filings`,
+`sec_documents`, `sec_facts`, `sec_insider_transactions`, and
+`sec_institutional_holdings` are shared canonical public-source data.
+`sec_ingestion_jobs`, `analytics_comparison_records`, `optimization_experiments`,
+and `external_engine_runs` are workspace-owned; parse results connect a workspace
+job to shared filings.
+
+Accession numbers are globally unique, SEC dates are distinct from UTC acceptance/retrieval
+timestamps, numeric facts/holdings retain fixed precision, and input/result checksums preserve
+reproducibility. All new PostgreSQL tables receive the same deny-by-default RLS flag and
+conditional Supabase `anon`/`authenticated` revocations as the v0.5.1 application schema.
+No Supabase-managed schema is modified.

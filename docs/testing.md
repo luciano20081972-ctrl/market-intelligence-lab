@@ -6,6 +6,12 @@ Pytest uses an isolated SQLite database per test. Coverage includes the foundati
 
 Run `pytest`, `ruff check .`, and `mypy apps packages scripts` from the root. CI also applies Alembic to an empty database and runs `alembic check`.
 
+v0.6 additionally runs `python scripts/validate_upstream.py`. Deterministic fixtures cover SEC
+forms/facts/insiders/13F, analytics reconciliation, constrained optimization, and LEAN result
+packages without network or brokerage access. Live SEC verification requires
+`MIL_RUN_LIVE_SEC_TESTS=true` and an explicitly configured bounded worker; it is skipped by
+default. PostgreSQL 17 CI remains the destructive migration/concurrency environment.
+
 ## Frontend
 
 Vitest and React Testing Library cover the foundation screens, backtesting and paper-trading workflows, provider health, import creation/detail, data quality, corporate actions, and exchange sessions. Run `pnpm test`, `pnpm run typecheck`, and `pnpm run build` from `apps/web`.

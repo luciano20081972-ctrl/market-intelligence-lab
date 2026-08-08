@@ -12,6 +12,7 @@ from starlette.responses import JSONResponse, Response
 
 from apps.api.dependencies import get_db, get_workspace_context
 from apps.api.routers import (
+    analytics,
     assets,
     backtests,
     comparisons,
@@ -19,9 +20,12 @@ from apps.api.routers import (
     infrastructure,
     market_data,
     operations,
+    optimization,
     paper_portfolios,
+    sec_intelligence,
     strategies,
     system,
+    upstream,
     watchlists,
 )
 from apps.api.schemas import HealthResponse
@@ -148,6 +152,10 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.include_router(paper_portfolios.router, prefix="/api/v1", dependencies=protected)
     app.include_router(market_data.router, prefix="/api/v1", dependencies=protected)
     app.include_router(operations.router, prefix="/api/v1", dependencies=protected)
+    app.include_router(sec_intelligence.router, prefix="/api/v1", dependencies=protected)
+    app.include_router(analytics.router, prefix="/api/v1", dependencies=protected)
+    app.include_router(optimization.router, prefix="/api/v1", dependencies=protected)
+    app.include_router(upstream.router, prefix="/api/v1", dependencies=protected)
     return app
 
 
