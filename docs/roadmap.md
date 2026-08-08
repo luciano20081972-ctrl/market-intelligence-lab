@@ -1,56 +1,107 @@
 # Roadmap
 
-## Release sequence (updated 2026-07-30)
+## World-intelligence release sequence (proposed 2026-08-07)
 
-- **v0.5 — implemented/fixture-verified:** secure multi-user and production foundation. Supabase/Twelve Data live verification and PostgreSQL RLS are deferred; PostgreSQL checks run when the disposable service is available.
-- **v0.6 — implemented/fixture-verified:** upstream license governance, normalized SEC entities,
-  analytics reconciliation, constrained optimization, and optional LEAN contracts. Live SEC and
-  actual LEAN process execution remain explicit future validation.
-- **v0.7 — recommended:** bounded cached SEC worker/live rehearsal, XBRL taxonomy expansion,
-  production object-store references, actual isolated LEAN container conformance, and
-  workspace-aware PostgreSQL RLS policies. No real-money execution.
-- **Later intelligence scope:** FRED/ALFRED and government-event ingestion with point-in-time provenance.
-- **Later research scope:** advanced validation and reporting beyond the v0.6 analytics and optimization foundation.
-- **v0.8 — planned:** explainable signal and model research laboratory.
-- **v0.9 — planned:** deployment, alerts, backups, monitoring, and private beta.
-- **v1.0 — planned:** security review, data-license review, performance hardening, complete RLS decision, and first complete release.
+Effort uses focused engineer-weeks and assumes one experienced developer with Codex assistance. Runtime ranges are directional and must be replaced by measured benchmarks. Every release preserves the no-broker/no-real-money boundary.
 
-Estimates are one focused sprint per listed minor release, subject to provider licensing and security review. “Fixture-tested” never means “live-verified.”
+### v0.7 — Temporal Truth and high-density world-data foundation
 
-## Sprint 1 — v0.1.0 foundation
+- **Scope:** canonical temporal envelope and eligibility policies; immutable source/object manifests; point-in-time query/test harness; SEC bulk submissions/companyfacts; FRED/ALFRED; one agency pilot (EIA recommended); distributed budget/watermark extensions to existing jobs; bounded live rehearsals.
+- **Reuse:** existing providers/jobs/provenance/migrations; SEC APIs, EdgarTools parser, FRED/ALFRED and EIA APIs.
+- **Build:** temporal policy registry, revision model, object references, source manifests, point-in-time fixtures and feature-input contract.
+- **Risks:** ambiguous historical availability, amendments/revisions, source terms, entity mapping, storage growth.
+- **Effort / Codex:** 8-12 engineer-weeks; high schema/migration/test workload, medium adapter workload.
+- **Runtime:** low-medium; 8-16 vCPU batch, 32-64 GB RAM, 0.2-1 TB object tier for a 100-company pilot.
+- **Beta value:** trustworthy “what was knowable when” financial/macro/energy evidence.
 
-Database, migrations, synthetic provenance-complete prices, asset/watchlist API, responsive research UI, tests, CI, Docker, and security documentation.
+### v0.8 — Economic entity/driver graph and relevance router
 
-## Sprint 2 — v0.2.0 backtesting and paper trading
+- **Scope:** typed relational graph, evidence/versioned edges, identifiers, bounded recursive queries, driver profiles, routing budgets/exploration, dossier skeleton.
+- **Reuse:** PostgreSQL/RLS/provenance; pgvector optional; NetworkX for offline algorithms; PostGIS only if the first spatial pilot requires it.
+- **Build:** entity/edge/evidence schemas, identity workflows, graph SLO benchmark, routing policy and benchmark set.
+- **Risks:** false entity links, edge confidence, graph explosion, prior bias, weak driver ground truth.
+- **Effort / Codex:** 10-14 weeks; high domain/test/UI workload.
+- **Runtime:** medium; graph materializations and incremental scoring, no dedicated graph database.
+- **Beta value:** explainable, different driver sets per company and selective source execution.
 
-Seven transparent strategies, technical indicators, point-in-time shared-cash backtests, execution friction, metrics and provenance, simulated paper portfolios, deterministic order types, explicit risk controls, and complete API/UI workflows.
+### v0.9 — Progressive resolution and point-in-time feature store
 
-## Next recommended sprint — v0.3.0 read-only market ingestion
+- **Scope:** L0-L4 universe policies, reproducible promotions, point-in-time feature definitions/materializations, budgets/cost ledger, first sector-specific sources.
+- **Reuse:** pandas/Arrow/Parquet ecosystem, existing backtests, agency bulk/API data.
+- **Build:** feature registry/lineage, as-of joins, promotion service, cost/coverage dashboard.
+- **Risks:** feature leakage, expensive recomputation, selection bias, universe survivorship.
+- **Effort / Codex:** 10-16 weeks; high data/benchmark workload.
+- **Runtime:** medium-high; columnar/object storage and parallel batch workers become mandatory near 1,000 companies.
+- **Beta value:** thousands screened cheaply while deep research stays bounded.
 
-Implement one well-documented, read-only historical market-data adapter behind the existing provider interface. Add market calendars, corporate-action metadata, retry/rate-limit handling, ingestion-run diagnostics, raw-response checksums, correction/upsert policy, and integration tests recorded from non-secret fixtures. Show an explicit delayed/live/fixed freshness classification throughout the UI. Retain the synthetic provider for offline tests.
+### v0.10 — Hypothesis Factory with Qlib/RD-Agent evaluation
 
-This sprint should not add brokerage connectivity or trading.
+- **Scope:** machine-readable hypotheses, experiment families/gates, walk-forward/robustness pipeline; Qlib optional engine; sandboxed RD-Agent benchmark, not autonomous production coding.
+- **Reuse:** Qlib, RD-Agent patterns/optional runner, existing simulation and leakage rules.
+- **Build:** experiment control plane, manifests, statistical/multiplicity gates, sandbox and result normalization.
+- **Risks:** multiple testing, agent hallucination, non-reproducible generated code, model/provider cost.
+- **Effort / Codex:** 12-18 weeks; high research/evaluation workload.
+- **Runtime:** high and bursty; CPU/GPU experiment pools and bounded hosted-model batches.
+- **Beta value:** falsifiable driver hypotheses that cannot bypass quantitative gates.
 
-## Later increments
+### v0.11 — Research Memory, divergence, and signal independence
 
-- SEC filings and filing-section search with accession-number provenance.
-- Macroeconomic series with release/vintage semantics.
-- Congressional transaction and political/regulatory event timelines.
-- Authentication, PostgreSQL deployment, observability, dependency scanning, and backups.
+- **Scope:** durable positive/negative experiment memory, duplicate detection, outcome links, divergence events, Independent Information Score.
+- **Reuse:** PostgreSQL/object store/pgvector, QuantStats/skfolio adapters, NetworkX exports.
+- **Build:** memory schemas/retrieval evaluation, source-dependency graph, divergence baselines, conditional contribution tests.
+- **Risks:** retrospective narrative, correlation mistaken for independence, embedding retrieval omissions.
+- **Effort / Codex:** 10-14 weeks; medium-high analytics/UI workload.
+- **Runtime:** medium-high; vector/relational retrieval and scheduled cross-source comparisons.
+- **Beta value:** institutional learning, fewer duplicate tests, orthogonal-signal prioritization.
 
-## Sprint 3 — v0.3.0 historical market-data platform
+### v0.12 — Skeptic agent and scenario/counterfactual engine
 
-- Provider capability registry and disabled vendor placeholders.
-- Durable full and incremental imports with retry, restart, cancellation, provenance, and quality reports.
-- Corporate-action models, XNYS exchange sessions, APIs, and governance UI.
+- **Scope:** blocking red-team findings, scenario versioning/propagation, bounded sensitivities, thesis-failure counterfactuals.
+- **Reuse:** graph/router/research memory, quantitative libraries, runtime AI gateway.
+- **Build:** skeptic test catalog, approval workflow, propagation levels, calibration/replay suite.
+- **Risks:** false causal paths, correlated shocks, invented precision, waived findings.
+- **Effort / Codex:** 10-16 weeks; high evaluation and UX workload.
+- **Runtime:** medium; asynchronous graph propagation and selective reasoning.
+- **Beta value:** explicit challenge process and portfolio-wide exposure exploration.
 
-## Recommended Sprint 4
+### v0.13 — Feedback/calibration and portfolio/risk integration
 
-- Implement one licensed provider adapter with sandbox credentials and contract tests.
-- Replace the finite holiday table with a maintained calendar feed.
-- Add a durable worker and scheduler lease model, observability, authentication, rate limiting, and provider license controls.
-# After v0.4.1
+- **Scope:** forecast distributions/outcomes, calibration and attribution, reliability updates, information-value routing, integration with skfolio/risk and optional advanced engine comparisons.
+- **Reuse:** skfolio, QuantStats, internal paper/risk/backtest, optional LEAN/Nautilus after approval.
+- **Build:** outcome scheduler, calibration dashboards, guarded policy updates, portfolio-level constraints.
+- **Risks:** attribution ambiguity, feedback loops, regime drift, optimizer instability.
+- **Effort / Codex:** 10-14 weeks; high statistical/test workload.
+- **Runtime:** medium-high; scheduled evaluation/retraining and portfolio simulations.
+- **Beta value:** measured learning and calibrated research confidence rather than anecdotal wins.
 
-Sprint 4 completes the first operational historical provider, maintained XNYS calendar, durable single-process queue/worker, daily schedules, health/observability, reconciliation, and imported-data backtests. Version 0.4.1 stabilizes Stooq response classification and strict parsing, persists honest health states, and prevents unvalidated external imports. Fixture-backed behavior is complete; live availability remains environment/provider dependent and Stooq still has no SLA or authoritative adjustment/publication semantics.
+### v0.14 — Private-beta hardening
 
-Sprint 5 implements authentication/authorization, workspace isolation, provider/infrastructure governance, a fixture-tested second provider, non-destructive quorum comparison, manifests, validation reports, and PostgreSQL CI. Recommended Sprint 6 is SEC, FRED/ALFRED, and government-event intelligence with point-in-time release/vintage semantics. Brokerage connectivity and real-money execution remain out of scope.
+- **Scope:** workspace-aware RLS, security/license/privacy review, backups/restore, SLOs, observability, cost controls, source degradation, runbooks and selected live validations.
+- **Reuse:** current security/CI/observability foundations and managed PostgreSQL/object storage.
+- **Build:** operations automation, policy evidence, load/chaos/recovery tests, admin controls.
+- **Risks:** provider rights, operational complexity, cost spikes, tenant isolation.
+- **Effort / Codex:** 10-16 weeks; medium feature, high verification/documentation workload.
+- **Runtime:** production-like multi-worker environment; measured capacity targets.
+- **Beta value:** safe invited-user operation with honest source and model health.
+
+### v1.0 — Validated research platform
+
+- **Scope:** frozen supported source/engine matrix, benchmark evidence, calibration/limitations report, security/data-license sign-off, performance budgets, reproducible release.
+- **Reuse:** all approved adapters and platform foundations.
+- **Build:** final gaps revealed by beta evidence, migration/support policies, release documentation.
+- **Risks:** scientific validity and user interpretation remain larger than software completeness.
+- **Effort / Codex:** 8-14 weeks after beta findings; verification-heavy.
+- **Runtime:** sized from v0.14 measurements, not roadmap estimates.
+- **Beta value:** a validated entity-specific research platform, not a promise of profitable prediction.
+
+Ordering is dependency-driven: trustworthy time precedes graphs/features; graphs and routing precede expensive research; experiments precede memory/independence; all precede feedback and beta hardening.
+
+## Completed foundation
+
+- **v0.1-v0.4:** modular API/UI, provenance-complete market data, deterministic backtests/paper simulation, operational historical ingestion, workers/schedules/observability.
+- **v0.5:** secure multi-user foundation, workspace controls, provider/infrastructure governance.
+- **v0.6:** upstream license governance, normalized SEC entities, analytics/optimization boundaries, and optional LEAN contracts. Fixture verification never means live production readiness.
+
+## Controlling research
+
+See [world-intelligence architecture](architecture/world-intelligence.md), [high-density data sources](research/high-density-data-sources.md), [open-source capability audit](research/open-source-capability-audit.md), and [build-versus-integrate matrix](research/build-vs-integrate-matrix.md).

@@ -1,5 +1,21 @@
 # Architecture
 
+## Post-v0.6 direction: entity-specific world intelligence
+
+The v0.6 platform remains the operational foundation, but the research product is now defined as discovery and validation of company-specific economic drivers—not a fixed-factor stock predictor. The target flow is:
+
+```text
+high-density sources -> Temporal Truth -> entity/exposure graph -> feature store
+-> relevance routing -> hypotheses -> quantitative validation -> research memory
+-> divergence and scenarios
+```
+
+AI works on bounded, cited evidence packets selected from durable structured data. It does not repeatedly crawl the web, own canonical calculations, approve signals, or modify production source code. PostgreSQL remains the transactional system of record; object storage/Parquet is proposed for large immutable payloads; optional upstream engines remain behind process or package adapters.
+
+The controlling design is [world-intelligence.md](architecture/world-intelligence.md). Detailed decisions cover [Temporal Truth](architecture/temporal-truth.md), the [economic driver graph](architecture/economic-driver-graph.md), [relevance routing](architecture/data-relevance-router.md), [progressive resolution](architecture/progressive-resolution.md), the [hypothesis factory](architecture/hypothesis-factory.md), [research memory](architecture/research-memory.md), [divergence](architecture/divergence-engine.md), [signal independence](architecture/signal-independence.md), [scenarios](architecture/scenario-engine.md), [runtime AI](architecture/runtime-ai.md), and [information value](architecture/information-value.md).
+
+This is an approved planning boundary only. No v0.7 production subsystem is implemented by these documents.
+
 ## Shape
 
 The repository is a modular monorepo with an API process, an explicit optional worker process, and one browser application. FastAPI owns transport concerns; reusable packages own data and domain behavior. React talks only to the versioned JSON API through a typed client.
@@ -58,3 +74,10 @@ EdgarTools, QuantStats, and skfolio are pinned optional dependencies. LEAN is an
 process/container design and remains disabled. OpenBB and Fincept are reference-only; no source
 or visual expression was copied. Core research, authentication, and simulation continue when
 any optional adapter is unavailable.
+
+The post-v0.6 audit classifies provider, auth, workspace, provenance, reproducibility,
+migration, testing, and UI foundations as KEEP/EXTEND. Backtesting and upstream engines are
+WRAP boundaries. Compatibility-only QuantStats/skfolio calculations are to be replaced by real
+pinned adapters after reconciliation. SQLite, fixture-only readiness claims, in-process
+multi-host scheduling assumptions, and a fixed universal factor model are deprecated as
+production architecture, while remaining useful in bounded tests where noted.
