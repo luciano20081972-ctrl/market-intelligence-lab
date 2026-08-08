@@ -1,5 +1,11 @@
 # Economic entity and driver graph
 
+## v0.8 implementation status
+
+Implemented in v0.8: workspace-scoped canonical entities and identifiers, aliases and manual resolution decisions, evidence-backed typed relationships, versioned confidence decomposition, deterministic SEC structured extraction, series linking through intermediate concepts, bounded as-of traversal, path explanations, quality findings, company profiles, and durable recomputation requests. The schema uses `economic_entities` and `economic_relationships`; names below describe the architectural concepts rather than literal table names.
+
+The measured beta design remains PostgreSQL-first. Neo4j, Apache AGE, NetworkX production processing, pgvector identity matching, materialized exposure summaries, statistical correlation edges, and scenario propagation are not implemented. The original five-million-edge acceptance benchmark remains a later scale gate; v0.8 validates the requested 10K/50K shape and optionally 100K/500K where resources permit.
+
 ## Beta choice
 
 Use PostgreSQL tables, recursive CTEs, ordinary indexes, PostGIS where spatial joins are approved, and optional pgvector for semantic retrieval. Use NetworkX on bounded exported subgraphs for research algorithms. Do not require Neo4j for beta.
@@ -12,12 +18,12 @@ This choice keeps tenancy, transactions, migrations, provenance, temporal versio
 
 - `id`, `workspace_scope`, `entity_type`, `canonical_name`, `status`
 - stable external identifiers in a separate versioned `entity_identifier` table
-- types include Company, Security, Subsidiary, BusinessSegment, Product, Facility, Supplier, Customer, Competitor, Commodity, Technology, Country, Region, Port, PowerGrid, TransportationNetwork, GovernmentAgency, Regulation, PoliticalEvent, WeatherRegion, Resource, Patent, ResearchTopic, and EconomicSeries
+- implemented types include Company, Security, Subsidiary, BusinessSegment, Product, Facility, Supplier, Customer, Competitor, Commodity, Technology, Country, Region, Port, TransportationNode, EnergyMarket, GovernmentAgency, Regulation, EconomicSeries, ResearchTopic, Industry, and Event
 
 `relationship`
 
 - `id`, `from_entity_id`, `to_entity_id`, `relationship_type`
-- types include OWNS, OPERATES, SUPPLIES, BUYS_FROM, SELLS_TO, COMPETES_WITH, LOCATED_IN, DEPENDS_ON, EXPOSED_TO, REGULATED_BY, CONSUMES, PRODUCES, SHIPS_THROUGH, USES_TECHNOLOGY, AFFECTED_BY, and CORRELATED_WITH
+- implemented types include OWNS, OPERATES, HAS_SEGMENT, PRODUCES, USES, SUPPLIES, BUYS_FROM, SELLS_TO, COMPETES_WITH, LOCATED_IN, EXPOSED_TO, DEPENDS_ON, REGULATED_BY, CONSUMES, SHIPS_THROUGH, USES_TECHNOLOGY, AFFECTED_BY, HAS_SECURITY, and TRACKED_BY_SERIES
 - `confidence`, `confidence_method`, `magnitude`, `units`, `polarity`, `directness`
 - `valid_from`, `valid_to`, `discovered_at`, `last_verified_at`, `simulation_eligible_time`
 - `origin` (`manual`, `rule`, `extraction`, `statistical`), `method_version`, `status`

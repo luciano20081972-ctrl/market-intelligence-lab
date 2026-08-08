@@ -19,6 +19,7 @@ PERMISSIONS: dict[str, frozenset[str]] = {
             "providers.read",
             "providers.manage",
             "recovery.manage",
+            "graph.manage",
         }
     ),
     "member": frozenset(
@@ -67,4 +68,6 @@ def permission_for_request(method: str, path: str) -> str:
         for segment in ("/sec/imports", "/analytics", "/optimization", "/upstream/engines")
     ):
         return "research.write"
+    if "/entity-resolution/" in path:
+        return "graph.manage"
     return "workspace.read"

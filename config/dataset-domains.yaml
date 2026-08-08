@@ -1,0 +1,38 @@
+schema_version: "1"
+datasets:
+  sec.companyfacts:
+    label: SEC company facts
+    availability: implemented
+    domains: {financial: 1.0, industry: 0.4, regulatory: 0.3}
+  sec.submissions:
+    label: SEC submissions
+    availability: implemented
+    domains: {financial: 0.9, industry: 0.6, regulatory: 0.5, supply_chain: 0.3}
+  fred.observations:
+    label: FRED observations
+    availability: implemented
+    domains: {macro: 1.0, consumer: 0.6, labor: 0.6, industry: 0.5}
+  alfred.vintages:
+    label: ALFRED vintages
+    availability: implemented
+    domains: {macro: 1.0, consumer: 0.6, labor: 0.6, industry: 0.5}
+  eia.electricity.retail-price:
+    label: EIA electricity prices
+    availability: implemented
+    domains: {energy: 1.0, industry: 0.3, geospatial: 0.3}
+  noaa.weather:
+    label: NOAA weather observations
+    availability: catalogued
+    domains: {weather_environmental: 1.0, geospatial: 0.5, water: 0.4}
+  usda.crop-conditions:
+    label: USDA crop conditions
+    availability: catalogued
+    domains: {agriculture: 1.0, commodity: 0.6, weather_environmental: 0.5}
+  faa.airports:
+    label: FAA airport operations
+    availability: catalogued
+    domains: {transportation: 1.0, consumer: 0.3, weather_environmental: 0.3}
+  commerce.semiconductors:
+    label: Commerce semiconductor indicators
+    availability: catalogued
+    domains: {technology: 1.0, geopolitical: 0.6, supply_chain: 0.7, regulatory: 0.5}

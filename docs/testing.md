@@ -1,5 +1,11 @@
 # Testing
 
+## v0.8 graph verification
+
+Backend coverage includes identity normalization/ambiguity/manual decisions, database uniqueness, evidence gates and conflict preservation, confidence components, expiry, strong as-of leakage boundaries, cycle/depth/node limits, priors, routing, overrides, durable recomputation, workspace isolation, deterministic SEC extraction, series linking, graph quality, APIs, and idempotent three-company fixtures. PostgreSQL-marked coverage adds native constraints, timezone round-trips, recursive CTE/as-of behavior, expected indexes, rollback, and concurrent job claims.
+
+Frontend unit and Playwright workflows cover the bounded graph explorer, differentiated company profiles, relationship evidence, routing decisions, and resolution review without severe console errors. Run the requested beta benchmark with `python scripts/benchmark_economic_graph.py --sizes 10000:50000`; use `--sizes 100000:500000` when resources allow, and add `--postgres-url-env MIL_POSTGRES_TEST_DATABASE_URL` for an isolated PostgreSQL EXPLAIN ANALYZE report.
+
 ## Backend
 
 Pytest uses an isolated SQLite database per test. Coverage includes the foundation workflows plus indicator calculations, seven strategy contracts, strict parameter validation, shared-cash and delayed no-lookahead backtests, costs and exposure controls, metrics and provenance, paper market/limit/stop/stop-limit behavior, idempotency, long-only enforcement, fills, P&L, pause/resume, risk rejections, provider registration, durable imports, retries/restarts, provenance, quality validation, corporate actions, exchange calendars, and API validation.

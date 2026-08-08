@@ -23,6 +23,9 @@ def test_clean_database_migration(tmp_path: Path, monkeypatch: object) -> None:
     assert "workspaces" in tables
     assert "provider_comparisons" in tables
     assert "backtest_reproducibility_manifests" in tables
+    assert "economic_entities" in tables
+    assert "economic_relationships" in tables
+    assert "data_relevance_decisions" in tables
     command.check(config)
     get_settings.cache_clear()
 
@@ -130,6 +133,42 @@ def test_v06_to_v07_upgrade_preserves_sec_data(tmp_path: Path, monkeypatch: obje
         assert connection.scalar(
             text("SELECT name FROM sec_companies WHERE id=:id"), {"id": company_id}
         ) == "Preserved SEC"
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == (
+            EXPECTED_SCHEMA_REVISION
+        )
+    command.check(config)
+    engine.dispose()
+    get_settings.cache_clear()
+
+
+def test_v07_to_v08_upgrade_preserves_world_data(
+    tmp_path: Path, monkeypatch: object
+) -> None:
+    database = tmp_path / "v07-upgrade.db"
+    database_url = f"sqlite:///{database.as_posix()}"
+    monkeypatch.setenv("MIL_DATABASE_URL", database_url)  # type: ignore[attr-defined]
+    get_settings.cache_clear()
+    config = Config("alembic.ini")
+    command.upgrade(config, "7f4af62df2fe")
+    engine = create_engine(database_url)
+    series_id = "dddddddddddddddddddddddddddddddd"
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO macro_series "
+                "(id,source_id,external_id,title,units,frequency,seasonal_adjustment,"
+                "release_id,notes,metadata_json,retrieved_at) VALUES "
+                "(:id,'FRED','PRESERVED_V07','Preserved v0.7 series','Index','monthly',"
+                "NULL,NULL,'upgrade fixture','{}','2026-08-07')"
+            ),
+            {"id": series_id},
+        )
+    command.upgrade(config, "head")
+    command.upgrade(config, "head")
+    with engine.connect() as connection:
+        assert connection.scalar(
+            text("SELECT title FROM macro_series WHERE id=:id"), {"id": series_id}
+        ) == "Preserved v0.7 series"
         assert connection.scalar(text("SELECT version_num FROM alembic_version")) == (
             EXPECTED_SCHEMA_REVISION
         )

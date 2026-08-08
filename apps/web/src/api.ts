@@ -10,6 +10,8 @@ import type {
   AnalyticsComparisonResult, OptimizationResult, SecCompany, SecFiling,
   SecInsiderTransaction, SecInstitutionalHolding, UpstreamHealth, UpstreamProject,
   WorldDataSource, DataManifestRecord, WorldSeries, WorldObservation,
+  CompanyDriverProfile, DataRelevancePage, EconomicEntityPage, EconomicGraph,
+  RelationshipEvidence, ResolutionCandidate,
 } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -180,4 +182,27 @@ export const api = {
   macroAsOf: (id: string, asOf: string) => request<{ items: WorldObservation[]; total: number; point_in_time_safe: boolean }>(`/api/v1/macro/series/${id}/as-of?as_of=${encodeURIComponent(asOf)}`),
   energySeries: () => request<{ items: WorldSeries[]; total: number }>("/api/v1/energy/series"),
   energyObservations: (id: string) => request<{ items: WorldObservation[]; total: number }>(`/api/v1/energy/series/${id}/observations`),
+  economicEntities: (entityType?: string) => request<EconomicEntityPage>(
+    `/api/v1/entities${entityType ? `?entity_type=${encodeURIComponent(entityType)}` : ""}`,
+  ),
+  economicGraph: (companyId: string) => request<EconomicGraph>(
+    `/api/v1/companies/${companyId}/driver-paths?max_depth=3&max_nodes=100`,
+  ),
+  companyDriverProfile: (companyId: string) => request<CompanyDriverProfile>(
+    `/api/v1/companies/${companyId}/driver-profile`,
+  ),
+  relationshipEvidence: (entityId: string) => request<{ items: RelationshipEvidence[]; total: number }>(
+    `/api/v1/entities/${entityId}/evidence`,
+  ),
+  dataRelevance: (companyId: string) => request<DataRelevancePage>(
+    `/api/v1/companies/${companyId}/data-relevance`,
+  ),
+  resolutionCandidates: () => request<{ items: ResolutionCandidate[]; total: number }>(
+    "/api/v1/entity-resolution/candidates?status=candidate",
+  ),
+  decideResolution: (id: string, decision: "confirm" | "reject", reason: string) =>
+    request<{ id: string; candidate_id: string; decision: string }>(
+      `/api/v1/entity-resolution/${id}/${decision}`,
+      { method: "POST", body: JSON.stringify({ reason }) },
+    ),
 };

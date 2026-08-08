@@ -31,8 +31,12 @@ def test_seed_is_deterministic_and_idempotent(tmp_path: Path) -> None:
     digest_a, first, second = _seed_digest(tmp_path / "a.db")
     digest_b, _, _ = _seed_digest(tmp_path / "b.db")
     assert digest_a == digest_b
-    assert first == {"assets_inserted": 9, "bars_inserted": 9 * BAR_COUNT_PER_ASSET}
-    assert second == {"assets_inserted": 0, "bars_inserted": 0}
+    assert first == {
+        "assets_inserted": 9,
+        "bars_inserted": 9 * BAR_COUNT_PER_ASSET,
+        "graph_companies": 3,
+    }
+    assert second == {"assets_inserted": 0, "bars_inserted": 0, "graph_companies": 3}
 
 
 def test_seed_reconciles_existing_provider_registry_metadata(tmp_path: Path) -> None:

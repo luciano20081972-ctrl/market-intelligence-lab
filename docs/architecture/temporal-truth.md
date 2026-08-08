@@ -1,5 +1,9 @@
 # Temporal Truth
 
+## v0.8 graph integration
+
+Economic entities, identifiers, aliases, resolution candidates, relationships, evidence, and profiles carry validity and/or simulation-eligibility clocks. Bounded graph queries require `simulation_eligible_time <= as_of`, `valid_from <= as_of`, and `valid_to IS NULL OR valid_to > as_of`. The half-open validity boundary prevents an expired relationship from appearing at its expiry instant. Tests prove that an edge discovered one second after a historical cutoff is absent, while it becomes visible at its eligibility time. Path evidence is filtered by the same eligibility cutoff.
+
 Temporal correctness is a data contract, not a backtest option. Times are timezone-aware UTC instants unless a source provides only a date; date precision and timezone assumptions are stored separately.
 
 ## Standard envelope

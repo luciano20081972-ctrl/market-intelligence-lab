@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.0 - 2026-08-08
+
+- Added a workspace-scoped PostgreSQL economic entity graph with canonical identifiers, aliases, manual ambiguity review, evidence-backed relationships, versioned confidence components, bounded recursive/as-of queries, and graph quality findings.
+- Added deterministic structured SEC graph extraction and economic-series linking through explicit intermediate mechanisms; supplier/customer relationships are never inferred without evidence.
+- Added configurable sector priors, three distinct reference-company driver profiles, deterministic PROCESS/DEFER/IGNORE/REVIEW routing, explainable graph paths, and durable event-driven recomputation jobs.
+- Added protected graph/resolution APIs and five frontend views: Economic Graph Explorer, Company Driver Profile, Relationship Evidence, Data Relevance, and Entity Resolution Review.
+- Added Alembic revision `61293cddc2e2`, v0.7 upgrade preservation, PostgreSQL recursive/index/constraint coverage, temporal leakage tests, and bounded synthetic benchmarks.
+
+### Limitations
+
+- Relevance is a potential driver, not causality, a historically validated factor, expected return, or investment advice. Historical validation is reserved for a later release.
+- SEC extraction is deterministic and structured only. Generic LLM extraction, supplier/customer inference, scenario propagation, Hypothesis Factory, Research Memory, and the Divergence Engine are not implemented.
+- NOAA, USDA, FAA, and Commerce are catalogued routing domains, not live-verified adapters. Neo4j, NetworkX, and pgvector are not required production dependencies.
+
 ## 0.7.0 - 2026-08-07
 
 - Added the immutable seven-clock Temporal Truth envelope and strict simulation-eligibility invariant for point-in-time research.

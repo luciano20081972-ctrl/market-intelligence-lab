@@ -1,5 +1,9 @@
 # Data relevance router
 
+## v0.8 implementation status
+
+v0.8 implements the first deterministic router: versioned YAML priors and dataset domains, evidence-backed company driver profiles, PROCESS/DEFER/IGNORE/REVIEW decisions, reason codes, graph paths, confidence, durable recomputation requests, and three differentiated fixtures. It does not implement historical predictive validation, information-value optimization, cost ledgers, activation hysteresis, discovery exploration budgets, or runtime AI. Those remain future work; the historical-evidence field is intentionally empty.
+
 The router converts a company's dynamic driver profile and a budget into an explainable pipeline plan. It prevents universal ingestion and prevents model curiosity from becoming unbounded cost.
 
 ## Driver profile

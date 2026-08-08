@@ -1,5 +1,9 @@
 # Database
 
+## v0.8 graph schema
+
+Alembic revision `61293cddc2e2` (parent `7f4af62df2fe`) adds canonical entities, identifiers, aliases, resolution candidates/decisions, relationships, evidence links, confidence components, company profiles/entries, relevance decisions, quality issues, and recomputation jobs. Tables use workspace foreign keys, bounded confidence/status constraints, unique identity mappings, half-open validity intervals, and composite inbound/outbound/as-of indexes. PostgreSQL recursive CTEs serve production traversal; SQLite uses bounded breadth-first traversal for local deterministic tests.
+
 ## Models
 
 - `Asset`: normalized symbol and descriptive stock/ETF metadata.

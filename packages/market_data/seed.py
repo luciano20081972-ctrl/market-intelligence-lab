@@ -11,7 +11,13 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from packages.auth.bootstrap import ensure_legacy_workspace
-from packages.database.models import Asset, DataIngestionRun, DataSource, PriceBar
+from packages.database.models import (
+    LEGACY_WORKSPACE_ID,
+    Asset,
+    DataIngestionRun,
+    DataSource,
+    PriceBar,
+)
 from packages.market_data.platform_seed import provider_id, seed_market_data_platform
 
 DEMO_NAMESPACE = uuid.UUID("f5857027-d790-43ae-8ff0-e334528cd81a")
@@ -238,7 +244,13 @@ def seed_demonstration_data(
                 records_processed=len(ASSETS) * BAR_COUNT_PER_ASSET,
             )
         )
+    from packages.economic_graph.fixtures import seed_reference_graph
     from packages.strategies.seed import seed_builtin_strategies
 
     seed_builtin_strategies(session)
-    return {"assets_inserted": inserted_assets, "bars_inserted": inserted_bars}
+    graph_companies = seed_reference_graph(session, LEGACY_WORKSPACE_ID)
+    return {
+        "assets_inserted": inserted_assets,
+        "bars_inserted": inserted_bars,
+        "graph_companies": len(graph_companies),
+    }

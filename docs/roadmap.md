@@ -18,6 +18,8 @@ Effort uses focused engineer-weeks and assumes one experienced developer with Co
 
 ### v0.8 — Economic entity/driver graph and relevance router
 
+**Status: implemented on the v0.8 feature branch.** PostgreSQL bounded traversal, canonical identity/evidence, company-specific profiles, deterministic routing, administrative resolution, and beta benchmarks are complete. Historical factor validation and broad live-source enrichment remain later work.
+
 - **Scope:** typed relational graph, evidence/versioned edges, identifiers, bounded recursive queries, driver profiles, routing budgets/exploration, dossier skeleton.
 - **Reuse:** PostgreSQL/RLS/provenance; pgvector optional; NetworkX for offline algorithms; PostGIS only if the first spatial pilot requires it.
 - **Build:** entity/edge/evidence schemas, identity workflows, graph SLO benchmark, routing policy and benchmark set.

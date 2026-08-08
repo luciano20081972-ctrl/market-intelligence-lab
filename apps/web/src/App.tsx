@@ -50,6 +50,11 @@ import { WorldDataSourceDetail } from "./pages/WorldDataSourceDetail";
 import { DataManifests, DataManifestDetail } from "./pages/DataManifests";
 import { MacroExplorer } from "./pages/MacroExplorer";
 import { EnergyExplorer } from "./pages/EnergyExplorer";
+import { CompanyDriverProfile } from "./pages/CompanyDriverProfile";
+import { DataRelevance } from "./pages/DataRelevance";
+import { EconomicGraphExplorer } from "./pages/EconomicGraphExplorer";
+import { EntityResolutionReview } from "./pages/EntityResolutionReview";
+import { RelationshipEvidence } from "./pages/RelationshipEvidence";
 
 export { queryClient };
 
@@ -78,6 +83,11 @@ export function App() {
       <Route path="world-data/manifests/:id" element={<DataManifestDetail />} />
       <Route path="world-data/macro" element={<MacroExplorer />} />
       <Route path="world-data/energy" element={<EnergyExplorer />} />
+      <Route path="economic-graph" element={<EconomicGraphExplorer />} />
+      <Route path="driver-profiles" element={<CompanyDriverProfile />} />
+      <Route path="relationship-evidence" element={<RelationshipEvidence />} />
+      <Route path="data-relevance" element={<DataRelevance />} />
+      <Route path="entity-resolution" element={<EntityResolutionReview />} />
       <Route path="providers" element={<Providers />} />
       <Route path="providers/:id" element={<ProviderDetail />} />
       <Route path="imports" element={<ImportJobs />} />

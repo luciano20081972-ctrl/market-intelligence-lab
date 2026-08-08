@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 
 from packages.database.models import (
     LEGACY_WORKSPACE_ID,
+    EconomicEntity,
     ImportJob,
     JobLease,
     PriceBar,
@@ -21,6 +22,8 @@ from packages.database.models import (
     WorkspaceMembership,
 )
 from packages.database.session import create_database_engine, make_session_factory, session_scope
+from packages.economic_graph.fixtures import FIXTURE_TIME
+from packages.economic_graph.traversal import postgres_recursive_neighborhood
 from packages.market_data.ingestion import create_import_job
 from packages.market_data.operations import (
     claim_next_job,
@@ -205,3 +208,63 @@ def test_postgres_expired_lease_recovery(postgres_factory) -> None:  # type: ign
         assert recover_abandoned_jobs(session, now=current) == [job.id]
         assert session.scalar(select(ImportJob.status).where(ImportJob.id == job.id)) == "retrying"
         assert session.scalar(select(func.count(JobLease.id)).where(JobLease.job_id == job.id)) == 0
+
+
+def test_postgres_graph_constraints_and_temporal_types(postgres_factory) -> None:  # type: ignore[no-untyped-def]
+    with session_scope(postgres_factory) as session:
+        company = session.scalar(
+            select(EconomicEntity).where(EconomicEntity.canonical_name == "Silica Systems")
+        )
+        assert company is not None
+        assert company.simulation_eligible_time.tzinfo is not None
+        company.confidence = Decimal("1.1")
+        with pytest.raises(IntegrityError):
+            session.flush()
+        session.rollback()
+
+
+def test_postgres_recursive_graph_and_as_of_boundary(postgres_factory) -> None:  # type: ignore[no-untyped-def]
+    with session_scope(postgres_factory) as session:
+        company = session.scalar(
+            select(EconomicEntity).where(EconomicEntity.canonical_name == "Silica Systems")
+        )
+        assert company is not None
+        before = postgres_recursive_neighborhood(
+            session,
+            workspace_id=LEGACY_WORKSPACE_ID,
+            start_entity_id=company.id,
+            as_of=FIXTURE_TIME - timedelta(seconds=1),
+            max_depth=3,
+            max_nodes=100,
+        )
+        visible = postgres_recursive_neighborhood(
+            session,
+            workspace_id=LEGACY_WORKSPACE_ID,
+            start_entity_id=company.id,
+            as_of=FIXTURE_TIME,
+            max_depth=3,
+            max_nodes=100,
+        )
+        assert len(before) == 1
+        assert len(visible) > 1
+        assert max(row["depth"] for row in visible) <= 3
+
+
+def test_postgres_graph_query_indexes_exist(postgres_factory) -> None:  # type: ignore[no-untyped-def]
+    expected = {
+        "ix_economic_entity_workspace_eligible",
+        "ix_economic_relationship_outbound",
+        "ix_economic_relationship_inbound",
+        "ix_entity_identifier_entity_namespace",
+        "ix_data_relevance_company_created",
+    }
+    with session_scope(postgres_factory) as session:
+        found = set(
+            session.scalars(
+                text(
+                    "SELECT indexname FROM pg_indexes "
+                    "WHERE schemaname='public' AND indexname = ANY(:names)"
+                ).bindparams(names=list(expected))
+            )
+        )
+    assert found == expected

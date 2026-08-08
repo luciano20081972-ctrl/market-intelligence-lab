@@ -313,3 +313,59 @@ export interface WorldObservation {
   id: string; source_value: string; numeric_value: string | null; observation_time: string;
   revision_time: string; simulation_eligible_time: string; quality_flags: string[];
 }
+
+export interface EconomicEntity {
+  id: string; entity_type: string; canonical_name: string; status: string;
+  valid_from: string; valid_to: string | null; first_seen: string; last_verified: string;
+  simulation_eligible_time: string; confidence: string; provenance: Record<string, unknown>;
+}
+export interface EconomicEntityPage {
+  items: EconomicEntity[]; page: number; page_size: number; total: number;
+}
+export interface GraphRelationship {
+  id: string; subject_entity_id: string; predicate: string; object_entity_id: string;
+  confidence: string; status: string; valid_from: string; valid_to: string | null;
+  simulation_eligible_time: string;
+}
+export interface GraphPathExplanation {
+  entity_ids: string[]; relationship_ids: string[]; depth: number;
+  explanation: Array<Record<string, unknown>>;
+}
+export interface EconomicGraph {
+  as_of: string; max_depth: number; max_nodes: number; nodes: EconomicEntity[];
+  relationships: GraphRelationship[]; paths: GraphPathExplanation[];
+  path_explanations: GraphPathExplanation[]; truncated: boolean;
+}
+export interface DriverEntry {
+  id: string; driver_category: string; linked_entity_ids: string[];
+  supporting_relationship_ids: string[]; prior_relevance: string;
+  evidence_relevance: string; historical_evidence_relevance: string | null;
+  user_override: string | null; effective_relevance: string; confidence: string;
+  explanation: string;
+}
+export interface CompanyDriverProfile {
+  id: string; company_entity_id: string; prior_version: string; version: number;
+  generated_at: string; simulation_eligible_time: string; trigger_reason: string;
+  scientific_label: string; entries: DriverEntry[];
+}
+export interface RelationshipEvidence {
+  id: string; relationship_id: string; direction: string;
+  source_record_identifier: string; evidence_type: string; publication_time: string;
+  simulation_eligible_time: string; confidence: string; content_reference: string;
+  supporting_text: string | null;
+}
+export interface RelevanceDecision {
+  id: string; dataset_id: string; decision: "PROCESS" | "DEFER" | "IGNORE" | "REVIEW";
+  relevance_score: string; reason_codes: string[];
+  supporting_graph_paths: Array<Record<string, unknown>>; confidence: string; created_at: string;
+}
+export interface DataRelevancePage {
+  company_entity_id: string; profile_id: string; router_version: string | null;
+  items: RelevanceDecision[]; total: number;
+}
+export interface ResolutionCandidate {
+  id: string; namespace: string; value: string; normalized_value: string;
+  candidate_entity_id: string; method: string; confidence: string; source: string;
+  evidence: Record<string, unknown>; resolver_version: string; status: string;
+  resolved_at: string;
+}

@@ -1,0 +1,31 @@
+schema_version: "1"
+profiles:
+  semiconductor:
+    aliases: [semiconductors, semiconductor]
+    drivers:
+      technology: {relevance: 0.95, reason: "fabrication, packaging, and compute technology exposure"}
+      geopolitical: {relevance: 0.85, reason: "cross-border fabrication and export-control exposure"}
+      energy: {relevance: 0.55, reason: "electricity-intensive fabrication operations"}
+      supply_chain: {relevance: 0.80, reason: "specialized foundry and packaging dependencies"}
+      regulatory: {relevance: 0.70, reason: "technology and export regulation"}
+  airline:
+    aliases: [airline, airlines, air_transportation]
+    drivers:
+      energy: {relevance: 0.95, reason: "jet-fuel operating-cost exposure"}
+      weather_environmental: {relevance: 0.85, reason: "weather and disruption exposure"}
+      transportation: {relevance: 0.90, reason: "airport, aircraft, and airspace capacity"}
+      labor: {relevance: 0.65, reason: "specialized labor and scheduling exposure"}
+      consumer: {relevance: 0.60, reason: "passenger and tourism demand"}
+  agriculture:
+    aliases: [agriculture, agricultural_products, crop_production]
+    drivers:
+      weather_environmental: {relevance: 0.95, reason: "weather, drought, and crop-condition exposure"}
+      agriculture: {relevance: 0.95, reason: "crop, soil, fertilizer, and harvest conditions"}
+      water: {relevance: 0.85, reason: "irrigation and drought exposure"}
+      commodity: {relevance: 0.80, reason: "crop and input commodity exposure"}
+      energy: {relevance: 0.50, reason: "fertilizer, processing, and logistics energy use"}
+  default:
+    aliases: []
+    drivers:
+      financial: {relevance: 0.80, reason: "company-reported financial information"}
+      macro: {relevance: 0.35, reason: "broad economic context pending company evidence"}

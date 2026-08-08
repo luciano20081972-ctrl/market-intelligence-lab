@@ -1,5 +1,9 @@
 # Architecture
 
+## v0.8 company-specific intelligence
+
+The Economic Driver Graph is a workspace-scoped relational adjacency model in PostgreSQL. Canonical entities connect through typed, evidence-backed, temporally valid relationships. A bounded recursive query supplies explainable paths to versioned Company Driver Profiles; the deterministic Data Relevance Router then decides which datasets to process, defer, ignore, or review. PostgreSQL remains the system of record and no separate graph database is required. See `docs/graph/` for the implemented contracts and explicit limits.
+
 ## Post-v0.6 direction: entity-specific world intelligence
 
 The v0.6 platform remains the operational foundation, but the research product is now defined as discovery and validation of company-specific economic drivers—not a fixed-factor stock predictor. The target flow is:

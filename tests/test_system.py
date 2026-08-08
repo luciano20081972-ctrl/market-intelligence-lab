@@ -8,7 +8,7 @@ from packages.core.config import Settings
 def test_health_endpoint(client: TestClient) -> None:
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "healthy", "database": "healthy", "version": "0.7.0"}
+    assert response.json() == {"status": "healthy", "database": "healthy", "version": "0.8.0"}
 
 
 def test_system_information(client: TestClient) -> None:
@@ -77,7 +77,7 @@ def test_staging_readiness_requires_current_alembic_revision(engine: Engine) -> 
     with TestClient(create_app(settings=settings, engine=engine)) as test_client:
         ready = test_client.get("/health/ready")
         assert ready.status_code == 200
-        assert ready.json()["version"] == "0.7.0"
+        assert ready.json()["version"] == "0.8.0"
 
 
 def test_postgresql_url_selects_installed_psycopg_driver() -> None:
