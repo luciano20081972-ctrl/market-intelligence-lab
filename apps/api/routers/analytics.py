@@ -68,7 +68,7 @@ def compare_analytics(
             "Trade-level win rate is not compared with return-series win rate",
         ],
         engine_versions={
-            "canonical": "mil-0.8.0",
+            "canonical": "mil-0.9.0",
             "quantstats": adapter.health().version.library_version or "unavailable",
         },
         agreement_status=status_value,

@@ -729,7 +729,10 @@ class MacroObservation(Base):
     __tablename__ = "macro_observations"
     __table_args__ = (
         UniqueConstraint(
-            "series_id", "observation_time", "revision_time", "source_value",
+            "series_id",
+            "observation_time",
+            "revision_time",
+            "source_value",
             name="uq_macro_observation_vintage",
         ),
         Index("ix_macro_as_of", "series_id", "observation_time", "simulation_eligible_time"),
@@ -1623,9 +1626,7 @@ class EntityResolutionCandidate(Base):
             "status IN ('candidate','confirmed','rejected','ambiguous')",
             name="status_valid",
         ),
-        CheckConstraint(
-            "confidence >= 0 AND confidence <= 1", name="confidence_range"
-        ),
+        CheckConstraint("confidence >= 0 AND confidence <= 1", name="confidence_range"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
@@ -1692,9 +1693,7 @@ class EconomicRelationship(Base):
             "status IN ('candidate','verified','disputed','expired','rejected')",
             name="economic_relationship_status_valid",
         ),
-        CheckConstraint(
-            "confidence >= 0 AND confidence <= 1", name="confidence_range"
-        ),
+        CheckConstraint("confidence >= 0 AND confidence <= 1", name="confidence_range"),
         CheckConstraint(
             "strength IS NULL OR (strength >= 0 AND strength <= 1)",
             name="economic_relationship_strength_range",
@@ -1755,9 +1754,7 @@ class EvidenceRecord(Base):
             "workspace_id", "checksum", "source_record_identifier", name="uq_evidence_source"
         ),
         CheckConstraint("confidence >= 0 AND confidence <= 1", name="evidence_confidence_range"),
-        Index(
-            "ix_evidence_workspace_eligible", "workspace_id", "simulation_eligible_time"
-        ),
+        Index("ix_evidence_workspace_eligible", "workspace_id", "simulation_eligible_time"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
@@ -1818,9 +1815,7 @@ class RelationshipConfidenceComponent(Base):
         UniqueConstraint(
             "relationship_id", "formula_version", "component", name="uq_relationship_confidence"
         ),
-        CheckConstraint(
-            "value >= 0 AND value <= 1", name="component_range"
-        ),
+        CheckConstraint("value >= 0 AND value <= 1", name="component_range"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
@@ -1987,3 +1982,442 @@ class GraphRecomputeJob(Base):
     started_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     error_message: Mapped[str | None] = mapped_column(Text)
+
+
+class ResearchUniverse(Base):
+    __tablename__ = "research_universes"
+    __table_args__ = (UniqueConstraint("workspace_id", "name", name="uq_research_universe_name"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(160))
+    description: Mapped[str] = mapped_column(Text, default="")
+    owner_type: Mapped[str] = mapped_column(String(16), default="workspace")
+    source: Mapped[str] = mapped_column(String(160))
+    selection_rules: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class ResearchUniverseVersion(Base):
+    __tablename__ = "research_universe_versions"
+    __table_args__ = (
+        UniqueConstraint("universe_id", "version", name="uq_research_universe_version"),
+        CheckConstraint(
+            "effective_to IS NULL OR effective_to > effective_from", name="universe_version_range"
+        ),
+        Index(
+            "ix_universe_version_as_of", "universe_id", "simulation_eligible_time", "effective_from"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    universe_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_universes.id", ondelete="CASCADE"), index=True
+    )
+    version: Mapped[int] = mapped_column(Integer)
+    effective_from: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    effective_to: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
+    simulation_eligible_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    membership_checksum: Mapped[str] = mapped_column(String(64))
+    provenance: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class ResearchUniverseMembership(Base):
+    __tablename__ = "research_universe_memberships"
+    __table_args__ = (
+        UniqueConstraint("universe_version_id", "entity_id", name="uq_universe_membership_entity"),
+        CheckConstraint(
+            "valid_to IS NULL OR valid_to > valid_from", name="universe_membership_range"
+        ),
+        Index(
+            "ix_universe_membership_as_of",
+            "universe_version_id",
+            "simulation_eligible_time",
+            "valid_from",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    universe_version_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_universe_versions.id", ondelete="CASCADE"), index=True
+    )
+    entity_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("economic_entities.id", ondelete="CASCADE"), index=True
+    )
+    valid_from: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    valid_to: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
+    simulation_eligible_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    source_manifest_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("data_manifests.id", ondelete="RESTRICT"), index=True
+    )
+    provenance: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+
+
+class FeatureDefinition(Base):
+    __tablename__ = "feature_definitions"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "feature_key", name="uq_feature_definition_key"),
+        CheckConstraint(
+            "status IN ('draft','active','deprecated','disabled')", name="feature_definition_status"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    feature_key: Mapped[str] = mapped_column(String(120), index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str] = mapped_column(Text)
+    domain: Mapped[str] = mapped_column(String(40), index=True)
+    entity_type: Mapped[str] = mapped_column(String(48), default="Company")
+    status: Mapped[str] = mapped_column(String(16), default="active", index=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class FeatureDefinitionVersion(Base):
+    __tablename__ = "feature_definition_versions"
+    __table_args__ = (
+        UniqueConstraint("feature_definition_id", "version", name="uq_feature_definition_version"),
+        CheckConstraint(
+            "cost_class IN ('free','low','medium','high','premium')", name="feature_version_cost"
+        ),
+        CheckConstraint(
+            "determinism IN ('deterministic','non_deterministic')",
+            name="feature_version_determinism",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    feature_definition_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("feature_definitions.id", ondelete="CASCADE"), index=True
+    )
+    version: Mapped[int] = mapped_column(Integer)
+    output_type: Mapped[str] = mapped_column(String(32), default="numeric")
+    unit: Mapped[str] = mapped_column(String(64), default="ratio")
+    frequency: Mapped[str] = mapped_column(String(32))
+    lookback_requirement: Mapped[str] = mapped_column(String(80), default="none")
+    computation_method: Mapped[str] = mapped_column(String(160))
+    implementation_version: Mapped[str] = mapped_column(String(64))
+    required_datasets: Mapped[list[str]] = mapped_column(JSON, default=list)
+    required_graph_drivers: Mapped[list[str]] = mapped_column(JSON, default=list)
+    temporal_policy: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    missing_data_policy: Mapped[str] = mapped_column(String(80), default="mark_missing")
+    normalization_policy: Mapped[str] = mapped_column(String(80), default="none")
+    cost_class: Mapped[str] = mapped_column(String(16), default="low")
+    determinism: Mapped[str] = mapped_column(String(24), default="deterministic")
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class FeatureSet(Base):
+    __tablename__ = "feature_sets"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "key", "version", name="uq_feature_set_version"),
+        CheckConstraint("active_to IS NULL OR active_to > active_from", name="feature_set_range"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    key: Mapped[str] = mapped_column(String(120), index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    version: Mapped[int] = mapped_column(Integer)
+    owner: Mapped[str] = mapped_column(String(120))
+    intended_resolution: Mapped[str] = mapped_column(String(24), index=True)
+    estimated_compute_cost: Mapped[str] = mapped_column(String(16), default="low")
+    active_from: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    active_to: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class FeatureSetMembership(Base):
+    __tablename__ = "feature_set_memberships"
+    __table_args__ = (
+        UniqueConstraint("feature_set_id", "feature_version_id", name="uq_feature_set_member"),
+        UniqueConstraint("feature_set_id", "position", name="uq_feature_set_position"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    feature_set_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("feature_sets.id", ondelete="CASCADE"), index=True
+    )
+    feature_version_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("feature_definition_versions.id", ondelete="RESTRICT"), index=True
+    )
+    position: Mapped[int] = mapped_column(Integer)
+
+
+class FeatureMaterializationJob(Base):
+    __tablename__ = "feature_materialization_jobs"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "idempotency_key", name="uq_feature_job_workspace_key"),
+        CheckConstraint(
+            "status IN ('queued','running','succeeded','failed','cancelled','deferred')",
+            name="feature_job_status",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    feature_set_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("feature_sets.id", ondelete="SET NULL"), index=True
+    )
+    universe_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("research_universe_versions.id", ondelete="SET NULL"), index=True
+    )
+    mode: Mapped[str] = mapped_column(String(24), default="incremental")
+    status: Mapped[str] = mapped_column(String(24), default="queued", index=True)
+    scope: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    checkpoint: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    idempotency_key: Mapped[str] = mapped_column(String(128))
+    router_override: Mapped[bool] = mapped_column(Boolean, default=False)
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    error_class: Mapped[str | None] = mapped_column(String(64))
+    error_message: Mapped[str | None] = mapped_column(Text)
+    requested_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+    started_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+
+class FeatureValue(Base):
+    __tablename__ = "feature_values"
+    __table_args__ = (
+        UniqueConstraint(
+            "feature_version_id",
+            "entity_id",
+            "observation_time",
+            "input_checksum",
+            name="uq_feature_value_input_identity",
+        ),
+        CheckConstraint(
+            "quality_state IN ('complete','partial','missing_inputs','stale_inputs',"
+            "'ambiguous_inputs','low_confidence_graph','revised','temporally_unsafe',"
+            "'failed_computation')",
+            name="feature_value_quality",
+        ),
+        Index(
+            "ix_feature_value_as_of",
+            "feature_version_id",
+            "entity_id",
+            "simulation_eligible_time",
+            "observation_time",
+        ),
+        Index(
+            "ix_feature_value_matrix", "entity_id", "simulation_eligible_time", "feature_version_id"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    feature_version_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("feature_definition_versions.id", ondelete="RESTRICT"), index=True
+    )
+    entity_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("economic_entities.id", ondelete="CASCADE"), index=True
+    )
+    observation_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    effective_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    calculation_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    simulation_eligible_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    numeric_value: Mapped[Decimal | None] = mapped_column(Numeric(28, 10))
+    text_value: Mapped[str | None] = mapped_column(Text)
+    unit: Mapped[str] = mapped_column(String(64))
+    quality_state: Mapped[str] = mapped_column(String(32), default="complete", index=True)
+    quality_flags: Mapped[list[str]] = mapped_column(JSON, default=list)
+    input_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    computation_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    job_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("feature_materialization_jobs.id", ondelete="SET NULL"), index=True
+    )
+    deterministic_seed: Mapped[int | None] = mapped_column(Integer)
+    normalization: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class FeatureLineage(Base):
+    __tablename__ = "feature_lineage"
+    __table_args__ = (
+        UniqueConstraint(
+            "feature_value_id", "lineage_checksum", name="uq_feature_lineage_checksum"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    feature_value_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("feature_values.id", ondelete="CASCADE"), index=True
+    )
+    source_manifest_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
+    source_observation_refs: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    graph_relationship_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
+    evidence_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
+    grouped_input_manifest: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    computation_version: Mapped[str] = mapped_column(String(64))
+    lineage_checksum: Mapped[str] = mapped_column(String(64), index=True)
+
+
+class ResearchResolutionPolicy(Base):
+    __tablename__ = "research_resolution_policies"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "version", name="uq_resolution_policy_version"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    version: Mapped[str] = mapped_column(String(40))
+    configuration: Mapped[dict[str, Any]] = mapped_column(JSON)
+    checksum: Mapped[str] = mapped_column(String(64))
+    active_from: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class ResearchBudget(Base):
+    __tablename__ = "research_budgets"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "policy_id", "level", name="uq_research_budget_level"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    policy_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_resolution_policies.id", ondelete="CASCADE"), index=True
+    )
+    level: Mapped[str] = mapped_column(String(24), index=True)
+    limits: Mapped[dict[str, Any]] = mapped_column(JSON)
+    cost_class: Mapped[str] = mapped_column(String(16))
+    monetary_estimate: Mapped[Decimal | None] = mapped_column(Numeric(14, 4))
+
+
+class ResearchBudgetUsage(Base):
+    __tablename__ = "research_budget_usage"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    budget_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_budgets.id", ondelete="CASCADE"), index=True
+    )
+    screening_run_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("research_screening_runs.id", ondelete="CASCADE"), index=True
+    )
+    usage: Mapped[dict[str, Any]] = mapped_column(JSON)
+    decision: Mapped[str] = mapped_column(String(24), index=True)
+    recorded_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class FeatureSnapshot(Base):
+    __tablename__ = "feature_snapshots"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    universe_version_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_universe_versions.id", ondelete="RESTRICT"), index=True
+    )
+    feature_set_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("feature_sets.id", ondelete="RESTRICT"), index=True
+    )
+    as_of_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    entity_ids: Mapped[list[str]] = mapped_column(JSON)
+    feature_value_ids: Mapped[list[str]] = mapped_column(JSON)
+    application_sha: Mapped[str] = mapped_column(String(64))
+    migration_head: Mapped[str] = mapped_column(String(40))
+    manifest: Mapped[dict[str, Any]] = mapped_column(JSON)
+    checksum: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class ResearchScreeningRun(Base):
+    __tablename__ = "research_screening_runs"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    universe_version_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_universe_versions.id", ondelete="RESTRICT"), index=True
+    )
+    feature_snapshot_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("feature_snapshots.id", ondelete="RESTRICT"), index=True
+    )
+    policy_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_resolution_policies.id", ondelete="RESTRICT"), index=True
+    )
+    as_of_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    total_candidates: Mapped[int] = mapped_column(Integer)
+    promoted: Mapped[int] = mapped_column(Integer, default=0)
+    deferred: Mapped[int] = mapped_column(Integer, default=0)
+    demoted: Mapped[int] = mapped_column(Integer, default=0)
+    rejected: Mapped[int] = mapped_column(Integer, default=0)
+    budget_usage: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    reason_distribution: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    checksum: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class ResearchScreeningDecision(Base):
+    __tablename__ = "research_screening_decisions"
+    __table_args__ = (
+        UniqueConstraint("screening_run_id", "entity_id", name="uq_screening_decision_entity"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    screening_run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_screening_runs.id", ondelete="CASCADE"), index=True
+    )
+    entity_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("economic_entities.id", ondelete="CASCADE"), index=True
+    )
+    score: Mapped[Decimal] = mapped_column(Numeric(12, 8), index=True)
+    score_components: Mapped[dict[str, Any]] = mapped_column(JSON)
+    recommendation: Mapped[str] = mapped_column(String(24), index=True)
+    reason_codes: Mapped[list[str]] = mapped_column(JSON)
+    missing_information: Mapped[list[str]] = mapped_column(JSON, default=list)
+    budget_impact: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+
+
+class ResearchCandidateState(Base):
+    __tablename__ = "research_candidate_states"
+    __table_args__ = (
+        UniqueConstraint(
+            "workspace_id",
+            "universe_id",
+            "entity_id",
+            "policy_id",
+            name="uq_candidate_policy_state",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    universe_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_universes.id", ondelete="CASCADE"), index=True
+    )
+    entity_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("economic_entities.id", ondelete="CASCADE"), index=True
+    )
+    policy_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_resolution_policies.id", ondelete="RESTRICT"), index=True
+    )
+    current_level: Mapped[str] = mapped_column(String(24), index=True)
+    previous_level: Mapped[str | None] = mapped_column(String(24))
+    entered_at: Mapped[datetime] = mapped_column(UTCDateTime())
+    promotion_reason: Mapped[str | None] = mapped_column(Text)
+    demotion_reason: Mapped[str | None] = mapped_column(Text)
+    supporting_snapshot_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("feature_snapshots.id", ondelete="RESTRICT"), index=True
+    )
+    budget_impact: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    next_review_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)

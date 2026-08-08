@@ -12,6 +12,8 @@ import type {
   WorldDataSource, DataManifestRecord, WorldSeries, WorldObservation,
   CompanyDriverProfile, DataRelevancePage, EconomicEntityPage, EconomicGraph,
   RelationshipEvidence, ResolutionCandidate,
+  ResearchBudget, ResearchCandidate, ResearchFeature, ResearchUniverse,
+  FeatureValueRecord, ScreeningRun,
 } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -183,7 +185,7 @@ export const api = {
   energySeries: () => request<{ items: WorldSeries[]; total: number }>("/api/v1/energy/series"),
   energyObservations: (id: string) => request<{ items: WorldObservation[]; total: number }>(`/api/v1/energy/series/${id}/observations`),
   economicEntities: (entityType?: string) => request<EconomicEntityPage>(
-    `/api/v1/entities${entityType ? `?entity_type=${encodeURIComponent(entityType)}` : ""}`,
+    `/api/v1/entities?${entityType ? `entity_type=${encodeURIComponent(entityType)}&` : ""}page_size=200`,
   ),
   economicGraph: (companyId: string) => request<EconomicGraph>(
     `/api/v1/companies/${companyId}/driver-paths?max_depth=3&max_nodes=100`,
@@ -205,4 +207,17 @@ export const api = {
       `/api/v1/entity-resolution/${id}/${decision}`,
       { method: "POST", body: JSON.stringify({ reason }) },
     ),
+  researchFeatures: () => request<{ items: ResearchFeature[]; total: number; scientific_semantics: string }>("/api/v1/features"),
+  researchFeature: (key: string) => request<ResearchFeature & { versions: Array<Record<string, unknown>> }>(`/api/v1/features/${encodeURIComponent(key)}`),
+  featureSets: () => request<{ items: Array<Record<string, unknown>>; total: number }>("/api/v1/feature-sets"),
+  featureValues: () => request<{ items: FeatureValueRecord[]; total: number; point_in_time_safe: boolean }>("/api/v1/feature-values?page_size=200"),
+  featureLineage: (id: string) => request<Record<string, unknown>>(`/api/v1/feature-values/${id}/lineage`),
+  researchUniverses: () => request<{ items: ResearchUniverse[]; total: number }>("/api/v1/research-universes"),
+  researchUniverse: (id: string) => request<ResearchUniverse & { versions: Array<Record<string, unknown>> }>(`/api/v1/research-universes/${id}`),
+  screeningRuns: () => request<{ items: ScreeningRun[]; total: number }>("/api/v1/research/screening-runs"),
+  screeningRun: (id: string) => request<ScreeningRun>(`/api/v1/research/screening-runs/${id}`),
+  runReferenceScreening: () => request<Record<string, unknown>>("/api/v1/research/screening-runs/reference-fixture", { method: "POST" }),
+  researchCandidates: () => request<{ items: ResearchCandidate[]; total: number; semantics: string }>("/api/v1/research/candidates"),
+  researchCandidate: (id: string) => request<ResearchCandidate>(`/api/v1/research/candidates/${id}`),
+  researchBudgets: () => request<{ items: ResearchBudget[]; total: number }>("/api/v1/research/budgets"),
 };

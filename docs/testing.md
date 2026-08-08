@@ -1,5 +1,9 @@
 # Testing
 
+## v0.9 feature-store verification
+
+Coverage adds feature definition/version/immutability/lineage; universe and membership history; simulation-eligible as-of retrieval; future feature, universe, graph, SEC, ALFRED, normalization, and screening leakage boundaries; feature quality; safe normalization; materialization idempotency/claims/router skipping; budget enforcement; deterministic promotion/demotion; snapshot and screening reproducibility; workspace API isolation; full research-funnel frontend/Playwright workflows; and a bounded feature-store benchmark. Run `python scripts/benchmark_feature_store.py`; add `--postgres-url-env MIL_POSTGRES_TEST_DATABASE_URL` only for a disposable PostgreSQL 17 database.
+
 ## v0.8 graph verification
 
 Backend coverage includes identity normalization/ambiguity/manual decisions, database uniqueness, evidence gates and conflict preservation, confidence components, expiry, strong as-of leakage boundaries, cycle/depth/node limits, priors, routing, overrides, durable recomputation, workspace isolation, deterministic SEC extraction, series linking, graph quality, APIs, and idempotent three-company fixtures. PostgreSQL-marked coverage adds native constraints, timezone round-trips, recursive CTE/as-of behavior, expected indexes, rollback, and concurrent job claims.

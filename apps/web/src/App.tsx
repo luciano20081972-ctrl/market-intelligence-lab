@@ -55,6 +55,16 @@ import { DataRelevance } from "./pages/DataRelevance";
 import { EconomicGraphExplorer } from "./pages/EconomicGraphExplorer";
 import { EntityResolutionReview } from "./pages/EntityResolutionReview";
 import { RelationshipEvidence } from "./pages/RelationshipEvidence";
+import {
+  FeatureCatalog,
+  FeatureExplorer,
+  FeatureLineageViewer,
+  ResearchBudgetDashboard,
+  ResearchCandidateDetail,
+  ResearchFunnel,
+  ResearchUniversePage,
+  ScreeningRunDetail,
+} from "./pages/ResearchPlatform";
 
 export { queryClient };
 
@@ -88,6 +98,15 @@ export function App() {
       <Route path="relationship-evidence" element={<RelationshipEvidence />} />
       <Route path="data-relevance" element={<DataRelevance />} />
       <Route path="entity-resolution" element={<EntityResolutionReview />} />
+      <Route path="research/universe" element={<ResearchUniversePage />} />
+      <Route path="research/features" element={<FeatureCatalog />} />
+      <Route path="research/features/explorer" element={<FeatureExplorer />} />
+      <Route path="research/funnel" element={<ResearchFunnel />} />
+      <Route path="research/screening-runs/:id" element={<ScreeningRunDetail />} />
+      <Route path="research/candidates" element={<ResearchCandidateDetail />} />
+      <Route path="research/candidates/:id" element={<ResearchCandidateDetail />} />
+      <Route path="research/budgets" element={<ResearchBudgetDashboard />} />
+      <Route path="research/lineage/:id" element={<FeatureLineageViewer />} />
       <Route path="providers" element={<Providers />} />
       <Route path="providers/:id" element={<ProviderDetail />} />
       <Route path="imports" element={<ImportJobs />} />

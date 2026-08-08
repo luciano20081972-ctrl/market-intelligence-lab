@@ -1,5 +1,7 @@
 # Reproducibility
 
+v0.9 `FeatureSnapshot` is the research reproducibility boundary. It captures the eligible universe version, ordered feature-set version, entity and feature-value identities, as-of time, application SHA, migration head, source/graph/routing/policy references, seeds, warnings, and a canonical checksum. `ResearchScreeningRun` adds decomposed decisions, budget usage, reason distribution, and its own checksum. Re-running identical software, configuration, and point-in-time inputs returns the same snapshot and screening run; revisions append values rather than rewriting history.
+
 Backtests retain canonical manifests and validation reports. v0.6 extends the same discipline:
 
 - SEC filings retain accession, CIK, acceptance/retrieval/reporting timestamps, source URL,

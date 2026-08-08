@@ -8,6 +8,14 @@ datasets:
     expected_frequency: daily
     license: US-PUBLIC-DOMAIN
     temporal_mode: accepted-at
+    request_cost: low
+    byte_cost: medium
+    compute_cost: medium
+    storage_cost: medium
+    licensing_tier: public
+    latency: daily
+    refresh_cost: medium
+    maintenance_burden: medium
   - id: sec.companyfacts
     provider: sec
     title: SEC XBRL company facts
@@ -16,6 +24,14 @@ datasets:
     expected_frequency: daily
     license: US-PUBLIC-DOMAIN
     temporal_mode: filed-at
+    request_cost: low
+    byte_cost: medium
+    compute_cost: medium
+    storage_cost: medium
+    licensing_tier: public
+    latency: daily
+    refresh_cost: medium
+    maintenance_burden: medium
   - id: sec.bulk
     provider: sec
     title: SEC bulk archives
@@ -24,6 +40,14 @@ datasets:
     expected_frequency: daily
     license: US-PUBLIC-DOMAIN
     temporal_mode: accepted-at
+    request_cost: free
+    byte_cost: high
+    compute_cost: high
+    storage_cost: high
+    licensing_tier: public
+    latency: daily
+    refresh_cost: high
+    maintenance_burden: medium
   - id: fred.observations
     provider: fred
     title: FRED latest revised observations
@@ -32,6 +56,14 @@ datasets:
     expected_frequency: source-defined
     license: FRED-SERIES-SPECIFIC
     temporal_mode: latest-revised
+    request_cost: low
+    byte_cost: low
+    compute_cost: low
+    storage_cost: low
+    licensing_tier: source-specific
+    latency: source-defined
+    refresh_cost: low
+    maintenance_burden: low
   - id: alfred.vintages
     provider: alfred
     title: ALFRED vintage observations
@@ -40,6 +72,14 @@ datasets:
     expected_frequency: source-defined
     license: FRED-SERIES-SPECIFIC
     temporal_mode: point-in-time
+    request_cost: low
+    byte_cost: low
+    compute_cost: medium
+    storage_cost: medium
+    licensing_tier: source-specific
+    latency: source-defined
+    refresh_cost: medium
+    maintenance_burden: medium
   - id: eia.electricity.retail-price
     provider: eia
     title: EIA monthly retail electricity price pilot
@@ -48,3 +88,11 @@ datasets:
     expected_frequency: monthly
     license: US-PUBLIC-DOMAIN
     temporal_mode: retrieved-at
+    request_cost: low
+    byte_cost: low
+    compute_cost: low
+    storage_cost: low
+    licensing_tier: public
+    latency: monthly
+    refresh_cost: low
+    maintenance_burden: low

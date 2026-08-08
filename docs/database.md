@@ -1,5 +1,9 @@
 # Database
 
+## v0.9 progressive research schema
+
+Alembic revision `2f9e39afd435` (parent `61293cddc2e2`) adds research universes/versions/memberships, feature definitions/versions/sets/values/lineage, materialization jobs, resolution policies, budgets/usage, immutable snapshots, screening runs/decisions, and candidate state. Composite indexes put equality columns before the simulation-eligibility range for as-of point and matrix reads. Every foreign-key hot path is indexed. UTC-aware clocks, half-open validity intervals, unique version/input identities, quality/status constraints, and workspace foreign keys enforce the core invariants. The beta deliberately does not partition; reassess around 100 million feature-value rows.
+
 ## v0.8 graph schema
 
 Alembic revision `61293cddc2e2` (parent `7f4af62df2fe`) adds canonical entities, identifiers, aliases, resolution candidates/decisions, relationships, evidence links, confidence components, company profiles/entries, relevance decisions, quality issues, and recomputation jobs. Tables use workspace foreign keys, bounded confidence/status constraints, unique identity mappings, half-open validity intervals, and composite inbound/outbound/as-of indexes. PostgreSQL recursive CTEs serve production traversal; SQLite uses bounded breadth-first traversal for local deterministic tests.

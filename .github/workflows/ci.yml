@@ -88,11 +88,13 @@ jobs:
         with: { python-version: "3.12", cache: pip }
       - run: pip install -e ".[dev,postgres]"
       - run: alembic upgrade 7f4af62df2fe
+      - run: alembic upgrade 61293cddc2e2
       - run: alembic upgrade head
       - run: alembic upgrade head
       - run: alembic check
       - run: pytest -m postgres
       - run: python scripts/benchmark_economic_graph.py --sizes 10000:50000 --postgres-url-env MIL_POSTGRES_TEST_DATABASE_URL
+      - run: python scripts/benchmark_feature_store.py --postgres-url-env MIL_POSTGRES_TEST_DATABASE_URL
 
   supply-chain:
     runs-on: ubuntu-latest

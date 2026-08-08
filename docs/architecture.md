@@ -1,16 +1,17 @@
 # Architecture
 
-## v0.8 company-specific intelligence
+## v0.9 progressive research and feature store
 
-The Economic Driver Graph is a workspace-scoped relational adjacency model in PostgreSQL. Canonical entities connect through typed, evidence-backed, temporally valid relationships. A bounded recursive query supplies explainable paths to versioned Company Driver Profiles; the deterministic Data Relevance Router then decides which datasets to process, defer, ignore, or review. PostgreSQL remains the system of record and no separate graph database is required. See `docs/graph/` for the implemented contracts and explicit limits.
+The Economic Driver Graph is a workspace-scoped relational adjacency model in PostgreSQL. Canonical entities connect through typed, evidence-backed, temporally valid relationships. A bounded recursive query supplies explainable paths to versioned Company Driver Profiles; the deterministic Data Relevance Router then decides which datasets to process, defer, ignore, or review. v0.9 adds versioned universes, immutable point-in-time feature values, grouped lineage, progressive resolution, budgets, screening decisions, and reproducible snapshots. PostgreSQL remains the beta system of record; dense immutable historical matrices can move to Parquet without moving metadata or candidate state.
 
 ## Post-v0.6 direction: entity-specific world intelligence
 
 The v0.6 platform remains the operational foundation, but the research product is now defined as discovery and validation of company-specific economic drivers—not a fixed-factor stock predictor. The target flow is:
 
 ```text
-high-density sources -> Temporal Truth -> entity/exposure graph -> feature store
--> relevance routing -> hypotheses -> quantitative validation -> research memory
+high-density sources -> Temporal Truth -> entity/exposure graph -> relevance routing
+-> point-in-time feature store -> progressive resolution -> screening/promotion
+-> hypotheses -> quantitative validation -> research memory
 -> divergence and scenarios
 ```
 
@@ -18,7 +19,7 @@ AI works on bounded, cited evidence packets selected from durable structured dat
 
 The controlling design is [world-intelligence.md](architecture/world-intelligence.md). Detailed decisions cover [Temporal Truth](architecture/temporal-truth.md), the [economic driver graph](architecture/economic-driver-graph.md), [relevance routing](architecture/data-relevance-router.md), [progressive resolution](architecture/progressive-resolution.md), the [hypothesis factory](architecture/hypothesis-factory.md), [research memory](architecture/research-memory.md), [divergence](architecture/divergence-engine.md), [signal independence](architecture/signal-independence.md), [scenarios](architecture/scenario-engine.md), [runtime AI](architecture/runtime-ai.md), and [information value](architecture/information-value.md).
 
-Version 0.7 implements the first bounded slice: Temporal Truth, immutable manifests/raw objects, dataset checkpoints, and direct official SEC/FRED/ALFRED/EIA adapters. Entity graphs and relevance routing remain v0.8 work and are not started here.
+Version 0.9 implements the scalability layer through screening and promotion. Hypothesis generation, predictive validation, Research Memory, divergence, scenarios, and autonomous research agents remain future work.
 
 ## Shape
 

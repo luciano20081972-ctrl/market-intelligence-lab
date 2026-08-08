@@ -1,0 +1,49 @@
+schema_version: "1"
+policy_version: progressive-resolution-v1
+levels:
+  LEVEL_0:
+    label: Universe
+    maximum_population: 100
+    allowed_feature_sets: []
+    compute_budget: free
+    data_budget: free
+    refresh_interval_days: 30
+    entry_policy: point-in-time universe membership
+    exit_policy: removed from eligible universe
+  LEVEL_1:
+    label: Cheap Screen
+    maximum_population: 50
+    allowed_feature_sets: [cheap-screen-v1]
+    compute_budget: low
+    data_budget: low
+    refresh_interval_days: 30
+    entry_policy: transparent screening rank within budget
+    exit_policy: rank outside budget or unsafe temporal provenance
+  LEVEL_2:
+    label: Structured Research
+    maximum_population: 20
+    allowed_feature_sets: [fundamentals-v1, macro-v1]
+    compute_budget: medium
+    data_budget: medium
+    refresh_interval_days: 14
+    entry_policy: Level 1 evidence and completeness threshold
+    exit_policy: stale or incomplete evidence
+  LEVEL_3:
+    label: Domain Deep Dive
+    maximum_population: 8
+    allowed_feature_sets: [routed-domain-v1]
+    compute_budget: high
+    data_budget: high
+    refresh_interval_days: 7
+    entry_policy: routed external-driver relevance within budget
+    exit_policy: relevance or evidence falls below policy threshold
+  LEVEL_4:
+    label: AI Research Candidate
+    maximum_population: 3
+    allowed_feature_sets: []
+    compute_budget: premium
+    data_budget: high
+    refresh_interval_days: 7
+    entry_policy: top reproducible Level 3 candidates within budget
+    exit_policy: superseded by higher-priority candidate
+    safety_note: Eligibility only; v0.9 runs no AI research.

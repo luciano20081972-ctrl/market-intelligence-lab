@@ -1,12 +1,12 @@
 # Market Intelligence Lab
 
-Current version: **0.8.0**. The first company-specific intelligence layer adds an evidence-backed Economic Driver Graph, canonical entity resolution, bounded historical traversal, differentiated Company Driver Profiles, and a deterministic Data Relevance Router. Relevance means a potential economic driver—not causality, alpha, expected return, or investment advice.
+Current version: **0.9.0** — Progressive Research and Point-in-Time Feature Store. Versioned research universes, immutable feature values and lineage, as-of matrices, transparent screening, research-resolution policies, budgets, and reproducible snapshots determine which companies deserve more expensive research. A feature is a measurement and a screening score is research prioritization—not alpha, expected return, buy/sell advice, or an investment recommendation.
 
 The reference seed demonstrates three materially different business models: semiconductor, airline, and agriculture. See [the entity model](docs/graph/entity-model.md), [driver profiles](docs/graph/company-driver-profiles.md), [routing](docs/graph/relevance-routing.md), and [query limits](docs/graph/query-limits.md).
 
-Market Intelligence Lab is a workspace-isolated research workbench for historical market and official world data, explainable signals, reproducible backtests, simulated paper trading, SEC filing intelligence, portfolio analytics, and constrained optimization. v0.8 builds on the v0.7 Temporal Truth and official-data foundation without adding brokerage or real-money execution.
+Market Intelligence Lab is a workspace-isolated research workbench for historical market and official world data, explainable signals, reproducible backtests, simulated paper trading, SEC filing intelligence, portfolio analytics, constrained optimization, and bounded progressive research. v0.9 builds on the v0.8 driver graph and relevance router without adding predictive-alpha claims, brokerage, or real-money execution.
 
-The v0.8 application schema is at Alembic revision `61293cddc2e2`. The v0.5.1 Supabase
+The v0.9 application schema is at Alembic revision `2f9e39afd435` (parent `61293cddc2e2`). The v0.5.1 Supabase
 Auth/JWKS and deny-by-default PostgREST behavior were live-verified with
 temporary users that were removed after the rehearsal. Direct
 FastAPI-to-staging PostgreSQL runtime connectivity remains unverified because

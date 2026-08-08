@@ -143,6 +143,11 @@ code { color: #8be6c2; background: #101d1a; padding: .15rem .3rem; border-radius
 .page-links a { color: #72dbb4; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.research-funnel { display: grid; gap: .5rem; grid-template-columns: repeat(5, minmax(120px, 1fr)); margin: 1.25rem 0; }
+.research-funnel > div { align-items: center; display: grid; gap: .5rem; grid-template-columns: 1fr auto; }
+.research-funnel > div:last-child { grid-template-columns: 1fr; }
+.research-funnel span { color: #4fd1a1; font-size: 1.5rem; transform: rotate(-90deg); }
+
 @media (max-width: 900px) {
   .app-shell { grid-template-columns: 1fr; }
   .sidebar { position: static; height: auto; padding: .8rem; border-right: 0; border-bottom: 1px solid #202a34; }
@@ -155,6 +160,9 @@ code { color: #8be6c2; background: #101d1a; padding: .15rem .3rem; border-radius
   .panel-grid, .watchlist-grid, .strategy-grid, .portfolio-grid, .chart-grid { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .table-card { overflow-x: auto; }
+  .research-funnel { grid-template-columns: 1fr; }
+  .research-funnel > div { grid-template-columns: 1fr; }
+  .research-funnel span { text-align: center; transform: none; }
 }
 @media (max-width: 600px) {
   main { padding: 1rem; }

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.0 - 2026-08-08
+
+- Added versioned point-in-time research universes and membership provenance, immutable feature definitions/values/lineage, feature sets, temporal-safe as-of retrieval, and cross-sectional normalization.
+- Added five configurable progressive research levels, transparent decomposed screening, reproducible promotion/demotion state, pre-execution research budgets, resumable materialization jobs, immutable snapshots, and router-driven dataset skipping.
+- Added a deterministic 100-company/15-feature demonstration with a 100 → 50 → 20 → 8 → 3 funnel, differentiated semiconductor/airline/agriculture pipelines, protected APIs, and research UI workflows.
+- Added Alembic revision `2f9e39afd435`, PostgreSQL hot-path indexes, leakage/immutability/determinism tests, bounded 100/1,000/5,000-company benchmarks, and PostgreSQL-to-Parquet scale thresholds.
+- Feast, Qlib, PostgreSQL-native, and Arrow/Parquet options were evaluated. The beta uses PostgreSQL-native storage and preserves Parquet as the dense-history scale-out path.
+- Hypothesis Factory, predictive alpha validation, Research Memory, Divergence Engine, Skeptic Agent, Scenario Engine, autonomous research agents, and investment recommendations remain unimplemented.
+
 ## 0.8.0 - 2026-08-08
 
 - Added a workspace-scoped PostgreSQL economic entity graph with canonical identifiers, aliases, manual ambiguity review, evidence-backed relationships, versioned confidence components, bounded recursive/as-of queries, and graph quality findings.

@@ -30,6 +30,8 @@ Effort uses focused engineer-weeks and assumes one experienced developer with Co
 
 ### v0.9 — Progressive resolution and point-in-time feature store
 
+**Status: implemented on the v0.9 feature branch.** Versioned point-in-time universes, immutable lineage-bearing features, transparent screening, research budgets, snapshots, materialization controls, and the deterministic 100-company funnel are complete. No predictive-alpha claim is made.
+
 - **Scope:** L0-L4 universe policies, reproducible promotions, point-in-time feature definitions/materializations, budgets/cost ledger, first sector-specific sources.
 - **Reuse:** pandas/Arrow/Parquet ecosystem, existing backtests, agency bulk/API data.
 - **Build:** feature registry/lineage, as-of joins, promotion service, cost/coverage dashboard.

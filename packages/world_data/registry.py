@@ -18,6 +18,14 @@ class DatasetDefinition(BaseModel):
     expected_frequency: str
     license: str
     temporal_mode: str
+    request_cost: str = "low"
+    byte_cost: str = "low"
+    compute_cost: str = "low"
+    storage_cost: str = "low"
+    licensing_tier: str = "public"
+    latency: str = "batch"
+    refresh_cost: str = "low"
+    maintenance_burden: str = "low"
 
 
 class DatasetRegistry(BaseModel):

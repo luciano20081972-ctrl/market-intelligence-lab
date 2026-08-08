@@ -369,3 +369,84 @@ export interface ResolutionCandidate {
   evidence: Record<string, unknown>; resolver_version: string; status: string;
   resolved_at: string;
 }
+
+export interface ResearchFeature {
+  id: string;
+  feature_key: string;
+  name: string;
+  description: string;
+  domain: string;
+  entity_type: string;
+  status: string;
+}
+
+export interface ResearchUniverse {
+  id: string;
+  name: string;
+  description: string;
+  source: string;
+  owner_type: string;
+  selection_rules: Record<string, unknown>;
+}
+
+export interface FeatureValueRecord {
+  id: string;
+  feature_key: string;
+  entity_id: string;
+  observation_time: string;
+  simulation_eligible_time: string;
+  value: string | null;
+  unit: string;
+  quality_state: string;
+  input_checksum: string;
+  computation_checksum: string;
+}
+
+export interface ResearchDecision {
+  id: string;
+  entity_id: string;
+  score: string;
+  score_components: Record<string, string>;
+  recommendation: string;
+  reason_codes: string[];
+  missing_information: string[];
+  level: string;
+}
+
+export interface ScreeningRun {
+  id: string;
+  as_of_time: string;
+  total_candidates: number;
+  promoted: number;
+  deferred: number;
+  demoted: number;
+  rejected: number;
+  budget_usage: Record<string, unknown>;
+  reason_distribution: Record<string, number>;
+  checksum: string;
+  funnel: Record<string, number>;
+  decisions: ResearchDecision[];
+}
+
+export interface ResearchCandidate {
+  id: string;
+  entity_id: string;
+  company_name: string;
+  archetype: string;
+  current_level: string;
+  previous_level: string | null;
+  promotion_reason: string | null;
+  demotion_reason: string | null;
+  budget_impact: Record<string, unknown>;
+  next_review_time: string;
+  selected_pipelines?: string[];
+  irrelevant_pipelines_skipped?: boolean;
+}
+
+export interface ResearchBudget {
+  id: string;
+  level: string;
+  limits: Record<string, number>;
+  cost_class: string;
+  monetary_estimate: string | null;
+}
