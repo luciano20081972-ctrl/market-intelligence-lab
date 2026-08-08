@@ -32,6 +32,14 @@ Effort uses focused engineer-weeks and assumes one experienced developer with Co
 
 **Status: implemented on the v0.9 feature branch.** Versioned point-in-time universes, immutable lineage-bearing features, transparent screening, research budgets, snapshots, materialization controls, and the deterministic 100-company funnel are complete. No predictive-alpha claim is made.
 
+### v0.10 — Hypothesis Factory and factor validation
+
+**Status: implemented on the v0.10 feature branch.** Bounded falsifiable hypotheses, proposed mechanism paths, safe feature specifications, immutable partitioned experiments, walk-forward validation, multiple-testing correction, robustness/ablation/control suites, leakage attacks, promotion gates, and optional Qlib/RD-Agent contracts are complete. Most hypotheses are expected to fail; no investment recommendation or live-trading state exists.
+
+### Recommended v0.11 — Research Memory and signal independence
+
+Persist cross-release experiment similarity, failure patterns, and evidence conflicts; quantify redundancy and incremental information across validated candidates. Preserve sealed-test governance and do not expand into autonomous portfolio management.
+
 - **Scope:** L0-L4 universe policies, reproducible promotions, point-in-time feature definitions/materializations, budgets/cost ledger, first sector-specific sources.
 - **Reuse:** pandas/Arrow/Parquet ecosystem, existing backtests, agency bulk/API data.
 - **Build:** feature registry/lineage, as-of joins, promotion service, cost/coverage dashboard.

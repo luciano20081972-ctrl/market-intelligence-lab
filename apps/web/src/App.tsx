@@ -65,6 +65,16 @@ import {
   ResearchUniversePage,
   ScreeningRunDetail,
 } from "./pages/ResearchPlatform";
+import {
+  FactorExperimentDetail,
+  FactorStatisticsPage,
+  HypothesisDetail,
+  HypothesisLab,
+  ResearchEngineStatusPage,
+  RobustnessMatrix,
+  ValidationGates,
+  WalkForwardResults,
+} from "./pages/HypothesisPlatform";
 
 export { queryClient };
 
@@ -107,6 +117,14 @@ export function App() {
       <Route path="research/candidates/:id" element={<ResearchCandidateDetail />} />
       <Route path="research/budgets" element={<ResearchBudgetDashboard />} />
       <Route path="research/lineage/:id" element={<FeatureLineageViewer />} />
+      <Route path="research/hypotheses" element={<HypothesisLab />} />
+      <Route path="research/hypotheses/:id" element={<HypothesisDetail />} />
+      <Route path="research/experiments/:id" element={<FactorExperimentDetail />} />
+      <Route path="research/experiments/:id/walk-forward" element={<WalkForwardResults />} />
+      <Route path="research/experiments/:id/robustness" element={<RobustnessMatrix />} />
+      <Route path="research/experiments/:id/statistics" element={<FactorStatisticsPage />} />
+      <Route path="research/experiments/:id/gates" element={<ValidationGates />} />
+      <Route path="research/engines" element={<ResearchEngineStatusPage />} />
       <Route path="providers" element={<Providers />} />
       <Route path="providers/:id" element={<ProviderDetail />} />
       <Route path="imports" element={<ImportJobs />} />

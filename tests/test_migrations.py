@@ -26,6 +26,10 @@ def test_clean_database_migration(tmp_path: Path, monkeypatch: object) -> None:
     assert "economic_entities" in tables
     assert "economic_relationships" in tables
     assert "data_relevance_decisions" in tables
+    assert "research_hypotheses" in tables
+    assert "factor_experiments" in tables
+    assert "factor_experiment_folds" in tables
+    assert "experiment_manifests" in tables
     command.check(config)
     get_settings.cache_clear()
 
@@ -169,6 +173,43 @@ def test_v07_to_v08_upgrade_preserves_world_data(
         assert connection.scalar(
             text("SELECT title FROM macro_series WHERE id=:id"), {"id": series_id}
         ) == "Preserved v0.7 series"
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == (
+            EXPECTED_SCHEMA_REVISION
+        )
+    command.check(config)
+    engine.dispose()
+    get_settings.cache_clear()
+
+
+def test_v09_to_v010_upgrade_preserves_research_data(
+    tmp_path: Path, monkeypatch: object
+) -> None:
+    database = tmp_path / "v09-upgrade.db"
+    database_url = f"sqlite:///{database.as_posix()}"
+    monkeypatch.setenv("MIL_DATABASE_URL", database_url)  # type: ignore[attr-defined]
+    get_settings.cache_clear()
+    config = Config("alembic.ini")
+    command.upgrade(config, "2f9e39afd435")
+    engine = create_engine(database_url)
+    universe_id = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO research_universes "
+                "(id,workspace_id,name,description,owner_type,source,selection_rules,created_at) "
+                "VALUES "
+                "(:id,'00000000000040008000000000000002','Preserved v0.9 universe',"
+                "'upgrade fixture','system','migration-test','{}','2026-08-08')"
+            ),
+            {"id": universe_id},
+        )
+    command.upgrade(config, "head")
+    command.upgrade(config, "head")
+    with engine.connect() as connection:
+        assert connection.scalar(
+            text("SELECT name FROM research_universes WHERE id=:id"),
+            {"id": universe_id},
+        ) == "Preserved v0.9 universe"
         assert connection.scalar(text("SELECT version_num FROM alembic_version")) == (
             EXPECTED_SCHEMA_REVISION
         )

@@ -1,5 +1,9 @@
 # Architecture
 
+## v0.10 hypothesis factory and factor validation
+
+The v0.9 `ResearchCandidate` and immutable `FeatureSnapshot` feed a bounded Hypothesis Factory. A hypothesis records a proposed mechanism and evidence rather than causal proof; a declarative `CandidateFeatureSpec` is bound to a measurable outcome and immutable `FactorExperiment`. Explicit train, validation, and sealed final-test boundaries flow into retained walk-forward folds, corrected statistics, robustness variants, controls, and sequential promotion events. PostgreSQL remains authoritative for Temporal Truth, universes, graph state, lineage, budgets, and audit history. Qlib and RD-Agent are optional adapters behind internal interfaces and cannot bypass MIL validation.
+
 ## v0.9 progressive research and feature store
 
 The Economic Driver Graph is a workspace-scoped relational adjacency model in PostgreSQL. Canonical entities connect through typed, evidence-backed, temporally valid relationships. A bounded recursive query supplies explainable paths to versioned Company Driver Profiles; the deterministic Data Relevance Router then decides which datasets to process, defer, ignore, or review. v0.9 adds versioned universes, immutable point-in-time feature values, grouped lineage, progressive resolution, budgets, screening decisions, and reproducible snapshots. PostgreSQL remains the beta system of record; dense immutable historical matrices can move to Parquet without moving metadata or candidate state.

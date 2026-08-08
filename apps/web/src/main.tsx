@@ -9,7 +9,7 @@ if (sentryDsn) {
   Sentry.init({
     dsn: sentryDsn,
     environment: import.meta.env.MODE,
-    release: "market-intelligence-lab@0.9.0",
+    release: "market-intelligence-lab@0.10.0",
     sendDefaultPii: false,
     tracesSampleRate: 0,
     beforeSend(event) {

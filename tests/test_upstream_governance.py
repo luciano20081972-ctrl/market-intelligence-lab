@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 from pathlib import Path
+from typing import cast
 
 from packages.upstream import load_inventory, validate_inventory
 
@@ -15,7 +16,7 @@ def _inventory() -> dict[str, object]:
 def test_repository_upstream_inventory_is_valid() -> None:
     inventory = _inventory()
     assert validate_inventory(inventory, repository_root=ROOT) == []
-    assert len(inventory["projects"]) == 7  # type: ignore[arg-type]
+    assert len(inventory["projects"]) == 9  # type: ignore[arg-type]
 
 
 def test_unknown_license_is_rejected() -> None:
@@ -62,7 +63,8 @@ def test_copied_file_requires_valid_provenance_hash(tmp_path: Path) -> None:
 
 def test_dependency_versions_are_exactly_pinned() -> None:
     inventory = copy.deepcopy(_inventory())
-    project = inventory["projects"][1]  # type: ignore[index]
+    projects = cast(list[dict[str, object]], inventory["projects"])
+    project = next(item for item in projects if item["integration_category"] == "dependency")
     project["dependency_version"] = ">=5"
     errors = validate_inventory(inventory, repository_root=ROOT)
     assert any("exactly pinned" in error for error in errors)
@@ -73,7 +75,16 @@ def test_required_dependency_consistency() -> None:
     errors = validate_inventory(
         inventory,
         repository_root=ROOT,
-        required_dependencies={"edgartools", "quantstats", "skfolio", "react"},
+        required_dependencies={
+            "edgartools",
+            "numpy",
+            "quantstats",
+            "scikit-learn",
+            "scipy",
+            "skfolio",
+            "statsmodels",
+            "react",
+        },
     )
     assert errors == []
     errors = validate_inventory(

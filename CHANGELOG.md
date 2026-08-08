@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.10.0 - 2026-08-08
+
+- Added bounded, workspace-scoped research hypotheses with evidence-backed proposed mechanisms, declarative candidate features, measurable outcomes, strict lifecycle transitions, deduplication, budgets, and three differentiated reference cases.
+- Added immutable factor experiments with sealed train/validation/final-test partitions, expanding walk-forward folds, purge/embargo support, IC and quantile statistics, conventional-baseline incrementality, Bonferroni/Holm/FDR correction, robustness variants, ablations, negative controls, and nine leakage attacks.
+- Added sequential research-promotion gates, reproducibility manifests, optional snapshot-consuming Qlib and isolated artifact-only RD-Agent adapters, provider-neutral reasoning, protected APIs, and Hypothesis Lab frontend workflows. External engines and runtime AI remain disabled by default.
+- Added Alembic revision `ed23735efb90`, deterministic accepted/rejected fixtures, PostgreSQL constraints/concurrency/immutability coverage, and a bounded 100-hypothesis/1,000-experiment/10,000-fold benchmark.
+
+### Limitations
+
+- Proposed mechanisms are not causal proof, validated factors are not investment recommendations, and historical results do not predict future performance.
+- Qlib and RD-Agent execution are optional adapter contracts; neither is installed or required by ordinary operation. Generated code is never canonical or automatically merged.
+- Research Memory, full Signal Independence, Divergence Engine, Skeptic Agent, Scenario Engine, self-improving research, autonomous portfolio management, and live trading are not implemented.
+
 ## 0.9.0 - 2026-08-08
 
 - Added versioned point-in-time research universes and membership provenance, immutable feature definitions/values/lineage, feature sets, temporal-safe as-of retrieval, and cross-sectional normalization.

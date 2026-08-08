@@ -68,7 +68,10 @@ def permission_for_request(method: str, path: str) -> str:
         for segment in ("/sec/imports", "/analytics", "/optimization", "/upstream/engines")
     ):
         return "research.write"
-    if "/research/" in path or "/feature" in path:
+    if any(
+        segment in path
+        for segment in ("/research/", "/feature", "/hypotheses", "/factor-experiments")
+    ):
         return "research.write"
     if "/entity-resolution/" in path:
         return "graph.manage"

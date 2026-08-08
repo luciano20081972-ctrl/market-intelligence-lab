@@ -1,5 +1,9 @@
 # Database
 
+## v0.10 hypothesis-research schema
+
+Alembic revision `ed23735efb90` (parent `2f9e39afd435`) adds hypotheses, mechanisms/evidence, candidate specifications, outcomes, experiments/folds/statistics, multiple-testing and robustness records, ablations, negative controls, promotion events, manifests, and external-engine runs. Workspace foreign keys and status checks preserve tenant/lifecycle boundaries; composite indexes cover subject/status, experiment/status, and fold/range access. Application guards make completed or rejected experiments immutable. PostgreSQL workers claim scheduled experiments with `FOR UPDATE SKIP LOCKED`.
+
 ## v0.9 progressive research schema
 
 Alembic revision `2f9e39afd435` (parent `61293cddc2e2`) adds research universes/versions/memberships, feature definitions/versions/sets/values/lineage, materialization jobs, resolution policies, budgets/usage, immutable snapshots, screening runs/decisions, and candidate state. Composite indexes put equality columns before the simulation-eligibility range for as-of point and matrix reads. Every foreign-key hot path is indexed. UTC-aware clocks, half-open validity intervals, unique version/input identities, quality/status constraints, and workspace foreign keys enforce the core invariants. The beta deliberately does not partition; reassess around 100 million feature-value rows.

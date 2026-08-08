@@ -13,9 +13,11 @@ from sqlalchemy.exc import IntegrityError
 from packages.database.models import (
     LEGACY_WORKSPACE_ID,
     EconomicEntity,
+    FactorExperiment,
     ImportJob,
     JobLease,
     PriceBar,
+    ResearchHypothesis,
     UserProfile,
     Watchlist,
     Workspace,
@@ -24,6 +26,8 @@ from packages.database.models import (
 from packages.database.session import create_database_engine, make_session_factory, session_scope
 from packages.economic_graph.fixtures import FIXTURE_TIME
 from packages.economic_graph.traversal import postgres_recursive_neighborhood
+from packages.hypothesis.fixtures import seed_reference_hypothesis_research
+from packages.hypothesis.service import claim_factor_experiment
 from packages.market_data.ingestion import create_import_job
 from packages.market_data.operations import (
     claim_next_job,
@@ -268,3 +272,84 @@ def test_postgres_graph_query_indexes_exist(postgres_factory) -> None:  # type: 
             )
         )
     assert found == expected
+
+
+def test_postgres_hypothesis_schema_constraints_and_indexes(postgres_factory) -> None:  # type: ignore[no-untyped-def]
+    with session_scope(postgres_factory) as session:
+        seed_reference_hypothesis_research(session, LEGACY_WORKSPACE_ID)
+        session.commit()
+        expected = {
+            "ix_hypothesis_subject_status",
+            "ix_factor_experiment_hypothesis_status",
+            "ix_factor_fold_experiment_ranges",
+        }
+        found = set(
+            session.scalars(
+                text(
+                    "SELECT indexname FROM pg_indexes "
+                    "WHERE schemaname='public' AND indexname = ANY(:names)"
+                ).bindparams(names=list(expected))
+            )
+        )
+        assert found == expected
+        hypothesis = session.scalar(select(ResearchHypothesis))
+        assert hypothesis is not None
+        hypothesis.status = "INVALID"
+        with pytest.raises(IntegrityError):
+            session.flush()
+        session.rollback()
+
+
+def test_postgres_factor_experiment_claim_has_one_winner(postgres_factory) -> None:  # type: ignore[no-untyped-def]
+    with session_scope(postgres_factory) as session:
+        seed_reference_hypothesis_research(session, LEGACY_WORKSPACE_ID)
+        original = session.scalar(select(FactorExperiment))
+        assert original is not None
+        queued = FactorExperiment(
+            workspace_id=original.workspace_id,
+            hypothesis_id=original.hypothesis_id,
+            candidate_feature_spec_id=original.candidate_feature_spec_id,
+            universe_version_id=original.universe_version_id,
+            feature_snapshot_id=original.feature_snapshot_id,
+            outcome_definition_id=original.outcome_definition_id,
+            graph_state=original.graph_state,
+            period_start=original.period_start,
+            period_end=original.period_end,
+            validation_protocol=original.validation_protocol,
+            cost_assumptions=original.cost_assumptions,
+            application_sha=original.application_sha,
+            dependency_versions=original.dependency_versions,
+            seed=original.seed + 99,
+            status="SCHEDULED",
+            checksum=f"postgres-claim-{uuid.uuid4()}".replace("-", "")[:64],
+        )
+        session.add(queued)
+        session.flush()
+        queued_id = queued.id
+
+    def claim() -> str | None:
+        with session_scope(postgres_factory) as session:
+            item = claim_factor_experiment(session)
+            return str(item.id) if item else None
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(lambda _index: claim(), range(2)))
+    assert results.count(str(queued_id)) == 1
+    with session_scope(postgres_factory) as session:
+        status = session.scalar(
+            select(FactorExperiment.status).where(FactorExperiment.id == queued_id)
+        )
+        assert status == "RUNNING"
+
+
+def test_postgres_completed_factor_experiment_is_immutable(postgres_factory) -> None:  # type: ignore[no-untyped-def]
+    with session_scope(postgres_factory) as session:
+        seed_reference_hypothesis_research(session, LEGACY_WORKSPACE_ID)
+        experiment = session.scalar(
+            select(FactorExperiment).where(FactorExperiment.status == "COMPLETED")
+        )
+        assert experiment is not None
+        experiment.seed += 1
+        with pytest.raises(ValueError, match="immutable"):
+            session.flush()
+        session.rollback()

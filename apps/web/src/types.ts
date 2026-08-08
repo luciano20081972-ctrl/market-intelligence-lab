@@ -450,3 +450,85 @@ export interface ResearchBudget {
   cost_class: string;
   monetary_estimate: string | null;
 }
+
+export interface ResearchHypothesis {
+  id: string;
+  subject_entity_id: string;
+  company_name: string;
+  title: string;
+  type: string;
+  economic_rationale: string;
+  mechanism: Record<string, unknown>;
+  expected_direction: string;
+  expected_horizon: string;
+  required_evidence: Array<Record<string, unknown>>;
+  required_graph_drivers: string[];
+  required_datasets: string[];
+  proposed_outcome: Record<string, unknown>;
+  candidate_feature_specification: Record<string, unknown>;
+  originating_method: string;
+  falsification_criteria: string[];
+  mechanism_confidence: string;
+  novelty_estimate: string;
+  assumptions: string[];
+  simulation_eligible_time: string;
+  status: string;
+  version: number;
+  semantics: string;
+  mechanisms?: Array<Record<string, unknown>>;
+  evidence?: Array<Record<string, unknown>>;
+  feature_specs?: Array<Record<string, unknown>>;
+}
+
+export interface FactorExperiment {
+  id: string;
+  hypothesis_id: string;
+  candidate_feature_spec_id: string;
+  universe_version_id: string;
+  feature_snapshot_id: string;
+  outcome_definition_id: string;
+  status: string;
+  conclusion: string | null;
+  period_start: string;
+  period_end: string;
+  validation_protocol: Record<string, unknown>;
+  cost_assumptions: Record<string, unknown>;
+  dependency_versions: Record<string, string>;
+  seed: number;
+  warnings: string[];
+  immutable: boolean;
+}
+
+export interface ExperimentFold {
+  id: string;
+  fold_number: number;
+  train: [string, string];
+  validation: [string, string];
+  final_out_of_sample_test: [string, string];
+  purge_observations: number;
+  embargo_observations: number;
+  observations: number;
+  coverage: string;
+  factor_statistics: Record<string, number | string | string[]>;
+  model_statistics: Record<string, number | string | boolean>;
+  warnings: string[];
+  failures: string[];
+}
+
+export interface PromotionEvent {
+  from_stage: string | null;
+  to_stage: string;
+  decision: string;
+  reasons: string[];
+  gate_version: string;
+}
+
+export interface ResearchEngineStatus {
+  engine: string;
+  version: string | null;
+  available: boolean;
+  enabled: boolean;
+  message: string;
+  capabilities: string[];
+  security_boundaries: string[];
+}

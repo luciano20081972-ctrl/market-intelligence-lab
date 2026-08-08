@@ -13,7 +13,8 @@ import type {
   CompanyDriverProfile, DataRelevancePage, EconomicEntityPage, EconomicGraph,
   RelationshipEvidence, ResolutionCandidate,
   ResearchBudget, ResearchCandidate, ResearchFeature, ResearchUniverse,
-  FeatureValueRecord, ScreeningRun,
+  ExperimentFold, FactorExperiment, FeatureValueRecord, PromotionEvent,
+  ResearchEngineStatus, ResearchHypothesis, ScreeningRun,
 } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -220,4 +221,16 @@ export const api = {
   researchCandidates: () => request<{ items: ResearchCandidate[]; total: number; semantics: string }>("/api/v1/research/candidates"),
   researchCandidate: (id: string) => request<ResearchCandidate>(`/api/v1/research/candidates/${id}`),
   researchBudgets: () => request<{ items: ResearchBudget[]; total: number }>("/api/v1/research/budgets"),
+  hypotheses: () => request<{ items: ResearchHypothesis[]; total: number; high_rejection_rate_expected: boolean }>("/api/v1/hypotheses"),
+  hypothesis: (id: string) => request<ResearchHypothesis>(`/api/v1/hypotheses/${id}`),
+  runHypothesisFixture: () => request<Record<string, unknown>>("/api/v1/hypotheses/reference-fixture", { method: "POST" }),
+  factorExperiments: () => request<{ items: FactorExperiment[]; total: number }>("/api/v1/factor-experiments"),
+  factorExperiment: (id: string) => request<FactorExperiment>(`/api/v1/factor-experiments/${id}`),
+  experimentFolds: (id: string) => request<{ items: ExperimentFold[]; total: number; failed_folds_are_retained: boolean }>(`/api/v1/factor-experiments/${id}/folds`),
+  experimentStatistics: (id: string) => request<{ items: Array<{ metric_key: string; value: string | null; segment: string }>; multiple_testing: Array<{ hypothesis_family: string; number_of_hypotheses: number; raw_p_value: string; adjusted_p_value: string; correction_method: string; rejected_null: boolean }>; raw_p_values_never_reported_alone: boolean }>(`/api/v1/factor-experiments/${id}/statistics`),
+  experimentRobustness: (id: string) => request<{ variants: Array<{ type: string; parameters: Record<string, unknown>; statistics: Record<string, unknown>; passed: boolean }>; ablations: Array<{ component: string; included_components: string[]; statistics: Record<string, unknown>; contribution: string }>; negative_controls: Array<{ control_type: string; statistics: Record<string, unknown>; persistent_power_detected: boolean; methodology_valid: boolean }> }>(`/api/v1/factor-experiments/${id}/robustness`),
+  promotionEvents: (id: string) => request<{ items: PromotionEvent[]; total: number; live_trading_status_exists: boolean }>(`/api/v1/hypotheses/${id}/promotion-events`),
+  experimentManifest: (id: string) => request<Record<string, unknown>>(`/api/v1/factor-experiments/${id}/manifest`),
+  qlibResearchStatus: () => request<ResearchEngineStatus>("/api/v1/research-engines/qlib"),
+  rdAgentResearchStatus: () => request<ResearchEngineStatus>("/api/v1/research-engines/rd-agent"),
 };

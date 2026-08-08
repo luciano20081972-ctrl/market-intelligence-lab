@@ -1,6 +1,6 @@
 # Reproducibility
 
-v0.9 `FeatureSnapshot` is the research reproducibility boundary. It captures the eligible universe version, ordered feature-set version, entity and feature-value identities, as-of time, application SHA, migration head, source/graph/routing/policy references, seeds, warnings, and a canonical checksum. `ResearchScreeningRun` adds decomposed decisions, budget usage, reason distribution, and its own checksum. Re-running identical software, configuration, and point-in-time inputs returns the same snapshot and screening run; revisions append values rather than rewriting history.
+v0.10 extends the v0.9 `FeatureSnapshot` boundary with an immutable `ExperimentManifest`: hypothesis/specification versions, outcome, universe and graph/reference state, source manifests, application SHA, Alembic head, dependency versions, validation protocol, seed, exact partitions, engine configuration, warnings, and canonical checksums. Every fold, failed variant, correction, control, and promotion decision is retained. Re-running identical software, configuration, and point-in-time inputs returns the same deterministic fixture artifacts; revisions append rather than rewriting history.
 
 Backtests retain canonical manifests and validation reports. v0.6 extends the same discipline:
 

@@ -1,5 +1,11 @@
 # Testing
 
+## v0.10 factor-research verification
+
+`tests/test_hypothesis_factory.py` covers lifecycle rejection, declarative DSL safety, non-overlapping sealed partitions, walk-forward and purge/embargo behavior, factor/quantile statistics, three multiple-testing corrections, incrementality, robustness, ablation, controls, all nine leakage attacks, sequential promotion, budgets/manifests, optional-engine absence, differentiated archetypes, and the intentionally rejected agriculture hypothesis. PostgreSQL-marked tests add schema constraints/indexes, exclusive experiment claiming, and completed-experiment immutability. Migration tests apply an empty schema, preserve v0.9 data through `2f9e39afd435 → ed23735efb90`, repeat the upgrade, and run Alembic drift detection.
+
+Run `python scripts/benchmark_hypothesis_research.py` for the bounded 100-hypothesis, 1,000-experiment, 10,000-fold workload and 10/50/100-company resource estimates. Runtime AI, Qlib, RD-Agent, and upstream network access are not required by ordinary tests.
+
 ## v0.9 feature-store verification
 
 Coverage adds feature definition/version/immutability/lineage; universe and membership history; simulation-eligible as-of retrieval; future feature, universe, graph, SEC, ALFRED, normalization, and screening leakage boundaries; feature quality; safe normalization; materialization idempotency/claims/router skipping; budget enforcement; deterministic promotion/demotion; snapshot and screening reproducibility; workspace API isolation; full research-funnel frontend/Playwright workflows; and a bounded feature-store benchmark. Run `python scripts/benchmark_feature_store.py`; add `--postgres-url-env MIL_POSTGRES_TEST_DATABASE_URL` only for a disposable PostgreSQL 17 database.

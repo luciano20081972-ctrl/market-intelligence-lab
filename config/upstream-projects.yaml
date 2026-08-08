@@ -1,6 +1,52 @@
 policy_version: "1.0"
-reviewed_at: "2026-07-30"
+reviewed_at: "2026-08-08"
 projects:
+  - name: microsoft/qlib
+    repository_url: https://github.com/microsoft/qlib
+    reviewed_revision: v0.9.7
+    reviewed_release: v0.9.7
+    license: MIT
+    license_file_url: https://github.com/microsoft/qlib/blob/v0.9.7/LICENSE
+    copyright_holder: Microsoft Corporation and contributors
+    integration_category: optional_engine
+    approved_use: Snapshot-consuming optional research engine behind QlibResearchEngine.
+    prohibited_use: Canonical storage, bypassing MIL validation, or ungoverned external datasets.
+    attribution_requirements: Preserve the MIT copyright and license notice when distributed.
+    source_files_used: []
+    source_file_hashes: {}
+    modifications_made: No upstream source copied or modified.
+    dependency_version: null
+    replacement_strategy: Disable or replace the adapter while retaining normalized MIL experiments.
+    maintenance_status: evaluated_only
+    last_review_date: "2026-08-08"
+    security_status: Not installed; optional fixture contract only.
+    commercial_use_status: Permitted under MIT, subject to data/model terms.
+    network_service_obligations: None under MIT; upstream data terms remain separate.
+    patent_provisions: No express patent license in MIT.
+    trademark_restrictions: No Microsoft or Qlib trademark rights granted.
+  - name: microsoft/RD-Agent
+    repository_url: https://github.com/microsoft/RD-Agent
+    reviewed_revision: v0.8.0
+    reviewed_release: v0.8.0
+    license: MIT
+    license_file_url: https://github.com/microsoft/RD-Agent/blob/v0.8.0/LICENSE
+    copyright_holder: Microsoft Corporation and contributors
+    integration_category: optional_engine
+    approved_use: Future isolated bounded artifact generator whose output enters MIL validation.
+    prohibited_use: In-process generated code, secrets, unrestricted host access, or automatic merges.
+    attribution_requirements: Preserve the MIT copyright and license notice when distributed.
+    source_files_used: []
+    source_file_hashes: {}
+    modifications_made: No upstream source copied or modified.
+    dependency_version: null
+    replacement_strategy: Keep disabled or replace the artifact runner without changing MIL validation.
+    maintenance_status: evaluated_only
+    last_review_date: "2026-08-08"
+    security_status: Not installed; adapter disabled and artifact-only.
+    commercial_use_status: Permitted under MIT; model/API/output terms are separate.
+    network_service_obligations: External model and data providers impose separate obligations.
+    patent_provisions: No express patent license in MIT.
+    trademark_restrictions: No Microsoft or RD-Agent trademark rights granted.
   - name: QuantConnect/Lean
     repository_url: https://github.com/QuantConnect/Lean
     reviewed_revision: 962fcd6b58a56d7a52cf7178a42b965ff3681115
@@ -185,8 +231,12 @@ direct_dependencies:
   - { ecosystem: python, name: psycopg, version: ">=3.2,<4", license: LGPL-3.0-only }
   - { ecosystem: python, name: sentry-sdk, version: ">=2,<3", license: BSD-2-Clause }
   - { ecosystem: python, name: edgartools, version: "5.43.1", license: MIT }
+  - { ecosystem: python, name: numpy, version: "2.5.1", license: BSD-3-Clause }
   - { ecosystem: python, name: quantstats, version: "0.0.81", license: Apache-2.0 }
+  - { ecosystem: python, name: scikit-learn, version: "1.9.0", license: BSD-3-Clause }
+  - { ecosystem: python, name: scipy, version: "1.18.0", license: BSD-3-Clause }
   - { ecosystem: python, name: skfolio, version: "0.20.1", license: BSD-3-Clause }
+  - { ecosystem: python, name: statsmodels, version: "0.14.6", license: BSD-3-Clause }
   - { ecosystem: npm, name: "@sentry/react", version: "^9.1.0", license: BSD-3-Clause }
   - { ecosystem: npm, name: "@supabase/supabase-js", version: "^2.49.1", license: MIT }
   - { ecosystem: npm, name: "@tanstack/react-query", version: "^5.66.0", license: MIT }

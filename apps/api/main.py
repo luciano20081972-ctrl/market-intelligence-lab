@@ -17,6 +17,7 @@ from apps.api.routers import (
     backtests,
     comparisons,
     economic_graph,
+    hypotheses,
     identity,
     infrastructure,
     market_data,
@@ -162,6 +163,7 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.include_router(upstream.router, prefix="/api/v1", dependencies=protected)
     app.include_router(world_data.router, prefix="/api/v1", dependencies=protected)
     app.include_router(research.router, prefix="/api/v1", dependencies=protected)
+    app.include_router(hypotheses.router, prefix="/api/v1", dependencies=protected)
     return app
 
 

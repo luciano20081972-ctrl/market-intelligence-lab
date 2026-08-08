@@ -1,0 +1,43 @@
+version: hypothesis-factory-v1
+scientific_semantics: research_hypotheses_not_investment_predictions
+generation:
+  default_maximum_hypotheses_per_company: 10
+  hard_maximum_hypotheses_per_company: 25
+  runtime_reasoning_enabled: false
+  final_test_visible_to_generator: false
+validation:
+  window: expanding
+  train_required: true
+  validation_required: true
+  final_out_of_sample_required: true
+  purge_observations: 5
+  embargo_observations: 5
+  multiple_testing_method: benjamini-hochberg
+  significance_alpha: 0.05
+  negative_controls:
+    - shuffled
+    - deterministic_noise
+    - unrelated_sector
+    - temporal_corruption
+promotion:
+  gate_version: research-promotion-v1
+  required_gates:
+    - EVIDENCE_CHECKED
+    - IMPLEMENTED
+    - LEAKAGE_CHECKED
+    - BACKTESTED
+    - WALK_FORWARD_PASSED
+    - ROBUSTNESS_PASSED
+    - OOS_PASSED
+  terminal_research_stage: PAPER_ELIGIBLE
+  live_trading_stage_exists: false
+engines:
+  qlib:
+    optional: true
+    enabled: false
+    version_audited: 0.9.7
+  rd_agent:
+    optional: true
+    enabled: false
+    version_audited: 0.8.0
+    isolated_process_required: true
