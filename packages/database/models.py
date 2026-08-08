@@ -1621,10 +1621,10 @@ class EntityResolutionCandidate(Base):
         ),
         CheckConstraint(
             "status IN ('candidate','confirmed','rejected','ambiguous')",
-            name="resolution_candidate_status_valid",
+            name="status_valid",
         ),
         CheckConstraint(
-            "confidence >= 0 AND confidence <= 1", name="resolution_candidate_confidence_range"
+            "confidence >= 0 AND confidence <= 1", name="confidence_range"
         ),
     )
 
@@ -1693,7 +1693,7 @@ class EconomicRelationship(Base):
             name="economic_relationship_status_valid",
         ),
         CheckConstraint(
-            "confidence >= 0 AND confidence <= 1", name="economic_relationship_confidence_range"
+            "confidence >= 0 AND confidence <= 1", name="confidence_range"
         ),
         CheckConstraint(
             "strength IS NULL OR (strength >= 0 AND strength <= 1)",
@@ -1819,7 +1819,7 @@ class RelationshipConfidenceComponent(Base):
             "relationship_id", "formula_version", "component", name="uq_relationship_confidence"
         ),
         CheckConstraint(
-            "value >= 0 AND value <= 1", name="relationship_confidence_component_range"
+            "value >= 0 AND value <= 1", name="component_range"
         ),
     )
 
