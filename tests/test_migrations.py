@@ -230,6 +230,7 @@ def test_postgresql_offline_sql_contains_only_public_application_lockdown(
     command.upgrade(config, "head", sql=True)
     rendered = output.getvalue()
     assert 'ALTER TABLE public."assets" ENABLE ROW LEVEL SECURITY' in rendered
+    assert "ck_external_research_engine_runs_engine_run_status" in rendered
     assert "REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC" in rendered
     assert "ALTER DEFAULT PRIVILEGES IN SCHEMA public" in rendered
     assert "::VARCHAR" not in rendered

@@ -549,7 +549,7 @@ def upgrade() -> None:
         ),
         sa.CheckConstraint(
             "status IN ('unavailable','disabled','queued','running','completed','failed')",
-            name=op.f("ck_external_research_engine_runs_external_research_engine_status"),
+            name=op.f("ck_external_research_engine_runs_engine_run_status"),
         ),
         sa.ForeignKeyConstraint(
             ["experiment_id"],

@@ -2804,7 +2804,7 @@ class ExternalResearchEngineRun(Base):
         CheckConstraint("engine IN ('qlib','rd-agent')", name="external_research_engine"),
         CheckConstraint(
             "status IN ('unavailable','disabled','queued','running','completed','failed')",
-            name="external_research_engine_status",
+            name="engine_run_status",
         ),
     )
 
