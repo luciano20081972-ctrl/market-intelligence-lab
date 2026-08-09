@@ -42,13 +42,28 @@ describe("application states", () => {
   it("renders the application navigation and warning", () => {
     renderPage(<Layout />);
     expect(screen.getByText("Market Intelligence")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Dashboard" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Market Research" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Strategy Optimization" })).toBeInTheDocument();
+    expect(screen.getByText("More & administration")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Activity Log" })).toBeInTheDocument();
     expect(screen.getByText("Synthetic demonstration data — not live market data.")).toBeInTheDocument();
   });
 
   it("shows a loading state", () => {
     mocked.systemInfo.mockReturnValue(new Promise(() => {}));
     renderPage(<Overview />);
-    expect(screen.getByRole("status")).toHaveTextContent("Loading market overview");
+    expect(screen.getByRole("status")).toHaveTextContent("Loading your dashboard");
+  });
+
+  it("shows system readiness, beginner next steps, and workflow shortcuts", async () => {
+    renderPage(<Overview />);
+    expect(await screen.findByRole("heading", { name: "Research dashboard" })).toBeInTheDocument();
+    expect(screen.getByText("System ready")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Getting started" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /View Watchlists/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Test a Strategy/ })).toBeInTheDocument();
+    expect(screen.getByText(/does not automatically place real-money trades/)).toBeInTheDocument();
   });
 
   it("shows an API error state", async () => {
