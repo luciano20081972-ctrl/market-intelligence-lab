@@ -95,7 +95,13 @@ export function Layout() {
   );
   return <div className="app-shell">
     <aside className="sidebar">
-      <div className="brand"><span className="brand-mark">MIL</span><div>Market Intelligence<small>Research Lab · v0.11.0</small></div></div>
+      <div className="brand">
+        <picture>
+          <source media="(max-width: 600px)" srcSet="/assets/branding/market-intelligence-lab-app-icon-256.png" />
+          <img className="brand-logo" src="/assets/branding/market-intelligence-lab-logo-512.webp" alt="Market Intelligence Lab" />
+        </picture>
+        <div>Market Intelligence Lab<small>Research Lab · v0.11.0</small></div>
+      </div>
       <nav aria-label="Primary navigation">
         {primarySections.map(section => <NavigationLinks key={section.label} section={section} />)}
         <details className="advanced-nav" open={advancedRouteActive ? true : undefined}>

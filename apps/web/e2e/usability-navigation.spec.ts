@@ -8,6 +8,8 @@ test("beginner dashboard and advanced navigation remain usable on mobile", async
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
 
+  await expect(page.getByRole("img", { name: "Market Intelligence Lab" })).toBeVisible();
+  await expect(page.locator('link[rel="icon"][sizes="32x32"]')).toHaveAttribute("href", "/assets/branding/favicon-32.png");
   await expect(page.getByRole("heading", { name: "Research dashboard" })).toBeVisible();
   await expect(page.getByText("System ready")).toBeVisible();
   await expect(page.getByRole("link", { name: /View Watchlists/ })).toBeVisible();

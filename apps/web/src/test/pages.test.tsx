@@ -41,7 +41,10 @@ beforeEach(() => {
 describe("application states", () => {
   it("renders the application navigation and warning", () => {
     renderPage(<Layout />);
-    expect(screen.getByText("Market Intelligence")).toBeInTheDocument();
+    expect(screen.getByText("Market Intelligence Lab")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Market Intelligence Lab" })).toHaveAttribute(
+      "src", "/assets/branding/market-intelligence-lab-logo-512.webp"
+    );
     expect(screen.getByRole("link", { name: "Dashboard" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Market Research" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Strategy Optimization" })).toBeInTheDocument();
