@@ -4,7 +4,7 @@ test("progressive research fixture is temporal, explainable, and budgeted", asyn
   const severe: string[] = [];
   page.on("console", message => { if (message.type() === "error") severe.push(message.text()); });
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Market overview" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Research dashboard" })).toBeVisible();
   await page.getByLabel("Workspace", { exact: true }).selectOption({
     label: "Legacy Development Workspace",
   });

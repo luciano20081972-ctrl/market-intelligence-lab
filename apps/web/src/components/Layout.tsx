@@ -1,62 +1,108 @@
-import { NavLink, Outlet } from "react-router";
-import { DemoWarning } from "./States";
+import { NavLink, Outlet, useLocation } from "react-router";
 import { useAuth } from "../auth";
+import { DemoWarning } from "./States";
 
-const links: Array<{ to: string; label: string }> = [
-  { to: "/", label: "Overview" },
-  { to: "/watchlists", label: "Watchlists" },
-  { to: "/assets", label: "Asset Explorer" },
-  { to: "/strategies", label: "Strategy Lab" },
-  { to: "/backtests", label: "Backtests" },
-  { to: "/paper-portfolios", label: "Paper Portfolios" },
-  { to: "/data-sources", label: "Data Sources" },
-  { to: "/world-data", label: "World Data Registry" },
-  { to: "/world-data/manifests", label: "Data Manifests" },
-  { to: "/world-data/macro", label: "Macro & Vintages" },
-  { to: "/world-data/energy", label: "EIA Pilot" },
-  { to: "/economic-graph", label: "Economic Graph" },
-  { to: "/driver-profiles", label: "Driver Profiles" },
-  { to: "/relationship-evidence", label: "Relationship Evidence" },
-  { to: "/data-relevance", label: "Data Relevance" },
-  { to: "/entity-resolution", label: "Entity Resolution" },
-  { to: "/research/universe", label: "Research Universe" },
-  { to: "/research/features", label: "Feature Catalog" },
-  { to: "/research/features/explorer", label: "Feature Matrix" },
-  { to: "/research/funnel", label: "Research Funnel" },
-  { to: "/research/candidates", label: "Research Candidates" },
-  { to: "/research/budgets", label: "Research Budgets" },
-  { to: "/research/hypotheses", label: "Hypothesis Lab" },
-  { to: "/research/engines", label: "Research Engines" },
-  { to: "/providers", label: "Providers" },
-  { to: "/imports", label: "Import Jobs" },
-  { to: "/operations", label: "Queue & Workers" },
-  { to: "/schedules", label: "Schedules" },
-  { to: "/reconciliation", label: "Reconciliation" },
-  { to: "/provider-comparisons", label: "Provider Comparison" },
-  { to: "/infrastructure", label: "Infrastructure" },
-  { to: "/sec", label: "SEC Intelligence" },
-  { to: "/analytics", label: "Analytics Comparison" },
-  { to: "/optimization", label: "Optimization" },
-  { to: "/upstream", label: "Upstream Integrations" },
-  { to: "/audit", label: "Audit Log" },
-  { to: "/workspace", label: "Workspace Settings" },
-  { to: "/profile", label: "Profile" },
-  { to: "/data-quality", label: "Data Quality" },
-  { to: "/corporate-actions", label: "Corporate Actions" },
-  { to: "/exchange-calendar", label: "Exchange Calendar" },
-  { to: "/status", label: "System Status" },
-  { to: "/docs", label: "Documentation" },
+interface NavigationLink {
+  to: string;
+  label: string;
+  description?: string;
+}
+
+interface NavigationSection {
+  label: string;
+  links: NavigationLink[];
+}
+
+const primarySections: NavigationSection[] = [
+  { label: "Home", links: [{ to: "/", label: "Dashboard", description: "System health, data status, and next steps" }] },
+  { label: "Research", links: [
+    { to: "/watchlists", label: "Watchlists", description: "Keep the companies and funds you follow in one place" },
+    { to: "/assets", label: "Market Research", description: "Explore market history and available assets" },
+    { to: "/sec", label: "Company Filings & Activity", description: "Review SEC filings, ownership, and company disclosures" },
+    { to: "/research/hypotheses", label: "Factor Research", description: "Test economic ideas with controlled historical experiments" },
+  ] },
+  { label: "Test Strategies", links: [
+    { to: "/strategies", label: "Strategy Lab", description: "Choose assumptions and prepare a historical test" },
+    { to: "/backtests", label: "Backtest Results", description: "Review completed historical strategy tests" },
+    { to: "/optimization", label: "Strategy Optimization", description: "Compare constrained strategy configurations" },
+  ] },
+  { label: "Paper Trading", links: [
+    { to: "/paper-portfolios", label: "Paper Portfolios", description: "Review simulated portfolios, orders, and performance" },
+  ] },
+  { label: "Data", links: [
+    { to: "/data-sources", label: "Market Data", description: "See available data and when it was last refreshed" },
+    { to: "/imports", label: "Import Market Data", description: "Refresh or add historical market data" },
+    { to: "/providers", label: "Data Provider Status", description: "Check whether connected data providers are working" },
+    { to: "/corporate-actions", label: "Corporate Actions", description: "Review splits, dividends, and symbol changes" },
+    { to: "/data-quality", label: "Data Quality", description: "Review missing, stale, or conflicting records" },
+    { to: "/exchange-calendar", label: "Market Events Calendar", description: "Closures and events that can affect historical results" },
+  ] },
 ];
+
+const advancedSections: NavigationSection[] = [
+  { label: "Advanced research", links: [
+    { to: "/world-data", label: "Official Data Sources" },
+    { to: "/world-data/manifests", label: "Data History & Provenance" },
+    { to: "/world-data/macro", label: "Economic Data & Revisions" },
+    { to: "/world-data/energy", label: "Energy Data Pilot" },
+    { to: "/economic-graph", label: "Economic Relationships" },
+    { to: "/driver-profiles", label: "Company Drivers" },
+    { to: "/relationship-evidence", label: "Relationship Evidence" },
+    { to: "/data-relevance", label: "Data Relevance" },
+    { to: "/entity-resolution", label: "Entity Matching Review" },
+    { to: "/research/universe", label: "Research Universe" },
+    { to: "/research/features", label: "Research Measurements" },
+    { to: "/research/features/explorer", label: "Feature Matrix" },
+    { to: "/research/funnel", label: "Research Funnel" },
+    { to: "/research/candidates", label: "Research Candidates" },
+    { to: "/research/budgets", label: "Research Limits" },
+    { to: "/research/engines", label: "Research Engine Status" },
+  ] },
+  { label: "Data operations", links: [
+    { to: "/operations", label: "Background Jobs" },
+    { to: "/schedules", label: "Import Schedules" },
+    { to: "/reconciliation", label: "Data Reconciliation" },
+    { to: "/provider-comparisons", label: "Provider Comparison" },
+  ] },
+  { label: "Administration", links: [
+    { to: "/status", label: "System Status" },
+    { to: "/infrastructure", label: "System Services" },
+    { to: "/upstream", label: "Data Providers & Integrations" },
+    { to: "/analytics", label: "Analytics Comparison" },
+    { to: "/workspace", label: "Workspace Settings" },
+    { to: "/profile", label: "Profile" },
+    { to: "/audit", label: "Activity Log" },
+    { to: "/docs", label: "Documentation" },
+  ] },
+];
+
+function NavigationLinks({ section }: { section: NavigationSection }) {
+  return <div className="nav-section">
+    <span className="nav-heading">{section.label}</span>
+    {section.links.map(({ to, label, description }) =>
+      <NavLink key={to} to={to} end={to === "/"} title={description}>{label}</NavLink>
+    )}
+  </div>;
+}
 
 export function Layout() {
   const auth = useAuth();
+  const location = useLocation();
+  const advancedRouteActive = advancedSections.some(section =>
+    section.links.some(link => location.pathname === link.to || location.pathname.startsWith(`${link.to}/`))
+  );
   return <div className="app-shell">
     <aside className="sidebar">
-      <div className="brand"><span className="brand-mark">MIL</span><div>Market Intelligence<small>Research Lab · v0.10.0</small></div></div>
+      <div className="brand"><span className="brand-mark">MIL</span><div>Market Intelligence<small>Research & paper trading · v0.10.0</small></div></div>
       <nav aria-label="Primary navigation">
-        {links.map(({ to, label }) => <NavLink key={to} to={to} end={to === "/"}>{label}</NavLink>)}
+        {primarySections.map(section => <NavigationLinks key={section.label} section={section} />)}
+        <details className="advanced-nav" open={advancedRouteActive ? true : undefined}>
+          <summary>More & administration</summary>
+          <p>Technical, operational, and rarely used tools</p>
+          {advancedSections.map(section => <NavigationLinks key={section.label} section={section} />)}
+        </details>
       </nav>
-      <div className="sidebar-foot"><span className="status-dot" />Local research environment</div>
+      <div className="sidebar-foot"><span className="status-dot" />Private research environment</div>
     </aside>
     <div className="main-column">
       <header className="topbar"><div><b>{auth.workspace?.name ?? "Research workspace"}</b><span>Simulation only · {auth.workspace?.role}</span></div>
