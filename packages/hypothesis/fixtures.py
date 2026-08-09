@@ -46,7 +46,7 @@ from packages.hypothesis.validation import (
 from packages.research.fixtures import REFERENCE_AS_OF, seed_reference_research
 
 APPLICATION_SHA = "fixture-v0.10"
-MIGRATION_HEAD = "ed23735efb90"
+MIGRATION_HEAD = "3b2f6c7d8e90"
 
 
 def _companies_by_archetype(session: Session) -> dict[str, EconomicEntity]:

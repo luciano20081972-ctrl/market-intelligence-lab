@@ -30,6 +30,13 @@ def test_clean_database_migration(tmp_path: Path, monkeypatch: object) -> None:
     assert "factor_experiments" in tables
     assert "factor_experiment_folds" in tables
     assert "experiment_manifests" in tables
+    assert "compute_jobs" in tables
+    assert "compute_job_transitions" in tables
+    assert "cloud_usage_ledger" in tables
+    assert "market_supervisor_heartbeats" in tables
+    assert "data_freshness_observations" in tables
+    assert "decision_signals" in tables
+    assert "alert_events" in tables
     command.check(config)
     get_settings.cache_clear()
 
@@ -100,9 +107,10 @@ def test_v05_to_v051_lockdown_upgrade_preserves_existing_data(
     command.upgrade(config, "head")
     command.upgrade(config, "head")
     with engine.connect() as connection:
-        assert connection.scalar(
-            text("SELECT name FROM watchlists WHERE name='Preserved v0.5'")
-        ) == "Preserved v0.5"
+        assert (
+            connection.scalar(text("SELECT name FROM watchlists WHERE name='Preserved v0.5'"))
+            == "Preserved v0.5"
+        )
         assert connection.scalar(text("SELECT version_num FROM alembic_version")) == (
             EXPECTED_SCHEMA_REVISION
         )
@@ -134,9 +142,12 @@ def test_v06_to_v07_upgrade_preserves_sec_data(tmp_path: Path, monkeypatch: obje
     command.upgrade(config, "head")
     command.upgrade(config, "head")
     with engine.connect() as connection:
-        assert connection.scalar(
-            text("SELECT name FROM sec_companies WHERE id=:id"), {"id": company_id}
-        ) == "Preserved SEC"
+        assert (
+            connection.scalar(
+                text("SELECT name FROM sec_companies WHERE id=:id"), {"id": company_id}
+            )
+            == "Preserved SEC"
+        )
         assert connection.scalar(text("SELECT version_num FROM alembic_version")) == (
             EXPECTED_SCHEMA_REVISION
         )
@@ -145,9 +156,7 @@ def test_v06_to_v07_upgrade_preserves_sec_data(tmp_path: Path, monkeypatch: obje
     get_settings.cache_clear()
 
 
-def test_v07_to_v08_upgrade_preserves_world_data(
-    tmp_path: Path, monkeypatch: object
-) -> None:
+def test_v07_to_v08_upgrade_preserves_world_data(tmp_path: Path, monkeypatch: object) -> None:
     database = tmp_path / "v07-upgrade.db"
     database_url = f"sqlite:///{database.as_posix()}"
     monkeypatch.setenv("MIL_DATABASE_URL", database_url)  # type: ignore[attr-defined]
@@ -170,9 +179,12 @@ def test_v07_to_v08_upgrade_preserves_world_data(
     command.upgrade(config, "head")
     command.upgrade(config, "head")
     with engine.connect() as connection:
-        assert connection.scalar(
-            text("SELECT title FROM macro_series WHERE id=:id"), {"id": series_id}
-        ) == "Preserved v0.7 series"
+        assert (
+            connection.scalar(
+                text("SELECT title FROM macro_series WHERE id=:id"), {"id": series_id}
+            )
+            == "Preserved v0.7 series"
+        )
         assert connection.scalar(text("SELECT version_num FROM alembic_version")) == (
             EXPECTED_SCHEMA_REVISION
         )
@@ -181,9 +193,7 @@ def test_v07_to_v08_upgrade_preserves_world_data(
     get_settings.cache_clear()
 
 
-def test_v09_to_v010_upgrade_preserves_research_data(
-    tmp_path: Path, monkeypatch: object
-) -> None:
+def test_v09_to_v010_upgrade_preserves_research_data(tmp_path: Path, monkeypatch: object) -> None:
     database = tmp_path / "v09-upgrade.db"
     database_url = f"sqlite:///{database.as_posix()}"
     monkeypatch.setenv("MIL_DATABASE_URL", database_url)  # type: ignore[attr-defined]
@@ -206,10 +216,13 @@ def test_v09_to_v010_upgrade_preserves_research_data(
     command.upgrade(config, "head")
     command.upgrade(config, "head")
     with engine.connect() as connection:
-        assert connection.scalar(
-            text("SELECT name FROM research_universes WHERE id=:id"),
-            {"id": universe_id},
-        ) == "Preserved v0.9 universe"
+        assert (
+            connection.scalar(
+                text("SELECT name FROM research_universes WHERE id=:id"),
+                {"id": universe_id},
+            )
+            == "Preserved v0.9 universe"
+        )
         assert connection.scalar(text("SELECT version_num FROM alembic_version")) == (
             EXPECTED_SCHEMA_REVISION
         )
@@ -234,10 +247,7 @@ def test_postgresql_offline_sql_contains_only_public_application_lockdown(
     assert "REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC" in rendered
     assert "ALTER DEFAULT PRIVILEGES IN SCHEMA public" in rendered
     assert "::VARCHAR" not in rendered
-    assert (
-        "UPDATE watchlists SET workspace_id = "
-        "'00000000-0000-4000-8000-000000000002'" in rendered
-    )
+    assert "UPDATE watchlists SET workspace_id = '00000000-0000-4000-8000-000000000002'" in rendered
     for index_name in (
         "ix_backtest_trades_source_price_bar_id",
         "ix_paper_fills_source_price_bar_id",

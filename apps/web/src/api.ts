@@ -15,6 +15,7 @@ import type {
   ResearchBudget, ResearchCandidate, ResearchFeature, ResearchUniverse,
   ExperimentFold, FactorExperiment, FeatureValueRecord, PromotionEvent,
   ResearchEngineStatus, ResearchHypothesis, ScreeningRun,
+  CloudBudgetStatus, ComputeJob, ComputeStatus, MarketControlStatus,
 } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -233,4 +234,13 @@ export const api = {
   experimentManifest: (id: string) => request<Record<string, unknown>>(`/api/v1/factor-experiments/${id}/manifest`),
   qlibResearchStatus: () => request<ResearchEngineStatus>("/api/v1/research-engines/qlib"),
   rdAgentResearchStatus: () => request<ResearchEngineStatus>("/api/v1/research-engines/rd-agent"),
+  computeStatus: () => request<ComputeStatus>("/api/v1/compute/status"),
+  computeJobs: () => request<ComputeJob[]>("/api/v1/compute/jobs"),
+  computeJob: (id: string) => request<ComputeJob>(`/api/v1/compute/jobs/${id}`),
+  cancelComputeJob: (id: string) => request<ComputeJob>(`/api/v1/compute/jobs/${id}/cancel`, { method: "POST" }),
+  retryComputeJob: (id: string, confirmNoExecution = false) => request<ComputeJob>(`/api/v1/compute/jobs/${id}/retry`, { method: "POST", body: JSON.stringify({ confirm_no_cloud_execution: confirmNoExecution }) }),
+  cloudBudget: () => request<CloudBudgetStatus>("/api/v1/compute/budget"),
+  marketControlStatus: () => request<MarketControlStatus>("/api/v1/market/status"),
+  decisionSignals: () => request<Array<Record<string, unknown>>>("/api/v1/signals"),
+  alertEvents: () => request<Array<Record<string, unknown>>>("/api/v1/alerts"),
 };

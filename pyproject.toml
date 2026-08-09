@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "market-intelligence-lab"
-version = "0.10.0"
+version = "0.11.0"
 description = "Historical market-data research, backtesting, and simulated paper-trading platform"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -35,6 +35,12 @@ dev = [
   "types-PyYAML>=6.0,<7",
 ]
 postgres = ["psycopg[binary]>=3.2,<4"]
+cloud-worker = ["google-cloud-storage>=3,<4"]
+cloud-orchestrator = [
+  "google-auth>=2.40,<3",
+  "google-cloud-storage>=3,<4",
+  "requests>=2.32,<3",
+]
 observability = ["sentry-sdk[fastapi]>=2,<3"]
 integrations = [
   "edgartools==5.43.1",

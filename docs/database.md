@@ -2,7 +2,7 @@
 
 ## v0.10 hypothesis-research schema
 
-Alembic revision `ed23735efb90` (parent `2f9e39afd435`) adds hypotheses, mechanisms/evidence, candidate specifications, outcomes, experiments/folds/statistics, multiple-testing and robustness records, ablations, negative controls, promotion events, manifests, and external-engine runs. Workspace foreign keys and status checks preserve tenant/lifecycle boundaries; composite indexes cover subject/status, experiment/status, and fold/range access. Application guards make completed or rejected experiments immutable. PostgreSQL workers claim scheduled experiments with `FOR UPDATE SKIP LOCKED`.
+Alembic revision `3b2f6c7d8e90` (parent `ed23735efb90`) adds durable compute jobs and transitions, cloud usage estimates, market-supervisor heartbeats, freshness observations, decision signals, and in-app alerts. Workspace foreign keys, uniqueness constraints, state checks, and composite indexes preserve tenant and lifecycle boundaries. The parent revision retains hypotheses, experiments, folds, statistics, robustness records, controls, promotion events, and immutable manifests.
 
 ## v0.9 progressive research schema
 

@@ -6,7 +6,7 @@ from pathlib import Path
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-EXPECTED_SCHEMA_REVISION = "ed23735efb90"
+EXPECTED_SCHEMA_REVISION = "3b2f6c7d8e90"
 
 
 def normalize_database_url(value: str) -> str:
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Market Intelligence Lab"
-    version: str = "0.10.0"
+    version: str = "0.11.0"
     environment: str = "development"
     database_url: str = "sqlite:///./data/market_intelligence.db"
     migration_database_url: str | None = None
@@ -62,6 +62,26 @@ class Settings(BaseSettings):
     raw_object_store_root: str = "data/raw"
     run_live_world_data_tests: bool = False
     lean_executable: str | None = None
+    supervisor_poll_interval: float = Field(default=30.0, ge=1, le=300)
+    cloud_compute_enabled: bool = False
+    cloud_spend_cap_blocked: bool = False
+    max_cloud_job_estimated_usd: float = Field(default=0.25, ge=0, le=1000)
+    max_daily_cloud_compute_usd: float = Field(default=0.50, ge=0, le=10000)
+    max_monthly_cloud_compute_usd: float = Field(default=5.0, ge=0, le=100000)
+    max_parallel_cloud_tasks: int = Field(default=1, ge=1, le=10000)
+    max_cloud_job_runtime: int = Field(default=900, ge=1, le=604800)
+    local_min_available_ram_mb: int = Field(default=1536, ge=256)
+    local_max_load_per_cpu: float = Field(default=1.25, gt=0, le=20)
+    local_max_analytical_jobs: int = Field(default=1, ge=1, le=64)
+    local_heavy_concurrency: int = Field(default=0, ge=0, le=64)
+    local_reserved_ram_mb: int = Field(default=1024, ge=128)
+    cloud_project_id: str | None = None
+    cloud_region: str | None = None
+    cloud_run_job_name: str | None = None
+    cloud_worker_image: str | None = None
+    cloud_input_bucket: str | None = None
+    cloud_result_bucket: str | None = None
+    cloud_service_account: str | None = None
 
     @field_validator("database_url", "migration_database_url")
     @classmethod

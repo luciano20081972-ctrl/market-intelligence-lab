@@ -2,7 +2,7 @@
 
 ## v0.10 factor-research verification
 
-`tests/test_hypothesis_factory.py` covers lifecycle rejection, declarative DSL safety, non-overlapping sealed partitions, walk-forward and purge/embargo behavior, factor/quantile statistics, three multiple-testing corrections, incrementality, robustness, ablation, controls, all nine leakage attacks, sequential promotion, budgets/manifests, optional-engine absence, differentiated archetypes, and the intentionally rejected agriculture hypothesis. PostgreSQL-marked tests add schema constraints/indexes, exclusive experiment claiming, and completed-experiment immutability. Migration tests apply an empty schema, preserve v0.9 data through `2f9e39afd435 → ed23735efb90`, repeat the upgrade, and run Alembic drift detection.
+`tests/test_phase5_compute.py` covers provider contracts, local idempotency, routing and local capacity, cloud-disabled/provider-outage behavior, per-job/daily/monthly/spend-cap limits, Cloud Run serialization, bounded retry/cancellation, manifests and checksum rejection, deterministic sharding/merge, market sessions, freshness downgrades, alert deduplication, and the paper/live boundary. Migration tests apply an empty schema through `3b2f6c7d8e90`, preserve earlier data, repeat upgrades, and run Alembic drift detection. Existing hypothesis, PostgreSQL, API, and frontend suites remain required.
 
 Run `python scripts/benchmark_hypothesis_research.py` for the bounded 100-hypothesis, 1,000-experiment, 10,000-fold workload and 10/50/100-company resource estimates. Runtime AI, Qlib, RD-Agent, and upstream network access are not required by ordinary tests.
 

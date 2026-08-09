@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.11.0 - 2026-08-09
+
+- Added durable provider-neutral compute jobs, auditable routing, conservative local resource guards, Cloud Run Jobs and future Google Batch provider contracts, deterministic sharding, private object-staging manifests, result validation, idempotent submission keys, and layered application cost limits.
+- Added a lightweight session-aware market supervisor, freshness classification, evidence-rich decision-signal records, deduplicated in-app alerts, and explicit research/paper-only execution guards.
+- Added compute, job, budget, and market-status APIs and UI views. Cloud compute is disabled by default; PostgreSQL and Docker remain private and the Dell remains usable without Google Cloud.
+- Added Alembic revision `3b2f6c7d8e90` and focused routing, budget, provider, sharding, validation, freshness, alert, idempotency, and live-execution-boundary tests.
+
+### Limitations
+
+- Google Cloud account, billing, dedicated project, IAM, storage, Artifact Registry, spend-cap configuration, and the single tiny real Cloud Run integration test require explicit user authorization.
+- Google Batch is an unprovisioned future tier. No brokerage integration or real-money execution exists.
+
 ## 0.10.0 - 2026-08-08
 
 - Added bounded, workspace-scoped research hypotheses with evidence-backed proposed mechanisms, declarative candidate features, measurable outcomes, strict lifecycle transitions, deduplication, budgets, and three differentiated reference cases.

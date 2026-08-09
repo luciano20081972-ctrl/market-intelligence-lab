@@ -75,6 +75,9 @@ import {
   ValidationGates,
   WalkForwardResults,
 } from "./pages/HypothesisPlatform";
+import { ComputeDashboard } from "./pages/ComputeDashboard";
+import { ComputeJobDetail } from "./pages/ComputeJobDetail";
+import { MarketControlStatus } from "./pages/MarketControlStatus";
 
 export { queryClient };
 
@@ -125,6 +128,9 @@ export function App() {
       <Route path="research/experiments/:id/statistics" element={<FactorStatisticsPage />} />
       <Route path="research/experiments/:id/gates" element={<ValidationGates />} />
       <Route path="research/engines" element={<ResearchEngineStatusPage />} />
+      <Route path="compute" element={<ComputeDashboard />} />
+      <Route path="compute/jobs/:id" element={<ComputeJobDetail />} />
+      <Route path="market-status" element={<MarketControlStatus />} />
       <Route path="providers" element={<Providers />} />
       <Route path="providers/:id" element={<ProviderDetail />} />
       <Route path="imports" element={<ImportJobs />} />

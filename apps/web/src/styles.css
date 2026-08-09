@@ -154,6 +154,10 @@ code { color: #8be6c2; background: #101d1a; padding: .15rem .3rem; border-radius
 .promotion-flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .8rem; }
 .primary-link { display: inline-block; margin-top: 1rem; padding: .75rem 1rem; border-radius: 8px; background: #247d61; color: white; text-decoration: none; }
 .version-chip.danger { background: #4a2028; color: #ff9eaa; }
+.health.warning { color: #e2c274; background: #2b2412; border-color: #695629; }
+.empty-table { color: #7f8d9c; padding: 1rem; text-align: center; }
+.compact-value { font-size: 1.15rem !important; }
+.danger-button { margin-top: 1rem; border-color: #653838; color: #e69a9a; }
 
 @media (max-width: 900px) {
   .app-shell { grid-template-columns: 1fr; }

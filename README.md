@@ -1,12 +1,12 @@
 # Market Intelligence Lab
 
-Current version: **0.10.0** — Hypothesis Factory and Factor Validation. Bounded, falsifiable company-specific hypotheses become declarative feature specifications and immutable experiments with sealed out-of-sample periods, walk-forward folds, multiple-testing correction, robustness checks, negative controls, leakage attacks, and explicit promotion gates. An idea is not a signal, and rejected research is a successful scientific result—not an application failure.
+Current version: **0.11.0** — Always-on Intelligence and Elastic Compute. The Dell remains the private, durable control plane for the website, PostgreSQL, market-session supervisor, lightweight jobs, signals, alerts, paper trading, and validated results. A provider-neutral compute boundary can route bounded heavy research to Cloud Run Jobs only after explicit cloud authorization and application budget checks.
 
 The reference seed demonstrates three materially different business models: semiconductor, airline, and agriculture. See [the entity model](docs/graph/entity-model.md), [driver profiles](docs/graph/company-driver-profiles.md), [routing](docs/graph/relevance-routing.md), and [query limits](docs/graph/query-limits.md).
 
 Market Intelligence Lab is a workspace-isolated research workbench for historical market and official world data, explainable signals, reproducible backtests, simulated paper trading, SEC filing intelligence, portfolio analytics, constrained optimization, bounded progressive research, and scientifically controlled factor experiments. v0.10 builds on the point-in-time feature store without adding predictive-alpha claims, brokerage, or real-money execution.
 
-The v0.10 application schema is at Alembic revision `ed23735efb90` (parent `2f9e39afd435`). The v0.5.1 Supabase
+The v0.11 application schema is at Alembic revision `3b2f6c7d8e90` (parent `ed23735efb90`). The v0.5.1 Supabase
 Auth/JWKS and deny-by-default PostgREST behavior were live-verified with
 temporary users that were removed after the rehearsal. Direct
 FastAPI-to-staging PostgreSQL runtime connectivity remains unverified because

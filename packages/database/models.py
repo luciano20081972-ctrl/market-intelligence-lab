@@ -2828,3 +2828,216 @@ class ExternalResearchEngineRun(Base):
     artifacts: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
     output_checksum: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+
+
+class ComputeJob(Base):
+    __tablename__ = "compute_jobs"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "submission_key", name="uq_compute_job_submission"),
+        CheckConstraint(
+            "job_class IN ('INTERACTIVE_LIGHT','STANDARD','HEAVY','VERY_HEAVY')",
+            name="compute_job_class_valid",
+        ),
+        CheckConstraint(
+            "state IN ('QUEUED','ESTIMATING','ROUTING','LOCAL_RUNNING','CLOUD_SUBMITTING',"
+            "'CLOUD_QUEUED','CLOUD_RUNNING','CHECKPOINTED','RESULT_VALIDATING','SUCCEEDED',"
+            "'FAILED_RETRYABLE','FAILED_FINAL','CANCELED','BLOCKED_BY_BUDGET',"
+            "'WAITING_FOR_CAPACITY','CLOUD_DISABLED')",
+            name="compute_job_state_valid",
+        ),
+        CheckConstraint("priority >= 0 AND priority <= 100", name="compute_job_priority_valid"),
+        CheckConstraint("attempt_count >= 0", name="compute_job_attempt_nonnegative"),
+        CheckConstraint(
+            "max_attempts >= 1 AND max_attempts <= 10", name="compute_job_max_attempts_valid"
+        ),
+        CheckConstraint("estimated_cpu > 0", name="compute_job_cpu_positive"),
+        CheckConstraint("estimated_ram_mb > 0", name="compute_job_ram_positive"),
+        CheckConstraint("estimated_runtime_seconds > 0", name="compute_job_runtime_positive"),
+        CheckConstraint("estimated_cost_usd >= 0", name="compute_job_cost_nonnegative"),
+        Index("ix_compute_job_workspace_state_priority", "workspace_id", "state", "priority"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    requested_by_user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user_profiles.id", ondelete="RESTRICT"), index=True
+    )
+    submission_key: Mapped[str] = mapped_column(String(160))
+    job_type: Mapped[str] = mapped_column(String(80), index=True)
+    job_class: Mapped[str] = mapped_column(String(32), index=True)
+    priority: Mapped[int] = mapped_column(Integer, default=50)
+    state: Mapped[str] = mapped_column(String(32), index=True)
+    deadline: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
+    symbols: Mapped[list[str]] = mapped_column(JSON, default=list)
+    date_start: Mapped[date | None] = mapped_column(Date)
+    date_end: Mapped[date | None] = mapped_column(Date)
+    parameters: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    strategy_version: Mapped[str | None] = mapped_column(String(160))
+    hypothesis_version: Mapped[str | None] = mapped_column(String(160))
+    model_version: Mapped[str | None] = mapped_column(String(160))
+    input_manifest: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    input_manifest_hash: Mapped[str] = mapped_column(String(64), index=True)
+    data_provenance: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    data_version: Mapped[str | None] = mapped_column(String(160))
+    estimated_cpu: Mapped[Decimal] = mapped_column(Numeric(precision=8, scale=3))
+    estimated_ram_mb: Mapped[int] = mapped_column(Integer)
+    estimated_runtime_seconds: Mapped[int] = mapped_column(Integer)
+    estimated_cost_usd: Mapped[Decimal] = mapped_column(Numeric(precision=12, scale=6))
+    max_cost_usd: Mapped[Decimal | None] = mapped_column(Numeric(precision=12, scale=6))
+    selected_provider: Mapped[str | None] = mapped_column(String(48), index=True)
+    cloud_execution_id: Mapped[str | None] = mapped_column(String(320), unique=True)
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0)
+    max_attempts: Mapped[int] = mapped_column(Integer, default=3)
+    checkpoint_state: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    result_manifest: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    error_classification: Mapped[str | None] = mapped_column(String(48))
+    error_detail: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+    started_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+
+class ComputeJobTransition(Base):
+    __tablename__ = "compute_job_transitions"
+    __table_args__ = (Index("ix_compute_transition_job_created", "job_id", "created_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("compute_jobs.id", ondelete="CASCADE"), index=True
+    )
+    from_state: Mapped[str | None] = mapped_column(String(32))
+    to_state: Mapped[str] = mapped_column(String(32), index=True)
+    reason: Mapped[str] = mapped_column(String(240))
+    details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+
+
+class CloudUsageLedger(Base):
+    __tablename__ = "cloud_usage_ledger"
+    __table_args__ = (
+        CheckConstraint("estimated_usd >= 0", name="cloud_usage_estimate_nonnegative"),
+        CheckConstraint(
+            "observed_usd IS NULL OR observed_usd >= 0",
+            name="cloud_usage_observed_nonnegative",
+        ),
+        CheckConstraint("task_count >= 1", name="cloud_usage_task_count_positive"),
+        Index("ix_cloud_usage_workspace_date", "workspace_id", "usage_date"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    job_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("compute_jobs.id", ondelete="SET NULL"), index=True
+    )
+    provider: Mapped[str] = mapped_column(String(48), index=True)
+    estimated_usd: Mapped[Decimal] = mapped_column(Numeric(precision=12, scale=6), default=0)
+    observed_usd: Mapped[Decimal | None] = mapped_column(Numeric(precision=12, scale=6))
+    task_count: Mapped[int] = mapped_column(Integer, default=1)
+    usage_date: Mapped[date] = mapped_column(Date, index=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class MarketSupervisorHeartbeat(Base):
+    __tablename__ = "market_supervisor_heartbeats"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    instance_id: Mapped[str] = mapped_column(String(160), unique=True, index=True)
+    session_state: Mapped[str] = mapped_column(String(24), index=True)
+    cloud_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    provider_health: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    scheduler_state: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    last_signal_scan_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    last_error: Mapped[str | None] = mapped_column(Text)
+    heartbeat_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+    started_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class DataFreshnessObservation(Base):
+    __tablename__ = "data_freshness_observations"
+    __table_args__ = (
+        CheckConstraint(
+            "classification IN ('REAL_TIME','DELAYED','STALE','UNKNOWN')",
+            name="freshness_classification_valid",
+        ),
+        Index("ix_freshness_workspace_source_processed", "workspace_id", "source", "processed_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    source: Mapped[str] = mapped_column(String(120), index=True)
+    symbol: Mapped[str | None] = mapped_column(String(32), index=True)
+    market_timestamp: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    received_at: Mapped[datetime] = mapped_column(UTCDateTime())
+    processed_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    age_seconds: Mapped[int | None] = mapped_column(Integer)
+    classification: Mapped[str] = mapped_column(String(24), index=True)
+    details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+
+
+class DecisionSignal(Base):
+    __tablename__ = "decision_signals"
+    __table_args__ = (
+        CheckConstraint(
+            "decision IN ('BUY','SELL','HOLD','WATCH','AVOID')",
+            name="decision_signal_action_valid",
+        ),
+        CheckConstraint("confidence >= 0 AND confidence <= 1", name="decision_confidence_valid"),
+        Index(
+            "ix_decision_signal_workspace_symbol_created", "workspace_id", "symbol", "created_at"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    symbol: Mapped[str] = mapped_column(String(32), index=True)
+    decision: Mapped[str] = mapped_column(String(16), index=True)
+    confidence: Mapped[Decimal] = mapped_column(Numeric(precision=7, scale=6))
+    horizon: Mapped[str] = mapped_column(String(80))
+    market_regime: Mapped[str] = mapped_column(String(80))
+    evidence: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    contradicting_signals: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    entry_zone: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    invalidation_rule: Mapped[str] = mapped_column(Text)
+    risk_reference: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    freshness: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    strategy_version: Mapped[str] = mapped_column(String(160))
+    reproducibility_manifest: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+
+
+class AlertEvent(Base):
+    __tablename__ = "alert_events"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "dedupe_key", name="uq_alert_workspace_dedupe"),
+        CheckConstraint(
+            "status IN ('ACTIVE','ACKNOWLEDGED','RESOLVED')", name="alert_status_valid"
+        ),
+        CheckConstraint("occurrence_count >= 1", name="alert_occurrence_positive"),
+        Index("ix_alert_workspace_status_created", "workspace_id", "status", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    category: Mapped[str] = mapped_column(String(80), index=True)
+    severity: Mapped[str] = mapped_column(String(24), index=True)
+    dedupe_key: Mapped[str] = mapped_column(String(240))
+    title: Mapped[str] = mapped_column(String(240))
+    message: Mapped[str] = mapped_column(Text)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    channel: Mapped[str] = mapped_column(String(32), default="in_app")
+    status: Mapped[str] = mapped_column(String(24), default="ACTIVE", index=True)
+    occurrence_count: Mapped[int] = mapped_column(Integer, default=1)
+    cooldown_until: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    last_seen_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)

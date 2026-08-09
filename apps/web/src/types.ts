@@ -532,3 +532,81 @@ export interface ResearchEngineStatus {
   capabilities: string[];
   security_boundaries: string[];
 }
+
+export interface ComputeStatus {
+  cloud_enabled: boolean;
+  cloud_configured: boolean;
+  providers: Record<string, string>;
+  resource_guard: {
+    available_ram_mb: number;
+    load_per_cpu: number;
+    running_analytical_jobs: number;
+  };
+  job_counts: Record<string, number>;
+}
+
+export interface ComputeJob {
+  id: string;
+  submission_key: string;
+  job_type: string;
+  job_class: string;
+  state: string;
+  priority: number;
+  selected_provider: string | null;
+  estimate: {
+    cpu: string;
+    ram_mb: number;
+    runtime_seconds: number;
+    estimated_cost_usd: string;
+    task_count: number;
+  };
+  attempt_count: number;
+  max_attempts: number;
+  cancel_requested?: boolean;
+  symbols: string[];
+  input_manifest_hash: string;
+  result_manifest: Record<string, unknown>;
+  error_classification: string | null;
+  error_detail: string | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  updated_at: string;
+  input_manifest?: Record<string, unknown>;
+  data_provenance?: Record<string, unknown>;
+  observed_cost_usd?: string | null;
+  cost_observation_status?: string;
+  transitions?: Array<{
+    from_state: string | null;
+    to_state: string;
+    reason: string;
+    details: Record<string, unknown>;
+    created_at: string;
+  }>;
+}
+
+export interface CloudBudgetStatus {
+  cloud_enabled: boolean;
+  spend_cap_blocked: boolean;
+  limits: {
+    job_usd: string;
+    daily_usd: string;
+    monthly_usd: string;
+    parallel_tasks: number;
+    runtime_seconds: number;
+  };
+  usage: { daily_usd: string; monthly_usd: string; active_tasks: number };
+}
+
+export interface MarketControlStatus {
+  supervisor: {
+    status: string;
+    instance_id: string | null;
+    heartbeat_at: string | null;
+    session_state: string;
+    last_signal_scan_at: string | null;
+    providers: Record<string, string>;
+    last_error: string | null;
+  };
+  freshness_last_two_minutes: Record<string, number>;
+}

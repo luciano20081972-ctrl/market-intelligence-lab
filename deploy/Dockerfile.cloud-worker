@@ -1,0 +1,11 @@
+FROM python:3.12.10-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+WORKDIR /app
+
+COPY pyproject.toml README.md ./
+COPY packages ./packages
+RUN pip install --no-cache-dir ".[cloud-worker]" && useradd --create-home --uid 10001 worker
+
+USER worker
+ENTRYPOINT ["python", "-m", "packages.compute.cloud_worker"]
