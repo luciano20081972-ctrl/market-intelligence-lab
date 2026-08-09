@@ -16,7 +16,8 @@ label span { display: block; color: #8897a8; font-size: .75rem; margin-bottom: .
 .sidebar { background: #0d131a; border-right: 1px solid #202a34; padding: 1.4rem 1rem; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; }
 .brand { display: flex; align-items: center; gap: .75rem; font-size: .92rem; font-weight: 650; margin: .2rem .35rem 2rem; }
 .brand small { color: #738292; font-weight: 400; display: block; margin-top: .2rem; }
-.brand-mark { width: 38px; height: 38px; display: grid; place-items: center; color: #08130f; background: #4fd1a1; border-radius: 5px; font-size: .72rem; font-weight: 800; letter-spacing: .05em; }
+.brand picture { flex: 0 0 auto; }
+.brand-logo { background: #080d0c; border: 1px solid #334c40; border-radius: 9px; box-shadow: 0 0 18px #4fd1a125; display: block; height: 54px; object-fit: contain; padding: 3px; width: 54px; }
 .sidebar nav { display: grid; gap: 1rem; overflow-y: auto; min-height: 0; padding-right: .2rem; }
 .sidebar nav a { color: #95a2af; text-decoration: none; padding: .72rem .8rem; border-left: 2px solid transparent; border-radius: 3px; font-size: .88rem; }
 .sidebar nav a:hover { color: #e8edf2; background: #121b24; }
@@ -168,6 +169,12 @@ code { color: #8be6c2; background: #101d1a; padding: .15rem .3rem; border-radius
 .spinner { width: 24px; height: 24px; border: 2px solid #2b3e46; border-top-color: #4fd1a1; border-radius: 50%; animation: spin .8s linear infinite; }
 .page-links { display: flex; gap: 1rem; margin-top: 1rem; }
 .page-links a { color: #72dbb4; }
+.auth-page { max-width: 430px; padding-top: clamp(2rem, 8vh, 6rem); }
+.auth-brand { align-items: center; display: flex; gap: 1rem; margin-bottom: 2rem; }
+.auth-brand img { background: #080d0c; border: 1px solid #334c40; border-radius: 14px; box-shadow: 0 0 28px #4fd1a125; height: 92px; object-fit: contain; padding: 5px; width: 92px; }
+.auth-brand span, .auth-brand small { display: block; }
+.auth-brand span { font-size: 1.05rem; font-weight: 700; }
+.auth-brand small { color: #8391a0; margin-top: .3rem; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .research-funnel { display: grid; gap: .5rem; grid-template-columns: repeat(5, minmax(120px, 1fr)); margin: 1.25rem 0; }
@@ -204,6 +211,7 @@ code { color: #8be6c2; background: #101d1a; padding: .15rem .3rem; border-radius
   .partition-strip { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
+  .brand-logo { height: 46px; width: 46px; }
   main { padding: 1rem; }
   .topbar { padding: 0 1rem; }
   .demo-warning { margin: .75rem 1rem 0; }

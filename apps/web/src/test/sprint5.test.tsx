@@ -43,6 +43,9 @@ describe("Sprint 5 secure multi-user workflows", () => {
   it("shows an invalid login state without echoing credentials", async () => {
     state.signIn.mockRejectedValueOnce(new Error("invalid"));
     renderPage(<SignIn />);
+    expect(screen.getByRole("img", { name: "Market Intelligence Lab" })).toHaveAttribute(
+      "src", "/assets/branding/market-intelligence-lab-logo-512.webp"
+    );
     await userEvent.type(screen.getByLabelText("Email"), "user@example.test");
     await userEvent.type(screen.getByLabelText("Password"), "never-display-this");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));

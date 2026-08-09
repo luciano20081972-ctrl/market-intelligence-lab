@@ -12,7 +12,10 @@ export function SignIn() {
     event.preventDefault(); setError("");
     try { await auth.signIn(email, password); } catch { setError("Sign-in failed. Check your credentials and verification state."); }
   }
-  return <main className="auth-page"><h1>Sign in</h1>
+  return <main className="auth-page"><div className="auth-brand">
+      <img src="/assets/branding/market-intelligence-lab-logo-512.webp" alt="Market Intelligence Lab" />
+      <div><span>Market Intelligence Lab</span><small>Private research workspace</small></div>
+    </div><h1>Sign in</h1>
     {auth.sessionExpired && <p role="alert">Your session expired. Please sign in again.</p>}
     {error && <p role="alert">{error}</p>}
     <form onSubmit={submit}><label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
