@@ -35,6 +35,9 @@ from packages.market_data.operations import (
     register_worker,
 )
 from packages.market_data.seed import seed_demonstration_data
+from packages.paper_trading.engine import PaperTradingEngine
+from packages.paper_trading.service import create_portfolio
+from packages.paper_trading.types import OrderRequest
 from packages.security.tenant import install_workspace_guards
 
 pytestmark = pytest.mark.postgres
@@ -73,6 +76,27 @@ def test_postgres_transaction_rollback(postgres_factory) -> None:  # type: ignor
             raise RuntimeError("force rollback")
     with session_scope(postgres_factory) as session:
         assert session.scalar(select(Watchlist).where(Watchlist.name == name)) is None
+
+
+def test_postgres_paper_order_preview_uses_typed_trade_date(postgres_factory) -> None:  # type: ignore[no-untyped-def]
+    with session_scope(postgres_factory) as session:
+        portfolio = create_portfolio(
+            session,
+            name=f"PostgreSQL paper preview {uuid.uuid4()}",
+            starting_cash=Decimal("100000"),
+        )
+        preview = PaperTradingEngine().preview(
+            session,
+            portfolio,
+            OrderRequest(
+                client_order_id=f"postgres-preview-{uuid.uuid4()}",
+                symbol="AAPL",
+                side="buy",
+                order_type="market",
+                quantity=Decimal("1"),
+            ),
+        )
+        assert preview.outcome == "would_fill"
 
 
 def test_postgres_workspace_unique_constraint(postgres_factory) -> None:  # type: ignore[no-untyped-def]

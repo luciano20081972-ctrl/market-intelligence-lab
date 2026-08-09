@@ -162,7 +162,7 @@ def evaluate_risk(
             session.scalar(
                 select(func.count(PaperFill.id)).where(
                     PaperFill.portfolio_id == portfolio.id,
-                    func.date(PaperFill.filled_at) == bar.event_time.date().isoformat(),
+                    func.date(PaperFill.filled_at) == bar.event_time.date(),
                 )
             )
             or 0
