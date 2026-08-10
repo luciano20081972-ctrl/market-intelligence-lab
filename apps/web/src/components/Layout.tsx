@@ -115,7 +115,7 @@ export function Layout() {
     <div className="main-column">
       <header className="topbar"><div><b>{auth.workspace?.name ?? "Research workspace"}</b><span>Simulation only · {auth.workspace?.role}</span></div>
         <select aria-label="Workspace" value={auth.workspace?.id ?? ""} onChange={(event) => auth.switchWorkspace(event.target.value)}>{auth.workspaces.map((workspace) => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}</select>
-        <button onClick={() => void auth.signOut()}>Sign out</button><span className="version-chip">v0.10.0</span></header>
+        <button onClick={() => void auth.signOut()}>Sign out</button><span className="version-chip">v0.11.0</span></header>
       <DemoWarning />
       <main><Outlet /></main>
     </div>
