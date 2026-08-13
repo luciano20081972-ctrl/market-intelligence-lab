@@ -20,7 +20,12 @@ const state = vi.hoisted(() => ({
   signIn: vi.fn(), signOut: vi.fn(), requestReset: vi.fn(), completeReset: vi.fn(), switchWorkspace: vi.fn(),
 }));
 
-vi.mock("../auth", () => ({ useAuth: () => state }));
+vi.mock("../auth", () => ({
+  AuthFlowError: class AuthFlowError extends Error {
+    constructor(public code: string) { super(code); }
+  },
+  useAuth: () => state,
+}));
 vi.mock("../api", () => ({ api: {
   workspaceMembers: vi.fn(), inviteMember: vi.fn(), auditEvents: vi.fn(),
   infrastructureServices: vi.fn(), providerComparisons: vi.fn(),
@@ -49,8 +54,19 @@ describe("Sprint 5 secure multi-user workflows", () => {
     await userEvent.type(screen.getByLabelText("Email"), "user@example.test");
     await userEvent.type(screen.getByLabelText("Password"), "never-display-this");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Sign-in failed");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Sign-in could not be completed");
     expect(screen.queryByText("never-display-this")).not.toBeInTheDocument();
+  });
+
+  it("disables repeated submission and exposes password-manager fields", async () => {
+    state.signIn.mockReturnValueOnce(new Promise(() => {}));
+    renderPage(<SignIn />);
+    expect(screen.getByLabelText("Email")).toHaveAttribute("autocomplete", "email");
+    expect(screen.getByLabelText("Password")).toHaveAttribute("autocomplete", "current-password");
+    await userEvent.type(screen.getByLabelText("Email"), "owner@example.test");
+    await userEvent.type(screen.getByLabelText("Password"), "not-a-real-password");
+    await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(screen.getByRole("button", { name: "Signing in…" })).toBeDisabled();
   });
 
   it("shows session expiry explicitly", () => {

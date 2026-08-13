@@ -175,6 +175,9 @@ code { color: #8be6c2; background: #101d1a; padding: .15rem .3rem; border-radius
 .auth-brand span, .auth-brand small { display: block; }
 .auth-brand span { font-size: 1.05rem; font-weight: 700; }
 .auth-brand small { color: #8391a0; margin-top: .3rem; }
+.auth-page form { display: grid; gap: .9rem; margin-bottom: 1rem; }
+.auth-page form button { min-height: 44px; }
+.password-toggle { justify-self: start; min-height: 44px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .research-funnel { display: grid; gap: .5rem; grid-template-columns: repeat(5, minmax(120px, 1fr)); margin: 1.25rem 0; }

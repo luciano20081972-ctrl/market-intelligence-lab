@@ -2,7 +2,7 @@ import { createClient, type Session, type SupabaseClient } from "@supabase/supab
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Navigate, Outlet, useLocation } from "react-router";
 import { queryClient } from "./queryClient";
-import { api, configureRequestContext } from "./api";
+import { ApiError, api, configureRequestContext } from "./api";
 import type { CurrentUser, WorkspaceSummary } from "./types";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
@@ -25,6 +25,12 @@ interface AuthState {
   switchWorkspace(id: string): void;
 }
 
+export class AuthFlowError extends Error {
+  constructor(public code: "account_not_provisioned" | "no_workspace") {
+    super(code);
+  }
+}
+
 const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -35,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [workspace, setWorkspace] = useState<WorkspaceSummary | null>(null);
   const [sessionExpired, setSessionExpired] = useState(false);
 
-  async function hydrate(nextSession: Session | null) {
+  async function hydrate(nextSession: Session | null, reportFailure = false) {
     const development = supabase === null;
     if (!development && !nextSession) {
       configureRequestContext(null, null);
@@ -49,12 +55,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const selected = available.find((item) => item.id === storedWorkspaceId)
         ?? available[0]
         ?? null;
+      if (!selected) throw new AuthFlowError("no_workspace");
       if (selected) window.localStorage.setItem(WORKSPACE_STORAGE_KEY, selected.id);
       else window.localStorage.removeItem(WORKSPACE_STORAGE_KEY);
       configureRequestContext(nextSession?.access_token ?? null, selected?.id ?? null);
       setUser(profile); setWorkspaces(available); setWorkspace(selected); setSessionExpired(false);
-    } catch {
+    } catch (error) {
       setUser(null); setWorkspaces([]); setWorkspace(null);
+      if (reportFailure) {
+        if (error instanceof ApiError && error.status === 401) {
+          throw new AuthFlowError("account_not_provisioned");
+        }
+        throw error;
+      }
     } finally {
       setLoading(false);
     }
@@ -82,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) { await api.auditAuth("auth.sign_in_failed", "failure"); throw error; }
       configureRequestContext(data.session?.access_token ?? null, null);
       await api.auditAuth("auth.sign_in_succeeded", "success");
+      await hydrate(data.session, true);
     },
     signOut: async () => {
       await api.auditAuth("auth.signed_out", "success").catch(() => undefined);
