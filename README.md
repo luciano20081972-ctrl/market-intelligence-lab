@@ -1,6 +1,6 @@
 # Market Intelligence Lab
 
-Current version: **0.12.0** — Adversarial Research, Scenario, and Counterfactual Intelligence. Deterministic skeptic rules challenge research conclusions, bounded graph transmission explores explicit hypothetical worlds, and isolated mechanism-conditioned counterfactuals expose assumption dependence. A scenario is not a forecast; a counterfactual is not a proven causal effect; confidence is not a probability of profit.
+Current version: **0.13.0** — Prospective Calibration, Outcome Feedback, and Paper Portfolio Intelligence. Forecasts are frozen before outcomes mature, evaluation populations remain separate, and qualified research can enter a deterministic simulated portfolio workflow. Historical replay is not prospective evidence; confidence is not probability; paper performance is not real performance.
 
 The v0.10 Hypothesis Factory and Factor Validation and v0.11 Research Memory remain the experimental foundation. v0.12 adds immutable research cases, skeptic challenges, transparent confidence and fragility profiles, scenarios, counterfactuals, and traceable dossiers. Predictive does not mean causal; validated does not mean true; and no result is an investment recommendation.
 
@@ -31,6 +31,7 @@ This release has no Fidelity or brokerage integration, brokerage login automatio
 - `packages/strategies`: seven versioned, parameter-validated transparent strategies and technical indicators.
 - `packages/backtesting`: shared-cash, long-only, no-lookahead simulation and performance metrics.
 - `packages/paper_trading`: deterministic market/limit/stop/stop-limit simulation and portfolio risk rules.
+- `packages/prospective_intelligence`: immutable forecasts, scoring/calibration, reliability feedback, paper eligibility, portfolio construction, research risk, scenario stress, and paper-only evaluation.
 - `packages/sec_intelligence`: normalized, fixture-first EdgarTools boundary and SEC provenance.
 - `packages/analytics` and `packages/optimization`: QuantStats reconciliation and skfolio-compatible constrained experiments.
 - `packages/upstream` and `packages/external_engines`: license governance, stable protocols, and disabled-by-default LEAN prototype.

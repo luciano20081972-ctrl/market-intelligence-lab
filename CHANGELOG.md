@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.0 - 2026-08-15
+
+- Added immutable, evaluation-mode-scoped prospective forecasts, maturity-gated versioned outcomes, type-specific scoring, empirical calibration, confidence analysis, attribution, reliability snapshots, and bounded feedback recommendations.
+- Added deterministic paper-research eligibility, transparent allocation priority, capped long-only construction, information-domain risk, scenario stress, idempotent rebalance previews, and simulated portfolio evaluation while reusing the existing paper engine and skfolio boundary.
+- Added protected APIs, accessible paper-only UI, release fixtures, and Alembic revision `4e398fc4c9a1`. Historical replay is not prospective evidence; paper performance is not real performance; brokerage and real-money execution remain absent.
+
 ## 0.12.0 - 2026-08-15
 
 - Added immutable Research Cases, deterministic Skeptic Reviews, structured challenges and evidence-bound resolutions, adversarial promotion blocking, confidence decomposition, assumptions, and fragility analysis.

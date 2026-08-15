@@ -1,5 +1,7 @@
 # Architecture
 
+v0.13 closes the bounded research loop: frozen forecast → mature outcome → type-specific score → calibration/attribution → versioned reliability → human-reviewed feedback. A separate deterministic boundary maps eligible research to a paper allocation candidate and immutable paper plan; existing simulated execution and risk controls remain authoritative.
+
 ## v0.12 adversarial, scenario, and counterfactual intelligence
 
 An immutable Research Case bounds references to the v0.8 graph, v0.9 Feature Snapshot, v0.10 hypothesis/experiment, and v0.11 memory/independence/divergence state. Deterministic Skeptic Review precedes bounded Scenario and isolated Counterfactual runs; their manifests feed transparent confidence, fragility, and dossier outputs. No component is a trading agent or causal oracle.

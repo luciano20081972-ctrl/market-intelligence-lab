@@ -6,7 +6,7 @@ from pathlib import Path
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-EXPECTED_SCHEMA_REVISION = "e2517ff0412b"
+EXPECTED_SCHEMA_REVISION = "4e398fc4c9a1"
 
 
 def normalize_database_url(value: str) -> str:
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Market Intelligence Lab"
-    version: str = "0.12.0"
+    version: str = "0.13.0"
     environment: str = "development"
     database_url: str = "sqlite:///./data/market_intelligence.db"
     migration_database_url: str | None = None

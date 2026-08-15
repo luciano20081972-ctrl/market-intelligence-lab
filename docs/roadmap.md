@@ -1,5 +1,9 @@
 # Roadmap
 
+## v0.13 — Prospective Calibration, Outcome Feedback, and Paper Portfolio Intelligence
+
+**Status: implemented on the v0.13 feature branch.** The release freezes point-in-time forecasts, observes only mature outcomes, measures empirical calibration without mixing evaluation modes, and carries qualified research through paper-only construction and existing hard-risk controls. v0.14 should focus on scheduling, monitoring, backup/recovery, and private-beta operations; it must not add brokerage or real-money execution.
+
 ## v0.12 — Adversarial Research, Scenario, and Counterfactual Intelligence
 
 **Status: implemented on the v0.12 feature branch.** The release attacks research conclusions with deterministic structured challenges, transmits declarative shocks through supported graph paths, evaluates isolated mechanism-conditioned alternative states, and packages traceable evidence in dossiers. Runtime AI remains optional and disabled. v0.13 should focus on outcome calibration, feedback, and carefully bounded portfolio/risk integration—not brokerage or live-money automation.

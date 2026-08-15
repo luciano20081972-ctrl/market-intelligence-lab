@@ -28,6 +28,8 @@ const primarySections: NavigationSection[] = [
   ] },
   { label: "Paper Trading", links: [
     { to: "/paper-portfolios", label: "Paper Portfolios", description: "Review simulated portfolios, orders, and performance" },
+    { to: "/paper/lab", label: "Paper Portfolio Lab", description: "Build risk-reviewed simulated plans from qualified research" },
+    { to: "/paper/performance", label: "Paper Performance", description: "Evaluate simulated outcomes separately from forecast quality" },
   ] },
   { label: "Data", links: [
     { to: "/data-sources", label: "Market Data", description: "See available data and when it was last refreshed" },
@@ -72,6 +74,13 @@ const advancedSections: NavigationSection[] = [
     { to: "/research/counterfactuals", label: "Counterfactual Lab" },
     { to: "/research/confidence", label: "Research Confidence" },
     { to: "/research/dossiers", label: "Research Dossiers" },
+    { to: "/research/forecasts", label: "Prospective Forecasts" },
+    { to: "/research/outcomes", label: "Outcome Monitor" },
+    { to: "/research/calibration", label: "Forecast Calibration" },
+    { to: "/research/calibration/confidence", label: "Confidence Calibration" },
+    { to: "/research/reliability", label: "Research Reliability" },
+    { to: "/research/feedback", label: "Feedback Recommendations" },
+    { to: "/paper/attribution", label: "Portfolio Attribution" },
   ] },
   { label: "Data operations", links: [
     { to: "/operations", label: "Background Jobs" },
@@ -113,7 +122,7 @@ export function Layout() {
           <source media="(max-width: 600px)" srcSet="/assets/branding/market-intelligence-lab-app-icon-256.png" />
           <img className="brand-logo" src="/assets/branding/market-intelligence-lab-logo-512.webp" alt="Market Intelligence Lab" />
         </picture>
-        <div>Market Intelligence Lab<small>Adversarial scenario intelligence · v0.12.0</small></div>
+        <div>Market Intelligence Lab<small>Prospective calibration · paper-only intelligence · v0.13.0</small></div>
       </div>
       <nav aria-label="Primary navigation">
         {primarySections.map(section => <NavigationLinks key={section.label} section={section} />)}
@@ -128,7 +137,7 @@ export function Layout() {
     <div className="main-column">
       <header className="topbar"><div><b>{auth.workspace?.name ?? "Research workspace"}</b><span>Simulation only · {auth.workspace?.role}</span></div>
         <select aria-label="Workspace" value={auth.workspace?.id ?? ""} onChange={(event) => auth.switchWorkspace(event.target.value)}>{auth.workspaces.map((workspace) => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}</select>
-        <button onClick={() => void auth.signOut()}>Sign out</button><span className="version-chip">v0.12.0</span></header>
+        <button onClick={() => void auth.signOut()}>Sign out</button><span className="version-chip">v0.13.0</span></header>
       <DemoWarning />
       <main><Outlet /></main>
     </div>

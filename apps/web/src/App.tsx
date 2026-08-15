@@ -94,6 +94,11 @@ import {
   ResearchDossierPage, ScenarioComparisonPage, ScenarioDetailPage,
   ScenarioLabPage, SkepticChallengesPage,
 } from "./pages/AdversarialIntelligence";
+import {
+  CalibrationPage, FeedbackPage, OutcomeMonitorPage, PaperPerformancePage,
+  PaperPortfolioLabPage, PortfolioAttributionPage, ProspectiveForecastsPage,
+  ReliabilityPage,
+} from "./pages/ProspectiveIntelligence";
 
 export { queryClient };
 
@@ -166,6 +171,15 @@ export function App() {
       <Route path="research/confidence" element={<ResearchConfidencePage />} />
       <Route path="research/dossiers" element={<ResearchDossierPage />} />
       <Route path="research/dossiers/:id" element={<ResearchDossierDetailPage />} />
+      <Route path="research/forecasts" element={<ProspectiveForecastsPage />} />
+      <Route path="research/outcomes" element={<OutcomeMonitorPage />} />
+      <Route path="research/calibration" element={<CalibrationPage />} />
+      <Route path="research/calibration/confidence" element={<CalibrationPage confidence />} />
+      <Route path="research/reliability" element={<ReliabilityPage />} />
+      <Route path="research/feedback" element={<FeedbackPage />} />
+      <Route path="paper/lab" element={<PaperPortfolioLabPage />} />
+      <Route path="paper/performance" element={<PaperPerformancePage />} />
+      <Route path="paper/attribution" element={<PortfolioAttributionPage />} />
       <Route path="providers" element={<Providers />} />
       <Route path="providers/:id" element={<ProviderDetail />} />
       <Route path="imports" element={<ImportJobs />} />

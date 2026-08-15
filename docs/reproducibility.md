@@ -1,5 +1,7 @@
 # Reproducibility
 
+v0.13 manifests freeze software SHA, Alembic revision, research/dossier and evidence references, temporal snapshot, target definition, benchmark, policy versions, risk assumptions, and checksum. Corrections supersede forecasts and observations; they never rewrite sealed evidence.
+
 ## v0.12 immutable manifests
 
 Completed reviews, scenario runs, counterfactual runs, confidence profiles, and dossiers retain software SHA, Alembic revision, case/entity state, graph state, Feature Snapshot, Research Memory references, hypothesis and experiment checksums, definitions, policy, assumptions, exact as-of time, dependencies, seed, and result checksum. Historical queries filter all eligible inputs at the requested information boundary.

@@ -1,5 +1,7 @@
 # Database
 
+The v0.13 schema head is `4e398fc4c9a1` (parent `e2517ff0412b`). It adds versioned target definitions, immutable forecasts/outcomes/scores/calibration/reliability artifacts, bounded feedback, and paper-only eligibility, candidate, construction-policy, plan, and evaluation records. Historical migrations are unchanged.
+
 ## v0.12 research intelligence
 
 Alembic revision `e2517ff0412b` extends `eb1ff477509f` with workspace-scoped research cases, reviews, challenges, assumptions, confidence/fragility profiles, scenario definitions/shocks/runs/impacts, counterfactual definitions/runs, and dossiers. Definitions are versioned; completed outputs carry manifests and checksums. PostgreSQL remains authoritative and canonical evidence is never mutated by simulations.

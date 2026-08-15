@@ -1,0 +1,3 @@
+# Calibration build-vs-integrate audit
+
+NumPy/SciPy supply numerical aggregation, rank correlation, and uncertainty primitives; scikit-learn already supplies isotonic and logistic calibration when a sufficiently large cohort justifies fitting. Statsmodels remains available for interpretable diagnostics. No new dependency is needed. The application owns point-in-time cohort selection, immutability, evaluation-mode separation, sample safeguards, manifests, and domain semantics because generic libraries do not enforce them. QuantStats, the existing skfolio adapter, backtesting engine, Research Memory, confidence profiles, Temporal Truth, scenario engine, and PaperTradingEngine remain integration boundaries.

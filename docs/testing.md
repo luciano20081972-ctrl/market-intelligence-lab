@@ -1,5 +1,7 @@
 # Testing
 
+v0.13 release gates explicitly cover forecast locking, maturity rejection, evaluation-mode isolation, as-of leakage, probability/continuous/interval/rank scoring, sample safeguards, critical skeptic blocking, optimizer subordination, no shorting/leverage, scenario rejection, idempotent paper previews, and visible simulated labels.
+
 ## v0.12 release gates
 
 Scientific tests cover critical skeptic blocking, evidence-bound resolution, alternative-explanation collapse, supported-only graph propagation, bounded cycle safety, transmission functions, sensitivity retention, isolated counterfactual intervention, default SIMULATED_MECHANISM identification, confidence decomposition, and deliberate temporal leakage. The canonical `scripts/e2e.py` orchestration remains isolated and does not reuse production or development servers.

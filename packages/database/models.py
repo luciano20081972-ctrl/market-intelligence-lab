@@ -3417,6 +3417,265 @@ class ResearchDossier(Base):
     checksum: Mapped[str] = mapped_column(String(64), unique=True)
 
 
+class ForecastTargetDefinition(Base):
+    __tablename__ = "forecast_target_definitions"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "key", "version", name="uq_forecast_target_version"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    key: Mapped[str] = mapped_column(String(120), index=True)
+    version: Mapped[int] = mapped_column(Integer)
+    outcome_type: Mapped[str] = mapped_column(String(40))
+    specification: Mapped[dict[str, Any]] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class ResearchForecast(Base):
+    __tablename__ = "research_forecasts"
+    __table_args__ = (
+        CheckConstraint(
+            "evaluation_mode IN ('PROSPECTIVE','HISTORICAL_REPLAY','FIXTURE')",
+            name="forecast_evaluation_mode",
+        ),
+        CheckConstraint(
+            "forecast_type IN ('DIRECTIONAL','PROBABILITY','CONTINUOUS','INTERVAL','RANK',"
+            "'SCENARIO_CONDITIONAL')",
+            name="research_forecast_type",
+        ),
+        CheckConstraint("state IN ('OPEN','LOCKED','INVALIDATED')", name="research_forecast_state"),
+        Index("ix_forecast_workspace_maturity", "workspace_id", "outcome_eligible_time", "state"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    target_definition_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("forecast_target_definitions.id", ondelete="RESTRICT"), index=True
+    )
+    research_case_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("research_cases.id", ondelete="RESTRICT"), index=True
+    )
+    dossier_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("research_dossiers.id", ondelete="RESTRICT"), index=True
+    )
+    supersedes_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("research_forecasts.id", ondelete="RESTRICT"), index=True
+    )
+    forecast_type: Mapped[str] = mapped_column(String(32), index=True)
+    forecast_value: Mapped[dict[str, Any]] = mapped_column(JSON)
+    evaluation_mode: Mapped[str] = mapped_column(String(24), index=True)
+    state: Mapped[str] = mapped_column(String(16), default="OPEN", index=True)
+    as_of_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    target_start_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    target_end_time: Mapped[datetime] = mapped_column(UTCDateTime())
+    outcome_eligible_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    manifest: Mapped[dict[str, Any]] = mapped_column(JSON)
+    checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    locked_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+
+class ForecastOutcomeObservation(Base):
+    __tablename__ = "forecast_outcome_observations"
+    __table_args__ = (
+        UniqueConstraint("forecast_id", "version", name="uq_forecast_outcome_version"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    forecast_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_forecasts.id", ondelete="RESTRICT"), index=True
+    )
+    version: Mapped[int] = mapped_column(Integer)
+    realized_value: Mapped[dict[str, Any]] = mapped_column(JSON)
+    observed_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    source_manifest: Mapped[dict[str, Any]] = mapped_column(JSON)
+    outcome_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+
+
+class ForecastScore(Base):
+    __tablename__ = "forecast_scores"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    forecast_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_forecasts.id", ondelete="RESTRICT"), index=True
+    )
+    observation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("forecast_outcome_observations.id", ondelete="RESTRICT"), unique=True
+    )
+    evaluation_mode: Mapped[str] = mapped_column(String(24), index=True)
+    metrics: Mapped[dict[str, Any]] = mapped_column(JSON)
+    scored_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    checksum: Mapped[str] = mapped_column(String(64), unique=True)
+
+
+class ForecastCalibrationAnalysis(Base):
+    __tablename__ = "forecast_calibration_analyses"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    evaluation_mode: Mapped[str] = mapped_column(String(24), index=True)
+    cohort: Mapped[dict[str, Any]] = mapped_column(JSON)
+    sample_count: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    metrics: Mapped[dict[str, Any]] = mapped_column(JSON)
+    bins: Mapped[list[dict[str, Any]]] = mapped_column(JSON)
+    methodology_version: Mapped[str] = mapped_column(String(40))
+    as_of_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    checksum: Mapped[str] = mapped_column(String(64), unique=True)
+
+
+class ResearchReliabilitySnapshot(Base):
+    __tablename__ = "research_reliability_snapshots"
+    __table_args__ = (
+        UniqueConstraint(
+            "workspace_id",
+            "subject_type",
+            "subject_key",
+            "as_of_time",
+            name="uq_reliability_subject_asof",
+        ),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    subject_type: Mapped[str] = mapped_column(String(32), index=True)
+    subject_key: Mapped[str] = mapped_column(String(160), index=True)
+    evaluation_mode: Mapped[str] = mapped_column(String(24), index=True)
+    sample_count: Mapped[int] = mapped_column(Integer)
+    metrics: Mapped[dict[str, Any]] = mapped_column(JSON)
+    evidence_references: Mapped[list[dict[str, Any]]] = mapped_column(JSON)
+    methodology_version: Mapped[str] = mapped_column(String(40))
+    as_of_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    checksum: Mapped[str] = mapped_column(String(64), unique=True)
+
+
+class FeedbackRecommendation(Base):
+    __tablename__ = "feedback_recommendations"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('SUGGESTED','APPROVED','REJECTED','APPLIED','EXPIRED')",
+            name="feedback_recommendation_status",
+        ),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    subject_type: Mapped[str] = mapped_column(String(32), index=True)
+    subject_key: Mapped[str] = mapped_column(String(160), index=True)
+    recommendation: Mapped[str] = mapped_column(Text)
+    evidence: Mapped[dict[str, Any]] = mapped_column(JSON)
+    status: Mapped[str] = mapped_column(String(16), default="SUGGESTED", index=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class PaperResearchEligibilityPolicy(Base):
+    __tablename__ = "paper_research_eligibility_policies"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "version", name="uq_paper_eligibility_policy_version"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    version: Mapped[int] = mapped_column(Integer)
+    gates: Mapped[dict[str, Any]] = mapped_column(JSON)
+    uncalibrated_limits: Mapped[dict[str, Any]] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class PaperAllocationCandidate(Base):
+    __tablename__ = "paper_allocation_candidates"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    forecast_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_forecasts.id", ondelete="RESTRICT"), index=True
+    )
+    policy_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("paper_research_eligibility_policies.id", ondelete="RESTRICT")
+    )
+    asset_symbol: Mapped[str] = mapped_column(String(40), index=True)
+    direction: Mapped[str] = mapped_column(String(16))
+    calibration_state: Mapped[str] = mapped_column(String(32), index=True)
+    priority: Mapped[dict[str, Any]] = mapped_column(JSON)
+    evidence: Mapped[dict[str, Any]] = mapped_column(JSON)
+    as_of_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    expires_at: Mapped[datetime] = mapped_column(UTCDateTime())
+    checksum: Mapped[str] = mapped_column(String(64), unique=True)
+
+
+class PaperPortfolioConstructionPolicy(Base):
+    __tablename__ = "paper_portfolio_construction_policies"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "version", name="uq_paper_construction_policy_version"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    version: Mapped[int] = mapped_column(Integer)
+    method: Mapped[str] = mapped_column(String(32))
+    constraints: Mapped[dict[str, Any]] = mapped_column(JSON)
+    execution_mode: Mapped[str] = mapped_column(String(24), default="MANUAL_PREVIEW")
+
+
+class PaperPortfolioPlan(Base):
+    __tablename__ = "paper_portfolio_plans"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('DRAFT','RISK_REVIEW','APPROVED_FOR_SIMULATION','REJECTED',"
+            "'EXECUTED_SIMULATION','EXPIRED')",
+            name="paper_portfolio_plan_status",
+        ),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    portfolio_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("paper_portfolios.id", ondelete="RESTRICT"), index=True
+    )
+    policy_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("paper_portfolio_construction_policies.id", ondelete="RESTRICT")
+    )
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    target_weights: Mapped[dict[str, Any]] = mapped_column(JSON)
+    current_weights: Mapped[dict[str, Any]] = mapped_column(JSON)
+    risk_results: Mapped[dict[str, Any]] = mapped_column(JSON)
+    scenario_results: Mapped[dict[str, Any]] = mapped_column(JSON)
+    order_preview: Mapped[list[dict[str, Any]]] = mapped_column(JSON)
+    manifest: Mapped[dict[str, Any]] = mapped_column(JSON)
+    as_of_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    checksum: Mapped[str] = mapped_column(String(64), unique=True)
+
+
+class PaperPortfolioEvaluation(Base):
+    __tablename__ = "paper_portfolio_evaluations"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    plan_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("paper_portfolio_plans.id", ondelete="RESTRICT"), index=True
+    )
+    benchmark: Mapped[dict[str, Any]] = mapped_column(JSON)
+    metrics: Mapped[dict[str, Any]] = mapped_column(JSON)
+    attribution: Mapped[dict[str, Any]] = mapped_column(JSON)
+    evaluated_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    checksum: Mapped[str] = mapped_column(String(64), unique=True)
+
+
 @event.listens_for(ResearchMemoryEntry, "before_update")
 def _protect_historical_memory(
     _mapper: object, _connection: object, target: ResearchMemoryEntry
@@ -3440,6 +3699,13 @@ def _protect_historical_memory(
 @event.listens_for(CounterfactualRun, "before_update")
 @event.listens_for(ResearchConfidenceProfile, "before_update")
 @event.listens_for(ResearchDossier, "before_update")
+@event.listens_for(ForecastOutcomeObservation, "before_update")
+@event.listens_for(ForecastScore, "before_update")
+@event.listens_for(ForecastCalibrationAnalysis, "before_update")
+@event.listens_for(ResearchReliabilitySnapshot, "before_update")
+@event.listens_for(PaperAllocationCandidate, "before_update")
+@event.listens_for(PaperPortfolioPlan, "before_update")
+@event.listens_for(PaperPortfolioEvaluation, "before_update")
 def _protect_completed_research_artifact(
     _mapper: object, _connection: object, target: object
 ) -> None:
@@ -3452,6 +3718,18 @@ def _protect_completed_research_artifact(
             "completed research artifact is immutable; create a new version: "
             + ", ".join(sorted(changed))
         )
+
+
+@event.listens_for(ResearchForecast, "before_update")
+def _protect_locked_forecast(
+    _mapper: object, _connection: object, target: ResearchForecast
+) -> None:
+    state = inspect(target)
+    if state is None:
+        raise ValueError("forecast state is unavailable")
+    changed = {attribute.key for attribute in state.attrs if attribute.history.has_changes()}
+    if target.locked_at is not None and changed - {"state", "locked_at"}:
+        raise ValueError("locked forecast is immutable; create a superseding forecast")
 
 
 @event.listens_for(DivergenceEvent, "before_update")
