@@ -9,6 +9,7 @@ test("progressive research fixture is temporal, explainable, and budgeted", asyn
     label: "Legacy Development Workspace",
   });
 
+  await page.getByText("More & administration").click();
   await page.getByRole("link", { name: "Research Universe" }).click();
   await expect(page.getByRole("heading", { name: "Research Universe", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Research Funnel" }).click();
@@ -20,13 +21,15 @@ test("progressive research fixture is temporal, explainable, and budgeted", asyn
   await expect(page.getByRole("heading", { name: "Screening Run Detail" })).toBeVisible();
   await expect(page.getByText("DATA_COMPLETE").first()).toBeVisible();
 
+  await page.getByText("More & administration").click();
   await page.getByRole("link", { name: "Feature Matrix" }).click();
   await expect(page.getByText("POINT-IN-TIME SAFE")).toBeVisible();
   await page.getByRole("link", { name: "Trace" }).first().click();
   await expect(page.getByRole("heading", { name: "Feature Lineage Viewer" })).toBeVisible();
   await expect(page.getByText(/mil-feature-v1/)).toBeVisible();
 
-  await page.getByRole("link", { name: "Research Budgets" }).click();
+  await page.getByText("More & administration").click();
+  await page.getByRole("link", { name: "Research Limits" }).click();
   await expect(page.getByRole("heading", { name: "Research Budget Dashboard" })).toBeVisible();
   await expect(page.getByText("Maximum companies: 3")).toBeVisible();
 

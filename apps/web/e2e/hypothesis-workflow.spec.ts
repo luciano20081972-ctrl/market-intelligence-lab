@@ -11,6 +11,7 @@ test("bounded hypothesis research preserves scientific validation boundaries", a
     label: "Legacy Development Workspace",
   });
 
+  await page.getByText("More & administration").click();
   await page.getByRole("link", { name: "Research Funnel" }).click();
   await page.getByRole("button", { name: "Run reference screen" }).click();
   await expect(page.getByText("AI Candidates")).toBeVisible({ timeout: 60_000 });
@@ -19,7 +20,7 @@ test("bounded hypothesis research preserves scientific validation boundaries", a
   await levelFour.getByRole("link", { name: "Inspect rationale" }).click();
   await expect(page.getByText("Irrelevant pipelines skipped")).toBeVisible();
 
-  await page.getByRole("link", { name: "Hypothesis Lab" }).click();
+  await page.getByRole("link", { name: "Factor Research" }).click();
   await page.getByRole("button", { name: "Generate fixture hypotheses" }).click();
   await expect(page.getByRole("heading", {
     name: "Regional electricity-cost pressure may precede semiconductor margin changes",
@@ -52,7 +53,8 @@ test("bounded hypothesis research preserves scientific validation boundaries", a
   await expect(page.getByText("REJECTED", { exact: true })).toBeVisible();
   await expect(page.getByText("NO LIVE-TRADING STATUS")).toBeVisible();
 
-  await page.getByRole("link", { name: "Research Engines" }).click();
+  await page.getByText("More & administration").click();
+  await page.getByRole("link", { name: "Research Engine Status" }).click();
   await expect(page.getByRole("heading", { name: "Research Engine Status" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "qlib" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "rd-agent" })).toBeVisible();
