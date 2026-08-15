@@ -1,6 +1,8 @@
 # Market Intelligence Lab
 
-Current version: **0.10.0** — Hypothesis Factory and Factor Validation. Bounded, falsifiable company-specific hypotheses become declarative feature specifications and immutable experiments with sealed out-of-sample periods, walk-forward folds, multiple-testing correction, robustness checks, negative controls, leakage attacks, and explicit promotion gates. An idea is not a signal, and rejected research is a successful scientific result—not an application failure.
+Current version: **0.11.0** — Research Memory, Signal Independence, and Divergence Intelligence. Completed out-of-sample experiments become immutable positive or negative lessons with explicit applicability and temporal eligibility. The platform suppresses materially equivalent known failures unless an override is recorded, separates predictive strength from incremental information, and promotes cross-domain disagreement to research candidates—never trades.
+
+The v0.10 Hypothesis Factory and Factor Validation remain the experimental foundation. v0.11 adds memory, contradiction and regime context, conventional-factor comparisons, redundancy clusters, divergence evidence, and research-resource efficiency. Predictive does not mean independent; independent does not mean causal; divergent does not mean mispriced; and no result is an investment recommendation.
 
 The reference seed demonstrates three materially different business models: semiconductor, airline, and agriculture. See [the entity model](docs/graph/entity-model.md), [driver profiles](docs/graph/company-driver-profiles.md), [routing](docs/graph/relevance-routing.md), and [query limits](docs/graph/query-limits.md).
 

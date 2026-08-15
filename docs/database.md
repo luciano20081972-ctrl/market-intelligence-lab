@@ -77,3 +77,6 @@ No Supabase-managed schema is modified.
 # v0.7 temporal world-data schema
 
 Alembic revision `7f4af62df2fe` extends `6b8d9e0f1a2b` without rewriting history. `data_manifests`, `raw_data_objects`, and `ingestion_checkpoints` provide immutable provenance and resumability. `macro_series`/`macro_observations` and `energy_series`/`energy_observations` avoid a generic EAV table while sharing the same seven temporal columns, manifest foreign key, quality flags, source timezone, and precision. Composite indexes support series range and point-in-time eligibility queries.
+# v0.11 schema
+
+Alembic revision `eb1ff477509f` extends `ed23735efb90` with research memory and decisions, contradictions, regimes and assignments, signal-independence analyses, redundancy results and factor clusters, divergence definitions and immutable events, Information Value, method reliability, and outcome attribution. JSON decomposition fields retain formula inputs and evidence while indexed workspace, checksum, status, key, and temporal columns support bounded lookup. Constraint and index names remain below PostgreSQL's identifier limit.

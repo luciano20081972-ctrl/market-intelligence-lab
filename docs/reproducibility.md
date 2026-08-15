@@ -19,3 +19,6 @@ Raw filings, generated reports, caches, and external-engine artifacts are not co
 # World-data reproducibility
 
 Every acquisition is identified by its SHA-256 checksum, immutable logical raw-object key, parser/schema version, retrieval and coverage times, accepted/rejected counts, license identifier, optional parent manifest, and job. Replaying a normalized dataset begins from the referenced raw bytes and manifest; as-of research additionally records the UTC cutoff and selects only rows whose simulation eligibility is not later than that cutoff.
+# v0.11 research provenance
+
+Research memories retain exact experiment, hypothesis, feature, outcome, graph, dataset, dependency, seed, validation, and eligibility context. Signal-independence records store the baseline and formula versions plus decomposed inputs. Divergence definitions and events store normalization rules and evidence timestamps. The deterministic reference fixture is idempotent and represents semiconductor, airline, and agriculture archetypes with intentionally different outcomes.

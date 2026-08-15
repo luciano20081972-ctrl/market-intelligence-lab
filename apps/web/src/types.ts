@@ -532,3 +532,75 @@ export interface ResearchEngineStatus {
   capabilities: string[];
   security_boundaries: string[];
 }
+
+export interface ResearchMemory {
+  id: string;
+  hypothesis_id: string;
+  experiment_id: string;
+  subject_entity_id: string;
+  company_name: string | null;
+  feature_key: string;
+  outcome_key: string;
+  conclusion: "POSITIVE" | "NEGATIVE";
+  status: "ACTIVE" | "WEAK" | "CONTRADICTED" | "SUPERSEDED" | "RETIRED";
+  datasets: string[];
+  feature_domains: string[];
+  applicability: Record<string, unknown>;
+  regime_context: string[];
+  period_context: Record<string, unknown>;
+  result_summary: Record<string, unknown>;
+  failure_reasons: string[];
+  success_conditions: string[];
+  failure_conditions: string[];
+  confidence: string;
+  first_learned_at: string;
+  last_confirmed_at: string;
+  simulation_eligible_time: string;
+  memory_decisions?: Array<{
+    classification: string;
+    decision: string;
+    reason: string;
+    override_authorized: boolean;
+    policy_version: string;
+  }>;
+  graph_path?: Array<Record<string, unknown>>;
+  provenance?: Record<string, unknown>;
+}
+
+export interface SignalIndependence {
+  id: string;
+  experiment_id: string;
+  factor_key: string;
+  baseline_version: string;
+  methodology_version: string;
+  predictive_strength: string;
+  independent_contribution: string;
+  redundancy_score: string;
+  independent_information_score: string;
+  components: Record<string, number | string | Record<string, number>>;
+  formula: Record<string, unknown>;
+  segments: Record<string, unknown>;
+  as_of_time: string;
+  semantics: string;
+}
+
+export interface DivergenceEventRecord {
+  id: string;
+  definition_id: string;
+  subject_entity_id: string;
+  company_name: string | null;
+  as_of_time: string;
+  domain_values: Record<string, { raw: number; normalized: number }>;
+  magnitude_components: Record<string, number | boolean | string>;
+  disagreement_magnitude: string;
+  persistence_periods: number;
+  data_completeness: string;
+  evidence: Record<string, unknown>;
+  historical_analogues: Array<Record<string, unknown>>;
+  confidence: string;
+  research_priority: string;
+  status: string;
+  research_candidate_id: string | null;
+  paper_eligible: false;
+  semantics: string;
+}

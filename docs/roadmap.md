@@ -119,3 +119,6 @@ Ordering is dependency-driven: trustworthy time precedes graphs/features; graphs
 ## Controlling research
 
 See [world-intelligence architecture](architecture/world-intelligence.md), [high-density data sources](research/high-density-data-sources.md), [open-source capability audit](research/open-source-capability-audit.md), and [build-versus-integrate matrix](research/build-vs-integrate-matrix.md).
+# Current release boundary
+
+v0.11 implements Research Memory, applicability and contradictions, regime context, signal independence and redundancy, divergence research candidates, and research-efficiency records. v0.12 may add Skeptic/Red-Team and Scenario/Counterfactual engines; v0.13 may add calibration and portfolio/risk integration; v0.14 may add operational hardening. Those future systems, autonomous allocation, and real-money execution are not part of v0.11.

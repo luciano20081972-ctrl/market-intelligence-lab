@@ -75,6 +75,19 @@ import {
   ValidationGates,
   WalkForwardResults,
 } from "./pages/HypothesisPlatform";
+import {
+  DivergenceDetailPage,
+  DivergenceMonitorPage,
+  FactorClustersPage,
+  FactorRedundancyPage,
+  InformationValuePage,
+  ResearchContradictionsPage,
+  ResearchMemoryDetail,
+  ResearchMemoryPage,
+  ResearchMethodReliabilityPage,
+  ResearchRegimeContextPage,
+  SignalIndependencePage,
+} from "./pages/ResearchIntelligence";
 
 export { queryClient };
 
@@ -125,6 +138,17 @@ export function App() {
       <Route path="research/experiments/:id/statistics" element={<FactorStatisticsPage />} />
       <Route path="research/experiments/:id/gates" element={<ValidationGates />} />
       <Route path="research/engines" element={<ResearchEngineStatusPage />} />
+      <Route path="research/memory" element={<ResearchMemoryPage />} />
+      <Route path="research/memory/:id" element={<ResearchMemoryDetail />} />
+      <Route path="research/contradictions" element={<ResearchContradictionsPage />} />
+      <Route path="research/regimes" element={<ResearchRegimeContextPage />} />
+      <Route path="research/signal-independence" element={<SignalIndependencePage />} />
+      <Route path="research/factor-redundancy" element={<FactorRedundancyPage />} />
+      <Route path="research/factor-clusters" element={<FactorClustersPage />} />
+      <Route path="research/divergence" element={<DivergenceMonitorPage />} />
+      <Route path="research/divergence/:id" element={<DivergenceDetailPage />} />
+      <Route path="research/information-value" element={<InformationValuePage />} />
+      <Route path="research/method-reliability" element={<ResearchMethodReliabilityPage />} />
       <Route path="providers" element={<Providers />} />
       <Route path="providers/:id" element={<ProviderDetail />} />
       <Route path="imports" element={<ImportJobs />} />

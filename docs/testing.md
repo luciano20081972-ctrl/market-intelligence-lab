@@ -64,3 +64,6 @@ npm advisories.
 # v0.7 temporal validation
 
 The world-data suite covers UTC normalization, naive-time rejection, publication/retrieval/revision eligibility floors, future-vintage exclusion, immutable manifests and raw objects, registry completeness, SEC identifier/amendment normalization, missing FRED values, ALFRED leakage prevention, EIA units/geography, idempotency, protected APIs, clean migration, upgrade from v0.6, drift, PostgreSQL 17, and opt-in bounded live probes. Fixture success must never be described as live verification.
+# v0.11 verification
+
+The research-intelligence suite covers positive and negative memory, applicability, suppression and override audit, as-of leakage boundaries, deterministic Pearson/Spearman/residual statistics, redundant-versus-independent behavior, divergence without trade eligibility, contradiction/regime/cluster semantics, lifecycle immutability, and workspace scope. Frontend tests cover all new views; Playwright covers the integrated signed-in navigation path. Database gates include clean, incremental, repeated, drift, identifier-length, and rollback checks on disposable PostgreSQL 17 when configured.

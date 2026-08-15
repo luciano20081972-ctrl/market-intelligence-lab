@@ -25,6 +25,7 @@ from apps.api.routers import (
     optimization,
     paper_portfolios,
     research,
+    research_intelligence,
     sec_intelligence,
     strategies,
     system,
@@ -163,6 +164,7 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.include_router(upstream.router, prefix="/api/v1", dependencies=protected)
     app.include_router(world_data.router, prefix="/api/v1", dependencies=protected)
     app.include_router(research.router, prefix="/api/v1", dependencies=protected)
+    app.include_router(research_intelligence.router, prefix="/api/v1", dependencies=protected)
     app.include_router(hypotheses.router, prefix="/api/v1", dependencies=protected)
     return app
 

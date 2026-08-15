@@ -178,3 +178,11 @@ All notable changes follow Keep a Changelog conventions. The project uses semant
 - Provenance timestamps, ingestion runs, audit events, UTC enforcement, transactional mutations, and database constraints.
 - Backend, frontend, and Playwright tests; Ruff, MyPy, Vitest, build, migration, and CI checks.
 - Cross-platform development launcher, Docker images, Compose topology, and security/operations documentation.
+## 0.11.0 - 2026-08-15
+
+- Added immutable, temporal Research Memory derived only from completed experiments with final out-of-sample evidence, including first-class negative findings and explicit applicability.
+- Added known-failure classification, suppression, auditable overrides, contradictions, regime context, weakening, revalidation, and as-of retrieval.
+- Added deterministic signal-independence analysis against a versioned conventional baseline, factor redundancy results, information-family clusters, and a transparent Independent Information Score.
+- Added declarative divergence definitions and immutable cross-domain events with magnitude, persistence, evidence quality, tiny-sample warnings, historical analogues, and research-candidate-only semantics.
+- Added dataset Information Value, research-method reliability, outcome attribution, protected workspace APIs, reference archetypes, and research-intelligence UI workflows.
+- Added Alembic revision `eb1ff477509f` and bumped application metadata to 0.11.0.

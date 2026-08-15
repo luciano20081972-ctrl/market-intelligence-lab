@@ -92,3 +92,8 @@ WRAP boundaries. Compatibility-only QuantStats/skfolio calculations are to be re
 pinned adapters after reconciliation. SQLite, fixture-only readiness claims, in-process
 multi-host scheduling assumptions, and a fixed universal factor model are deprecated as
 production architecture, while remaining useful in bounded tests where noted.
+# v0.11 research-intelligence layer
+
+Research Memory now consumes finalized Factor Validation artifacts and supplies pre-scheduling classification to research workflows. Contradiction and regime records contextualize those lessons. Signal Independence compares candidates with a versioned conventional baseline, while the Divergence Engine turns declarative cross-domain disagreement into evidence-backed research candidates. Information Value, method reliability, and outcome attribution describe research efficiency.
+
+All new records are workspace scoped. Memory and divergence use explicit simulation-eligible timestamps. The layer does not submit orders, infer causality, or implement the future Skeptic, Scenario, Counterfactual, portfolio-allocation, or autonomous self-modification systems.

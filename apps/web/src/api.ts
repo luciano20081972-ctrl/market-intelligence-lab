@@ -15,6 +15,7 @@ import type {
   ResearchBudget, ResearchCandidate, ResearchFeature, ResearchUniverse,
   ExperimentFold, FactorExperiment, FeatureValueRecord, PromotionEvent,
   ResearchEngineStatus, ResearchHypothesis, ScreeningRun,
+  DivergenceEventRecord, ResearchMemory, SignalIndependence,
 } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -233,4 +234,20 @@ export const api = {
   experimentManifest: (id: string) => request<Record<string, unknown>>(`/api/v1/factor-experiments/${id}/manifest`),
   qlibResearchStatus: () => request<ResearchEngineStatus>("/api/v1/research-engines/qlib"),
   rdAgentResearchStatus: () => request<ResearchEngineStatus>("/api/v1/research-engines/rd-agent"),
+  runResearchIntelligenceFixture: () => request<Record<string, unknown>>(
+    "/api/v1/research/intelligence/reference-fixture", { method: "POST" },
+  ),
+  researchMemory: () => request<{ items: ResearchMemory[] }>("/api/v1/research/memory"),
+  researchMemoryDetail: (id: string) => request<ResearchMemory>(`/api/v1/research/memory/${id}`),
+  researchContradictions: () => request<{ items: Array<Record<string, unknown>> }>("/api/v1/research/contradictions"),
+  researchRegimes: () => request<{ definitions: Array<Record<string, unknown>>; assignments: Array<Record<string, unknown>> }>("/api/v1/research/regimes"),
+  signalIndependence: () => request<{ items: SignalIndependence[] }>("/api/v1/research/signal-independence"),
+  factorRedundancy: () => request<{ items: Array<Record<string, unknown>> }>("/api/v1/research/factor-redundancy"),
+  factorClusters: () => request<{ items: Array<Record<string, unknown>>; causal_structure_claimed: boolean }>("/api/v1/research/factor-clusters"),
+  divergenceDefinitions: () => request<{ items: Array<Record<string, unknown>> }>("/api/v1/research/divergence-definitions"),
+  divergenceEvents: () => request<{ items: DivergenceEventRecord[] }>("/api/v1/research/divergence-events"),
+  divergenceEvent: (id: string) => request<DivergenceEventRecord>(`/api/v1/research/divergence-events/${id}`),
+  informationValue: () => request<{ items: Array<Record<string, unknown>>; semantics: string }>("/api/v1/research/information-value"),
+  researchMethodReliability: () => request<{ items: Array<Record<string, unknown>> }>("/api/v1/research/method-reliability"),
+  researchOutcomeAttribution: () => request<{ items: Array<Record<string, unknown>> }>("/api/v1/research/outcome-attribution"),
 };
