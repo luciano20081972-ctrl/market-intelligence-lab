@@ -1,5 +1,7 @@
 # Testing
 
+v0.14 release gates add duplicate-scheduler, stale-lease recovery, bounded retry, weekend freshness, alert deduplication, production configuration, secret redaction, backup manifest, readiness, and Operations Center coverage. PostgreSQL CI verifies clean/repeated upgrade and concurrency. Live provider checks remain bounded and opt-in. Canonical E2E remains `python -m scripts.e2e` with isolated services.
+
 v0.13 release gates explicitly cover forecast locking, maturity rejection, evaluation-mode isolation, as-of leakage, probability/continuous/interval/rank scoring, sample safeguards, critical skeptic blocking, optimizer subordination, no shorting/leverage, scenario rejection, idempotent paper previews, and visible simulated labels.
 
 ## v0.12 release gates

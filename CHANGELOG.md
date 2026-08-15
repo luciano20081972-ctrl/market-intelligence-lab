@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.14.0 - Private Beta Operations, Live Data Automation, and Reliability
+
+- Added PostgreSQL-coordinated durable task schedules, unique occurrences, scheduler heartbeats, expiring leases, crash recovery, bounded retry timing, and quarantine-ready failure records.
+- Added cadence-aware freshness, operational alert deduplication, resource budgets, dependency health, deployment manifests, fail-closed production validation, and stronger secret redaction.
+- Added backup/restore metadata and dry-run tooling, owner recovery, readiness scoring, operations runbooks, and a clearer mobile-compatible Operations Center.
+- Preserved Temporal Truth, research, prospective calibration, and simulated paper-only behavior. No brokerage connectivity or live-money execution was added.
+
 ## 0.13.0 - 2026-08-15
 
 - Added immutable, evaluation-mode-scoped prospective forecasts, maturity-gated versioned outcomes, type-specific scoring, empirical calibration, confidence analysis, attribution, reliability snapshots, and bounded feedback recommendations.

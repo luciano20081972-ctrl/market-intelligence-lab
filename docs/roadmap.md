@@ -1,5 +1,13 @@
 # Roadmap
 
+## v0.14
+
+Private-beta operations, approved live-data automation, recoverable scheduling, operational health, and verified backup/restore procedures. No brokerage or live-money execution.
+
+## Recommended v1.0 scope
+
+Stabilize observed private-beta operations: prove Tier-1 providers under bounded live evidence, complete recurring restore drills, tune resource budgets from measured load, and resolve operator feedback. Do not add a new research engine or brokerage execution as a release shortcut.
+
 ## v0.13 — Prospective Calibration, Outcome Feedback, and Paper Portfolio Intelligence
 
 **Status: implemented on the v0.13 feature branch.** The release freezes point-in-time forecasts, observes only mature outcomes, measures empirical calibration without mixing evaluation modes, and carries qualified research through paper-only construction and existing hard-risk controls. v0.14 should focus on scheduling, monitoring, backup/recovery, and private-beta operations; it must not add brokerage or real-money execution.

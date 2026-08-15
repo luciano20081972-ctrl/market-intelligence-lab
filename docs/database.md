@@ -1,5 +1,7 @@
 # Database
 
+The v0.14 migration descends from `4e398fc4c9a1` and adds scheduled task definitions/occurrences, scheduler heartbeats, circuit breakers, freshness statuses, operational alerts, backup manifests, restore verifications, and maintenance state. Existing import schedules, jobs, leases, workers, provider health/quota state, and checkpoints remain canonical and are not duplicated. PostgreSQL 17 is authoritative for `SKIP LOCKED`, lease concurrency, and unique occurrence behavior.
+
 The v0.13 schema head is `4e398fc4c9a1` (parent `e2517ff0412b`). It adds versioned target definitions, immutable forecasts/outcomes/scores/calibration/reliability artifacts, bounded feedback, and paper-only eligibility, candidate, construction-policy, plan, and evaluation records. Historical migrations are unchanged.
 
 ## v0.12 research intelligence

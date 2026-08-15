@@ -1,6 +1,8 @@
 # Market Intelligence Lab
 
-Current version: **0.13.0** — Prospective Calibration, Outcome Feedback, and Paper Portfolio Intelligence. Forecasts are frozen before outcomes mature, evaluation populations remain separate, and qualified research can enter a deterministic simulated portfolio workflow. Historical replay is not prospective evidence; confidence is not probability; paper performance is not real performance.
+Current version: **0.14.0** — Private Beta Operations, Live Data Automation, and Reliability. PostgreSQL-backed schedules, leases, retries, quarantine, freshness, worker/scheduler health, alerts, readiness checks, and backup/restore procedures keep approved data and paper-only research workflows recoverable and resource bounded. This is private-beta reliability, not high availability or brokerage execution.
+
+Run `python -m scripts.private_beta_readiness` before a private-beta deployment. Start durable processes with `python -m packages.market_data.worker` and `python -m packages.operations.scheduler`. See [the operator guide](docs/operations/private-beta.md).
 
 The v0.10 Hypothesis Factory and Factor Validation and v0.11 Research Memory remain the experimental foundation. v0.12 adds immutable research cases, skeptic challenges, transparent confidence and fragility profiles, scenarios, counterfactuals, and traceable dossiers. Predictive does not mean causal; validated does not mean true; and no result is an investment recommendation.
 

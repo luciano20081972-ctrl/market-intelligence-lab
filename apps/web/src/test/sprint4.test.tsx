@@ -16,6 +16,7 @@ vi.mock("../api", () => ({ api: {
   importJobs: vi.fn(), previewImport: vi.fn(), createImportJob: vi.fn(), importJob: vi.fn(),
   importJobEvents: vi.fn(), importJobQuality: vi.fn(), cancelImportJob: vi.fn(), retryImportJob: vi.fn(),
   operationQueue: vi.fn(), operationWorkers: vi.fn(), operationHealth: vi.fn(), recoverAbandoned: vi.fn(),
+  operationsCenter: vi.fn(), freshnessStatuses: vi.fn(), operationalAlerts: vi.fn(), scheduledTasks: vi.fn(),
   schedules: vi.fn(), createSchedule: vi.fn(), updateSchedule: vi.fn(), runScheduleNow: vi.fn(), deleteSchedule: vi.fn(),
   reconciliationPreview: vi.fn(), reconciliationRun: vi.fn(), reconciliationReports: vi.fn(),
 } }));
@@ -58,6 +59,10 @@ beforeEach(() => {
   mocked.operationQueue.mockResolvedValue({ depth: 2, failed: 1, running: 0, by_status: { queued: 2, failed: 1 } });
   mocked.operationWorkers.mockResolvedValue({ items: [], meta: { page: 1, page_size: 25, total: 0 } });
   mocked.operationHealth.mockResolvedValue({ status: "degraded" });
+  mocked.operationsCenter.mockResolvedValue({ overall: "DEGRADED", categories: { application: "HEALTHY", database: "HEALTHY", workers: "ACTION_NEEDED", scheduler: "ACTION_NEEDED", data: "HEALTHY", authentication: "HEALTHY", storage: "HEALTHY", backups: "DEGRADED" }, open_alerts: 0, stale_datasets: 0, maintenance: { enabled: false, reason: null }, latest_backup: null });
+  mocked.freshnessStatuses.mockResolvedValue([]);
+  mocked.operationalAlerts.mockResolvedValue([]);
+  mocked.scheduledTasks.mockResolvedValue([]);
   mocked.recoverAbandoned.mockResolvedValue({ count: 1, recovered_job_ids: [job.id] });
   mocked.schedules.mockResolvedValue([]);
   mocked.createSchedule.mockResolvedValue({ id: "schedule-1", provider_id: provider.id, name: "Daily AAPL", symbols: ["AAPL"], mode: "incremental", adjustment_preference: "provider_default", timezone: "America/New_York", is_enabled: true, next_run_at: "2026-07-30T12:00:00Z", last_run_at: null, failure_count: 0, last_error: null, date_range_policy: { lookback_days: 7 } });

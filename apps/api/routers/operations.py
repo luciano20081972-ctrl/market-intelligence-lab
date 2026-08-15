@@ -17,13 +17,20 @@ from apps.api.schemas_sprint4 import (
 )
 from packages.core.config import get_settings
 from packages.database.models import (
+    BackupManifest,
+    DataFreshnessStatus,
     ImportSchedule,
     JobEvent,
+    MaintenanceState,
+    OperationalAlert,
     Provider,
     ProviderHealthSnapshot,
     ProviderRateLimitState,
     ReconciliationIssue,
     ReconciliationRun,
+    ScheduledTaskDefinition,
+    ScheduledTaskOccurrence,
+    SchedulerHeartbeat,
     ScheduleRun,
     WorkerInstance,
 )
@@ -38,6 +45,7 @@ from packages.market_data.rate_limit import InProcessRateLimiter
 from packages.market_data.reconciliation import preview_reconciliation, run_reconciliation
 from packages.market_data.registry import default_registry
 from packages.market_data.types import ProviderError
+from packages.operations.service import queue_age_seconds
 
 router = APIRouter(tags=["operations"])
 limiter = InProcessRateLimiter(
@@ -309,6 +317,190 @@ def operation_health(session: Session = Depends(get_db)) -> dict[str, Any]:
             for provider in enabled_providers
         ],
     }
+
+
+@router.get("/operations/center")
+def operations_center(session: Session = Depends(get_db)) -> dict[str, Any]:
+    now = datetime.now(UTC)
+    latest_worker = session.scalar(
+        select(WorkerInstance).order_by(WorkerInstance.last_heartbeat_at.desc())
+    )
+    latest_scheduler = session.scalar(
+        select(SchedulerHeartbeat).order_by(SchedulerHeartbeat.last_heartbeat_at.desc())
+    )
+    latest_backup = session.scalar(
+        select(BackupManifest).order_by(BackupManifest.created_at.desc())
+    )
+    maintenance = session.scalar(select(MaintenanceState).where(MaintenanceState.enabled.is_(True)))
+    stale = (
+        session.scalar(
+            select(func.count(DataFreshnessStatus.id)).where(
+                DataFreshnessStatus.status.in_(("STALE", "VERY_STALE"))
+            )
+        )
+        or 0
+    )
+    alerts = (
+        session.scalar(
+            select(func.count(OperationalAlert.id)).where(OperationalAlert.status == "OPEN")
+        )
+        or 0
+    )
+    queue = queue_summary(session)
+
+    def heartbeat_status(value: datetime | None) -> str:
+        if value is None:
+            return "ACTION_NEEDED"
+        return "HEALTHY" if now - value < timedelta(minutes=2) else "ACTION_NEEDED"
+
+    categories = {
+        "application": "DEGRADED" if maintenance else "HEALTHY",
+        "database": "HEALTHY",
+        "workers": heartbeat_status(latest_worker.last_heartbeat_at if latest_worker else None),
+        "scheduler": heartbeat_status(
+            latest_scheduler.last_heartbeat_at if latest_scheduler else None
+        ),
+        "data": "ACTION_NEEDED" if stale else "HEALTHY",
+        "authentication": "HEALTHY",
+        "storage": "HEALTHY",
+        "backups": "HEALTHY"
+        if latest_backup and latest_backup.verification_state == "VERIFIED"
+        else "DEGRADED",
+    }
+    return {
+        "overall": "ACTION_NEEDED"
+        if "ACTION_NEEDED" in categories.values()
+        else "DEGRADED"
+        if "DEGRADED" in categories.values()
+        else "HEALTHY",
+        "categories": categories,
+        "queue": {**queue, "oldest_age_seconds": queue_age_seconds(session, now)},
+        "open_alerts": alerts,
+        "stale_datasets": stale,
+        "maintenance": {
+            "enabled": bool(maintenance),
+            "reason": maintenance.reason if maintenance else None,
+        },
+        "latest_backup": {
+            "created_at": latest_backup.created_at,
+            "status": latest_backup.status,
+            "verification_state": latest_backup.verification_state,
+        }
+        if latest_backup
+        else None,
+    }
+
+
+@router.get("/operations/freshness")
+def freshness_statuses(session: Session = Depends(get_db)) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": row.id,
+            "provider": row.provider,
+            "dataset": row.dataset,
+            "status": row.status,
+            "last_eligible_update_at": row.last_eligible_update_at,
+            "expected_next_update_at": row.expected_next_update_at,
+            "last_success_at": row.last_success_at,
+            "current_error": row.current_error,
+            "provider_delayed": row.provider_delayed,
+        }
+        for row in session.scalars(
+            select(DataFreshnessStatus).order_by(
+                DataFreshnessStatus.provider, DataFreshnessStatus.dataset
+            )
+        ).all()
+    ]
+
+
+@router.get("/operations/alerts")
+def operational_alerts(session: Session = Depends(get_db)) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": row.id,
+            "severity": row.severity,
+            "category": row.category,
+            "status": row.status,
+            "summary": row.summary,
+            "impact": row.impact,
+            "unaffected": row.unaffected,
+            "recommended_action": row.recommended_action,
+            "occurrence_count": row.occurrence_count,
+            "last_seen_at": row.last_seen_at,
+        }
+        for row in session.scalars(
+            select(OperationalAlert).order_by(OperationalAlert.last_seen_at.desc()).limit(100)
+        ).all()
+    ]
+
+
+@router.get("/operations/scheduled-tasks")
+def scheduled_tasks(session: Session = Depends(get_db)) -> list[dict[str, Any]]:
+    rows = session.scalars(
+        select(ScheduledTaskDefinition).order_by(ScheduledTaskDefinition.next_due_at)
+    ).all()
+    return [
+        {
+            "id": row.id,
+            "name": row.name,
+            "task_type": row.task_type,
+            "enabled": row.enabled,
+            "schedule_type": row.schedule_type,
+            "provider": row.provider,
+            "next_due_at": row.next_due_at,
+            "last_scheduled_at": row.last_scheduled_at,
+        }
+        for row in rows
+    ]
+
+
+@router.get("/operations/occurrences")
+def task_occurrences(session: Session = Depends(get_db)) -> list[dict[str, Any]]:
+    rows = session.scalars(
+        select(ScheduledTaskOccurrence)
+        .order_by(ScheduledTaskOccurrence.created_at.desc())
+        .limit(100)
+    ).all()
+    return [
+        {
+            "id": row.id,
+            "definition_id": row.definition_id,
+            "scheduled_for": row.scheduled_for,
+            "status": row.status,
+            "attempts": row.attempts,
+            "claimed_by": row.claimed_by,
+            "next_retry_at": row.next_retry_at,
+            "error_category": row.error_category,
+        }
+        for row in rows
+    ]
+
+
+@router.post("/operations/occurrences/{occurrence_id}/{action}")
+def resolve_quarantined_occurrence(
+    occurrence_id: UUID, action: str, session: Session = Depends(get_db)
+) -> dict[str, Any]:
+    occurrence = session.get(ScheduledTaskOccurrence, occurrence_id)
+    if occurrence is None:
+        raise _error("occurrence_not_found", "Scheduled occurrence was not found", 404)
+    if occurrence.status != "QUARANTINED":
+        raise _error("occurrence_not_quarantined", "Only quarantined work can be resolved", 409)
+    normalized = action.upper()
+    if normalized == "RETRY":
+        occurrence.status = "RETRY_WAIT"
+        occurrence.next_retry_at = datetime.now(UTC)
+        occurrence.finished_at = None
+    elif normalized == "DISMISS":
+        occurrence.status = "CANCELLED"
+        occurrence.finished_at = datetime.now(UTC)
+    elif normalized == "SUPERSEDE":
+        occurrence.status = "CANCELLED"
+        occurrence.finished_at = datetime.now(UTC)
+        occurrence.result_manifest = {**occurrence.result_manifest, "resolution": "SUPERSEDED"}
+    else:
+        raise _error("invalid_quarantine_action", "Action must be RETRY, DISMISS, or SUPERSEDE")
+    session.commit()
+    return {"id": occurrence.id, "status": occurrence.status, "action": normalized}
 
 
 @router.post("/operations/recover-abandoned")

@@ -58,8 +58,8 @@ test("authenticated workspace research workflow has no severe console errors", a
   await page.getByRole("link", { name: "Validation report" }).click();
   await expect(page.getByRole("heading", { name: "Bias and leakage validation" })).toBeVisible();
   await page.getByText("More & administration").click();
-  await page.getByRole("link", { name: "Background Jobs" }).click();
-  await expect(page.getByRole("heading", { name: "Queue dashboard" })).toBeVisible();
+  await page.getByRole("link", { name: "Operations Center" }).click();
+  await expect(page.getByRole("heading", { name: "Operations Center" })).toBeVisible();
   await page.getByRole("link", { name: "Import Schedules" }).click();
   await expect(page.getByRole("heading", { name: "Import schedules" })).toBeVisible();
   await page.getByRole("link", { name: "Data Reconciliation" }).click();

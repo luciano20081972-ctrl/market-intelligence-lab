@@ -1,7 +1,9 @@
 from collections.abc import Callable, Iterator
+from dataclasses import replace
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from packages.auth import AuthError, AuthPrincipal, authenticate_request
@@ -32,7 +34,11 @@ def get_principal(request: Request, session: Session = Depends(get_db)) -> AuthP
         ) from exc
     if request.app.state.settings.auth_mode == "disabled":
         ensure_legacy_workspace(session)
-    profile = session.get(UserProfile, principal.user_id)
+    profile = session.scalar(
+        select(UserProfile).where(UserProfile.auth_subject == principal.subject)
+    )
+    if profile is None:
+        profile = session.get(UserProfile, principal.user_id)
     if profile is None:
         profile = UserProfile(
             id=principal.user_id,
@@ -47,6 +53,7 @@ def get_principal(request: Request, session: Session = Depends(get_db)) -> AuthP
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"code": "user_disabled", "message": "This user account is disabled"},
         )
+    principal = replace(principal, user_id=profile.id)
     session.info["actor_user_id"] = principal.user_id
     session.info["correlation_id"] = getattr(request.state, "correlation_id", None)
     session.info["user_agent_summary"] = request.headers.get("User-Agent", "")[:160] or None

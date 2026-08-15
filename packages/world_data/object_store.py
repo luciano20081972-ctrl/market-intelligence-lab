@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+import os
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -51,10 +53,18 @@ class LocalRawObjectStore:
                 raise FileExistsError("immutable raw object already exists with different content")
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(payload)
-        path.with_suffix(path.suffix + ".meta").write_text(
-            f"{checksum}\n{len(payload)}\n{media_type}\n", encoding="utf-8"
-        )
+            handle, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+            try:
+                with os.fdopen(handle, "wb") as stream:
+                    stream.write(payload)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                os.replace(temporary, path)
+            finally:
+                if os.path.exists(temporary):
+                    os.unlink(temporary)
+        metadata_path = path.with_suffix(path.suffix + ".meta")
+        metadata_path.write_text(f"{checksum}\n{len(payload)}\n{media_type}\n", encoding="utf-8")
         return RawObjectMetadata(key, checksum, len(payload), media_type)
 
     def metadata(self, key: str) -> RawObjectMetadata:

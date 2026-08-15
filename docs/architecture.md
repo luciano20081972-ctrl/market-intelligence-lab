@@ -1,5 +1,7 @@
 # Architecture
 
+v0.14 adds an operational control plane beside—not inside—the research engines. PostgreSQL is the durable coordination boundary for schedules, occurrences, leases, heartbeats, alerts, freshness, and backup verification. API, worker, and scheduler remain separate restartable processes. Optional provider outages degrade data automation without taking down read-only research access.
+
 v0.13 closes the bounded research loop: frozen forecast → mature outcome → type-specific score → calibration/attribution → versioned reliability → human-reviewed feedback. A separate deterministic boundary maps eligible research to a paper allocation candidate and immutable paper plan; existing simulated execution and risk controls remain authoritative.
 
 ## v0.12 adversarial, scenario, and counterfactual intelligence

@@ -11,12 +11,23 @@ from typing import Any
 from fastapi import Request, Response
 
 SECRET_PATTERN = re.compile(
-    r"(?i)(authorization|api[_-]?key|token|password|secret)(\s*[=:]\s*)([^,\s]+)"
+    r"(?i)(authorization|cookie|api[_-]?key|token|password|secret|database_url)"
+    r"(\s*[=:]\s*)([^,\s]+)"
+)
+BEARER_PATTERN = re.compile(r"(?i)bearer\s+[A-Za-z0-9._~+/=-]+")
+JWT_PATTERN = re.compile(r"\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b")
+DATABASE_CREDENTIAL_PATTERN = re.compile(
+    r"(?i)(postgres(?:ql)?(?:\+psycopg)?://[^:/\s]+:)[^@\s]+(@)"
 )
 
 
 def redact(value: str) -> str:
-    return SECRET_PATTERN.sub(lambda match: f"{match.group(1)}{match.group(2)}[REDACTED]", value)
+    redacted = SECRET_PATTERN.sub(
+        lambda match: f"{match.group(1)}{match.group(2)}[REDACTED]", value
+    )
+    redacted = BEARER_PATTERN.sub("Bearer [REDACTED]", redacted)
+    redacted = JWT_PATTERN.sub("[REDACTED_JWT]", redacted)
+    return DATABASE_CREDENTIAL_PATTERN.sub(r"\1[REDACTED]\2", redacted)
 
 
 class JsonFormatter(logging.Formatter):

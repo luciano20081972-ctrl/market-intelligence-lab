@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import Engine, text
+from sqlalchemy import Engine, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -37,6 +38,7 @@ from apps.api.routers import (
 )
 from apps.api.schemas import HealthResponse
 from packages.core.config import Settings, get_settings
+from packages.database.models import MaintenanceState
 from packages.database.session import create_database_engine, make_session_factory
 from packages.market_data.observability import correlation_middleware
 from packages.observability.sentry import configure_sentry
@@ -83,6 +85,21 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
             return JSONResponse(status_code=400, content={"detail": "Invalid Content-Length"})
         if body_size > app_settings.max_request_bytes:
             return JSONResponse(status_code=413, content={"detail": "Request body is too large"})
+        if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+            with app.state.session_factory() as maintenance_session:
+                maintenance = maintenance_session.scalar(
+                    select(MaintenanceState).where(MaintenanceState.enabled.is_(True))
+                )
+            if maintenance is not None:
+                return JSONResponse(
+                    status_code=503,
+                    content={
+                        "detail": {
+                            "code": "maintenance_mode",
+                            "message": maintenance.reason or "Maintenance is in progress",
+                        }
+                    },
+                )
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
@@ -142,6 +159,35 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
                     },
                 )
         return {"status": "healthy", "database": "healthy", "version": app_settings.version}
+
+    @app.get("/health/dependencies", tags=["system"])
+    def dependencies(session: Session = Depends(get_db)) -> dict[str, object]:
+        database = "healthy"
+        try:
+            session.execute(text("SELECT 1"))
+        except SQLAlchemyError:
+            database = "unavailable"
+        storage = Path(app_settings.raw_object_store_root)
+        storage_status = "healthy" if storage.exists() and storage.is_dir() else "unavailable"
+        readiness_status = "ready" if database == storage_status == "healthy" else "not_ready"
+        return {
+            "status": "HEALTHY" if readiness_status == "ready" else "ACTION_NEEDED",
+            "readiness": readiness_status,
+            "database": database,
+            "required_storage": storage_status,
+            "optional_market_data_providers": "independent",
+        }
+
+    @app.get("/health/deployment", tags=["system"])
+    def deployment_manifest() -> dict[str, str]:
+        return {
+            "application_version": app_settings.version,
+            "git_sha": app_settings.git_sha,
+            "alembic_revision": app_settings.expected_schema_revision,
+            "build_time": app_settings.build_time,
+            "environment": app_settings.environment,
+            "frontend_version": app_settings.version,
+        }
 
     @app.get("/", include_in_schema=False)
     def root(request: Request) -> dict[str, str]:

@@ -1109,6 +1109,195 @@ class ScheduleRun(Base):
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
 
 
+class ScheduledTaskDefinition(Base):
+    __tablename__ = "scheduled_task_definitions"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "task_type", "name", name="uq_scheduled_task_scope"),
+        CheckConstraint("maximum_runtime_seconds > 0", name="scheduled_task_runtime_positive"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(120))
+    task_type: Mapped[str] = mapped_column(String(64), index=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    schedule_type: Mapped[str] = mapped_column(String(24), index=True)
+    schedule: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    timezone: Mapped[str] = mapped_column(String(80), default="UTC")
+    provider: Mapped[str | None] = mapped_column(String(64), index=True)
+    configuration: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    policy_version: Mapped[str] = mapped_column(String(40), default="v1")
+    next_due_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    last_scheduled_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    maximum_runtime_seconds: Mapped[int] = mapped_column(Integer, default=900)
+    retry_policy: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    concurrency_policy: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    resource_budget: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    checksum: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+
+class ScheduledTaskOccurrence(Base):
+    __tablename__ = "scheduled_task_occurrences"
+    __table_args__ = (
+        UniqueConstraint("definition_id", "scheduled_for", name="uq_scheduled_task_occurrence"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    definition_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "scheduled_task_definitions.id",
+            ondelete="CASCADE",
+            name="fk_task_occurrence_definition",
+        ),
+        index=True,
+    )
+    workspace_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    scheduled_for: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    status: Mapped[str] = mapped_column(String(24), default="QUEUED", index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(128), unique=True)
+    claimed_by: Mapped[str | None] = mapped_column(String(120), index=True)
+    lease_expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    next_retry_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
+    error_category: Mapped[str | None] = mapped_column(String(40), index=True)
+    sanitized_error: Mapped[str | None] = mapped_column(Text)
+    result_manifest: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    resource_usage: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    started_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+
+class SchedulerHeartbeat(Base):
+    __tablename__ = "scheduler_heartbeats"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    scheduler_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    status: Mapped[str] = mapped_column(String(24), default="ONLINE", index=True)
+    started_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    last_heartbeat_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+    lease_expires_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    version: Mapped[str] = mapped_column(String(24))
+    software_sha: Mapped[str] = mapped_column(String(64), default="unknown")
+
+
+class ProviderCircuitBreaker(Base):
+    __tablename__ = "provider_circuit_breakers"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    provider_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("providers.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    state: Mapped[str] = mapped_column(String(16), default="CLOSED", index=True)
+    consecutive_failures: Mapped[int] = mapped_column(Integer, default=0)
+    opened_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    next_probe_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
+    last_error_category: Mapped[str | None] = mapped_column(String(40))
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+
+class DataFreshnessStatus(Base):
+    __tablename__ = "data_freshness_statuses"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "provider", "dataset", name="uq_data_freshness_scope"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    provider: Mapped[str] = mapped_column(String(64), index=True)
+    dataset: Mapped[str] = mapped_column(String(120), index=True)
+    status: Mapped[str] = mapped_column(String(24), default="UNKNOWN", index=True)
+    cadence: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    criticality: Mapped[str] = mapped_column(String(16), default="NORMAL", index=True)
+    calendar: Mapped[str | None] = mapped_column(String(32))
+    timezone: Mapped[str] = mapped_column(String(80), default="UTC")
+    last_eligible_update_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    last_success_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    expected_next_update_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    stale_after_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
+    provider_delayed: Mapped[bool] = mapped_column(Boolean, default=False)
+    last_job_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("import_jobs.id", ondelete="SET NULL"), index=True
+    )
+    current_error: Mapped[str | None] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+
+class OperationalAlert(Base):
+    __tablename__ = "operational_alerts"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "deduplication_key", "status", name="uq_active_alert"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    severity: Mapped[str] = mapped_column(String(16), index=True)
+    category: Mapped[str] = mapped_column(String(48), index=True)
+    deduplication_key: Mapped[str] = mapped_column(String(160))
+    status: Mapped[str] = mapped_column(String(16), default="OPEN", index=True)
+    summary: Mapped[str] = mapped_column(String(240))
+    impact: Mapped[str] = mapped_column(Text, default="")
+    unaffected: Mapped[str] = mapped_column(Text, default="")
+    recommended_action: Mapped[str] = mapped_column(Text, default="")
+    occurrence_count: Mapped[int] = mapped_column(Integer, default=1)
+    first_seen_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    last_seen_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+
+class BackupManifest(Base):
+    __tablename__ = "backup_manifests"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    backup_reference: Mapped[str] = mapped_column(String(240), unique=True)
+    application_version: Mapped[str] = mapped_column(String(24))
+    alembic_revision: Mapped[str] = mapped_column(String(32))
+    object_store_reference: Mapped[str | None] = mapped_column(String(240))
+    configuration_version: Mapped[str] = mapped_column(String(64))
+    checksums: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(24), index=True)
+    verification_state: Mapped[str] = mapped_column(String(24), default="UNVERIFIED", index=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+
+
+class RestoreVerification(Base):
+    __tablename__ = "restore_verifications"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    backup_manifest_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("backup_manifests.id", ondelete="RESTRICT"), index=True
+    )
+    status: Mapped[str] = mapped_column(String(24), index=True)
+    record_counts: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    checksums_match: Mapped[bool] = mapped_column(Boolean, default=False)
+    details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    verified_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+
+
+class MaintenanceState(Base):
+    __tablename__ = "maintenance_states"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    reason: Mapped[str] = mapped_column(Text, default="")
+    allow_reads: Mapped[bool] = mapped_column(Boolean, default=True)
+    activated_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("user_profiles.id", ondelete="SET NULL"), index=True
+    )
+    activated_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+
 class ProviderRateLimitState(Base):
     __tablename__ = "provider_rate_limit_states"
 

@@ -13,10 +13,58 @@ services:
     ports:
       - "8000:8000"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready')"]
       interval: 10s
       timeout: 3s
       retries: 10
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-m", "packages.market_data.worker"]
+    environment:
+      MIL_ENVIRONMENT: docker
+      MIL_DATABASE_URL: sqlite:////app/data/market_intelligence.db
+      MIL_AUTH_MODE: disabled
+    volumes:
+      - mil-data:/app/data
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-m", "packages.operations.scheduler"]
+    environment:
+      MIL_ENVIRONMENT: docker
+      MIL_DATABASE_URL: sqlite:////app/data/market_intelligence.db
+      MIL_AUTH_MODE: disabled
+    volumes:
+      - mil-data:/app/data
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  operations-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-m", "packages.operations.worker"]
+    environment:
+      MIL_ENVIRONMENT: docker
+      MIL_DATABASE_URL: sqlite:////app/data/market_intelligence.db
+      MIL_AUTH_MODE: disabled
+    volumes:
+      - mil-data:/app/data
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
 
   web:
     build:

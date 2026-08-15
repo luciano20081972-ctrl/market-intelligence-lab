@@ -1,5 +1,7 @@
 # Reproducibility
 
+Operational occurrences carry deterministic idempotency keys, policy versions, checksums, schedule times, result manifests, and resource usage. Ingestion resumes from persisted checkpoints and raw objects are immutable with atomic writes and SHA-256 verification. Retries never erase prior error history; research maintenance and paper previews remain deterministic and paper-only.
+
 v0.13 manifests freeze software SHA, Alembic revision, research/dossier and evidence references, temporal snapshot, target definition, benchmark, policy versions, risk assumptions, and checksum. Corrections supersede forecasts and observations; they never rewrite sealed evidence.
 
 ## v0.12 immutable manifests
