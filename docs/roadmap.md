@@ -1,5 +1,9 @@
 # Roadmap
 
+## v0.12 — Adversarial Research, Scenario, and Counterfactual Intelligence
+
+**Status: implemented on the v0.12 feature branch.** The release attacks research conclusions with deterministic structured challenges, transmits declarative shocks through supported graph paths, evaluates isolated mechanism-conditioned alternative states, and packages traceable evidence in dossiers. Runtime AI remains optional and disabled. v0.13 should focus on outcome calibration, feedback, and carefully bounded portfolio/risk integration—not brokerage or live-money automation.
+
 ## World-intelligence release sequence (proposed 2026-08-07)
 
 Effort uses focused engineer-weeks and assumes one experienced developer with Codex assistance. Runtime ranges are directional and must be replaced by measured benchmarks. Every release preserves the no-broker/no-real-money boundary.

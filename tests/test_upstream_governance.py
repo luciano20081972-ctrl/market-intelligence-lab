@@ -23,8 +23,7 @@ def test_unknown_license_is_rejected() -> None:
     inventory = copy.deepcopy(_inventory())
     inventory["projects"][0]["license"] = "UNKNOWN"  # type: ignore[index]
     assert any(
-        "unknown license" in error
-        for error in validate_inventory(inventory, repository_root=ROOT)
+        "unknown license" in error for error in validate_inventory(inventory, repository_root=ROOT)
     )
 
 

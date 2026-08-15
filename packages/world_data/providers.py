@@ -69,16 +69,18 @@ class SecDirectAdapter:
             form = recent["form"][index]
             accepted_text = recent["acceptanceDateTime"][index].replace("Z", "+00:00")
             accepted = datetime.fromisoformat(accepted_text)
-            rows.append({
-                "cik": normalize_cik(source["cik"]),
-                "accession_number": normalize_accession(accession),
-                "form": form,
-                "is_amendment": form.endswith("/A"),
-                "filed": recent["filingDate"][index],
-                "accepted_at": accepted,
-                "retrieval_time": retrieved_at,
-                "simulation_eligible_time": max(accepted, retrieved_at),
-            })
+            rows.append(
+                {
+                    "cik": normalize_cik(source["cik"]),
+                    "accession_number": normalize_accession(accession),
+                    "form": form,
+                    "is_amendment": form.endswith("/A"),
+                    "filed": recent["filingDate"][index],
+                    "accepted_at": accepted,
+                    "retrieval_time": retrieved_at,
+                    "simulation_eligible_time": max(accepted, retrieved_at),
+                }
+            )
         return rows
 
 
@@ -114,8 +116,14 @@ def parse_fred_observations(
             precision="day",
             quality_flags=flags + ((QualityFlag.REVISED,) if vintage else ()),
         )
-        parsed.append({"value": value, "source_value": str(row.get("value", ".")), "truth": truth,
-                       "realtime_end": row.get("realtime_end")})
+        parsed.append(
+            {
+                "value": value,
+                "source_value": str(row.get("value", ".")),
+                "truth": truth,
+                "realtime_end": row.get("realtime_end"),
+            }
+        )
     return parsed
 
 
@@ -132,15 +140,23 @@ def parse_eia_electricity(payload: bytes, retrieved_at: datetime) -> list[dict[s
         observed = datetime(int(period[:4]), int(period[5:7]), 1, tzinfo=UTC)
         value, flags = parse_decimal(str(row.get("price", row.get("value", ""))))
         truth = TemporalTruth(
-            event_time=observed, observation_time=observed, publication_time=retrieved_at,
-            retrieval_time=retrieved_at, effective_time=observed, revision_time=retrieved_at,
-            simulation_eligible_time=retrieved_at, precision="month", quality_flags=flags,
+            event_time=observed,
+            observation_time=observed,
+            publication_time=retrieved_at,
+            retrieval_time=retrieved_at,
+            effective_time=observed,
+            revision_time=retrieved_at,
+            simulation_eligible_time=retrieved_at,
+            precision="month",
+            quality_flags=flags,
         )
-        rows.append({
-            "value": value,
-            "source_value": str(row.get("price", "")),
-            "geography": row.get("stateid", "US"),
-            "units": row.get("price-units", "cents/kWh"),
-            "truth": truth,
-        })
+        rows.append(
+            {
+                "value": value,
+                "source_value": str(row.get("price", "")),
+                "geography": row.get("stateid", "US"),
+                "units": row.get("price-units", "cents/kWh"),
+                "truth": truth,
+            }
+        )
     return rows

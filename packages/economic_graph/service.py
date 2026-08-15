@@ -32,8 +32,17 @@ from packages.world_data.temporal import TemporalTruth
 VALID_ENTITY_STATUSES = {"candidate", "verified", "disputed", "expired", "rejected"}
 VALID_RELATIONSHIP_STATUSES = VALID_ENTITY_STATUSES
 IDENTIFIER_NAMESPACES = {
-    "asset_id", "ticker", "exchange", "cik", "lei", "figi", "iso_country",
-    "region", "fips", "provider_series", "facility_source_id",
+    "asset_id",
+    "ticker",
+    "exchange",
+    "cik",
+    "lei",
+    "figi",
+    "iso_country",
+    "region",
+    "fips",
+    "provider_series",
+    "facility_source_id",
 }
 
 

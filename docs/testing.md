@@ -1,5 +1,9 @@
 # Testing
 
+## v0.12 release gates
+
+Scientific tests cover critical skeptic blocking, evidence-bound resolution, alternative-explanation collapse, supported-only graph propagation, bounded cycle safety, transmission functions, sensitivity retention, isolated counterfactual intervention, default SIMULATED_MECHANISM identification, confidence decomposition, and deliberate temporal leakage. The canonical `scripts/e2e.py` orchestration remains isolated and does not reuse production or development servers.
+
 ## v0.10 factor-research verification
 
 `tests/test_hypothesis_factory.py` covers lifecycle rejection, declarative DSL safety, non-overlapping sealed partitions, walk-forward and purge/embargo behavior, factor/quantile statistics, three multiple-testing corrections, incrementality, robustness, ablation, controls, all nine leakage attacks, sequential promotion, budgets/manifests, optional-engine absence, differentiated archetypes, and the intentionally rejected agriculture hypothesis. PostgreSQL-marked tests add schema constraints/indexes, exclusive experiment claiming, and completed-experiment immutability. Migration tests apply an empty schema, preserve v0.9 data through `2f9e39afd435 → ed23735efb90`, repeat the upgrade, and run Alembic drift detection.

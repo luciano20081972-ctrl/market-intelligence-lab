@@ -19,8 +19,7 @@ def aggregate_confidence(components: dict[str, Decimal]) -> Decimal:
     extra = set(components) - set(CONFIDENCE_WEIGHTS)
     if missing or extra:
         raise ValueError(
-            "confidence components mismatch; "
-            f"missing={sorted(missing)} extra={sorted(extra)}"
+            f"confidence components mismatch; missing={sorted(missing)} extra={sorted(extra)}"
         )
     for name, value in components.items():
         if value < 0 or value > 1:

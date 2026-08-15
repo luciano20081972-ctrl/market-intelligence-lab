@@ -28,9 +28,7 @@ def immutable_object_key(
     safe = (provider, dataset, checksum_or_id)
     if any(not part or "/" in part or "\\" in part or ".." in part for part in safe):
         raise ValueError("raw-object key components must be path-safe")
-    return (
-        f"{provider}/{dataset}/{retrieved_at:%Y/%m/%d}/{checksum_or_id}"
-    )
+    return f"{provider}/{dataset}/{retrieved_at:%Y/%m/%d}/{checksum_or_id}"
 
 
 class LocalRawObjectStore:
@@ -61,9 +59,9 @@ class LocalRawObjectStore:
 
     def metadata(self, key: str) -> RawObjectMetadata:
         path = self._path(key)
-        checksum, byte_count, media_type = path.with_suffix(path.suffix + ".meta").read_text(
-            encoding="utf-8"
-        ).splitlines()
+        checksum, byte_count, media_type = (
+            path.with_suffix(path.suffix + ".meta").read_text(encoding="utf-8").splitlines()
+        )
         return RawObjectMetadata(key, checksum, int(byte_count), media_type)
 
     def exists(self, key: str) -> bool:

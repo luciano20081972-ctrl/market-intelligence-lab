@@ -1,5 +1,9 @@
 # Database
 
+## v0.12 research intelligence
+
+Alembic revision `e2517ff0412b` extends `eb1ff477509f` with workspace-scoped research cases, reviews, challenges, assumptions, confidence/fragility profiles, scenario definitions/shocks/runs/impacts, counterfactual definitions/runs, and dossiers. Definitions are versioned; completed outputs carry manifests and checksums. PostgreSQL remains authoritative and canonical evidence is never mutated by simulations.
+
 ## v0.10 hypothesis-research schema
 
 Alembic revision `ed23735efb90` (parent `2f9e39afd435`) adds hypotheses, mechanisms/evidence, candidate specifications, outcomes, experiments/folds/statistics, multiple-testing and robustness records, ablations, negative controls, promotion events, manifests, and external-engine runs. Workspace foreign keys and status checks preserve tenant/lifecycle boundaries; composite indexes cover subject/status, experiment/status, and fold/range access. Application guards make completed or rejected experiments immutable. PostgreSQL workers claim scheduled experiments with `FOR UPDATE SKIP LOCKED`.

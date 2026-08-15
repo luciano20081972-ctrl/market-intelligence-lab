@@ -1,5 +1,9 @@
 # Architecture
 
+## v0.12 adversarial, scenario, and counterfactual intelligence
+
+An immutable Research Case bounds references to the v0.8 graph, v0.9 Feature Snapshot, v0.10 hypothesis/experiment, and v0.11 memory/independence/divergence state. Deterministic Skeptic Review precedes bounded Scenario and isolated Counterfactual runs; their manifests feed transparent confidence, fragility, and dossier outputs. No component is a trading agent or causal oracle.
+
 ## v0.10 hypothesis factory and factor validation
 
 The v0.9 `ResearchCandidate` and immutable `FeatureSnapshot` feed a bounded Hypothesis Factory. A hypothesis records a proposed mechanism and evidence rather than causal proof; a declarative `CandidateFeatureSpec` is bound to a measurable outcome and immutable `FactorExperiment`. Explicit train, validation, and sealed final-test boundaries flow into retained walk-forward folds, corrected statistics, robustness variants, controls, and sequential promotion events. PostgreSQL remains authoritative for Temporal Truth, universes, graph state, lineage, budgets, and audit history. Qlib and RD-Agent are optional adapters behind internal interfaces and cannot bypass MIL validation.

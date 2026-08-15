@@ -57,9 +57,7 @@ def seed_market_data_platform(
             provider.name = registered.name
             provider.adapter_type = type(registered.adapter).__name__
             provider.capabilities = list(registered.adapter.capabilities)
-            provider.credential_environment_keys = list(
-                registered.credential_environment_keys
-            )
+            provider.credential_environment_keys = list(registered.credential_environment_keys)
         if registered.code == "stooq":
             provider.configuration = {
                 "network_enabled": True,

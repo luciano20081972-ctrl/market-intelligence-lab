@@ -78,9 +78,7 @@ def _sector_key(value: str) -> str:
     return alias_map.get(normalized, normalized)
 
 
-def _relationship_categories(
-    relationship: EconomicRelationship, other: EconomicEntity
-) -> set[str]:
+def _relationship_categories(relationship: EconomicRelationship, other: EconomicEntity) -> set[str]:
     categories: set[str] = set()
     predicate = relationship.predicate
     name = other.canonical_name.casefold()

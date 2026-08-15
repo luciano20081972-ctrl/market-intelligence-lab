@@ -25,10 +25,14 @@ def test_quantstats_reconciliation_and_tolerance() -> None:
     assert all(row["agreement_status"] in {"agrees", "not_comparable"} for row in rows)
     changed = dict(adapter)
     changed["volatility"] = float(changed["volatility"] or 0) + 1
-    assert next(
-        row for row in reconcile_metrics(canonical, changed, tolerance=0.01)
-        if row["metric"] == "volatility"
-    )["agreement_status"] == "differs"
+    assert (
+        next(
+            row
+            for row in reconcile_metrics(canonical, changed, tolerance=0.01)
+            if row["metric"] == "volatility"
+        )["agreement_status"]
+        == "differs"
+    )
 
 
 def test_quantstats_empty_short_nan_and_benchmark_alignment() -> None:

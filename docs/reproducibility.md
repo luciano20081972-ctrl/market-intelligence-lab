@@ -1,5 +1,9 @@
 # Reproducibility
 
+## v0.12 immutable manifests
+
+Completed reviews, scenario runs, counterfactual runs, confidence profiles, and dossiers retain software SHA, Alembic revision, case/entity state, graph state, Feature Snapshot, Research Memory references, hypothesis and experiment checksums, definitions, policy, assumptions, exact as-of time, dependencies, seed, and result checksum. Historical queries filter all eligible inputs at the requested information boundary.
+
 v0.10 extends the v0.9 `FeatureSnapshot` boundary with an immutable `ExperimentManifest`: hypothesis/specification versions, outcome, universe and graph/reference state, source manifests, application SHA, Alembic head, dependency versions, validation protocol, seed, exact partitions, engine configuration, warnings, and canonical checksums. Every fold, failed variant, correction, control, and promotion decision is retained. Re-running identical software, configuration, and point-in-time inputs returns the same deterministic fixture artifacts; revisions append rather than rewriting history.
 
 Backtests retain canonical manifests and validation reports. v0.6 extends the same discipline:

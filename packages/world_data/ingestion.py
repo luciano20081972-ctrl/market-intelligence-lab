@@ -31,8 +31,9 @@ def persist_manifest(session: Session, manifest: SourceManifest) -> tuple[DataMa
     item = DataManifest(
         **manifest.model_dump(exclude={"job_id", "parent_manifest_id"}),
         job_id=uuid.UUID(manifest.job_id) if manifest.job_id else None,
-        parent_manifest_id=(uuid.UUID(manifest.parent_manifest_id)
-                            if manifest.parent_manifest_id else None),
+        parent_manifest_id=(
+            uuid.UUID(manifest.parent_manifest_id) if manifest.parent_manifest_id else None
+        ),
     )
     session.add(item)
     session.flush()
@@ -84,20 +85,29 @@ def ingest_macro_rows(
         if duplicate:
             skipped += 1
             continue
-        session.add(MacroObservation(
-            series_id=series.id, source_value=row["source_value"], numeric_value=row["value"],
-            event_time=truth.event_time, observation_time=truth.observation_time,
-            publication_time=truth.publication_time, retrieval_time=truth.retrieval_time,
-            effective_time=truth.effective_time, revision_time=truth.revision_time,
-            simulation_eligible_time=truth.simulation_eligible_time,
-            realtime_end=(
-                datetime.fromisoformat(row["realtime_end"]).replace(tzinfo=UTC)
-                if row.get("realtime_end") and row["realtime_end"] != "9999-12-31"
-                else None
-            ),
-            time_precision=truth.precision, source_time_zone=truth.source_time_zone,
-            quality_flags=[flag.value for flag in truth.quality_flags], manifest_id=manifest_id,
-        ))
+        session.add(
+            MacroObservation(
+                series_id=series.id,
+                source_value=row["source_value"],
+                numeric_value=row["value"],
+                event_time=truth.event_time,
+                observation_time=truth.observation_time,
+                publication_time=truth.publication_time,
+                retrieval_time=truth.retrieval_time,
+                effective_time=truth.effective_time,
+                revision_time=truth.revision_time,
+                simulation_eligible_time=truth.simulation_eligible_time,
+                realtime_end=(
+                    datetime.fromisoformat(row["realtime_end"]).replace(tzinfo=UTC)
+                    if row.get("realtime_end") and row["realtime_end"] != "9999-12-31"
+                    else None
+                ),
+                time_precision=truth.precision,
+                source_time_zone=truth.source_time_zone,
+                quality_flags=[flag.value for flag in truth.quality_flags],
+                manifest_id=manifest_id,
+            )
+        )
         inserted += 1
     session.flush()
     return inserted, skipped
@@ -124,15 +134,24 @@ def ingest_energy_rows(
         if duplicate:
             skipped += 1
             continue
-        session.add(EnergyObservation(
-            series_id=series.id, source_value=row["source_value"], numeric_value=row["value"],
-            event_time=truth.event_time, observation_time=truth.observation_time,
-            publication_time=truth.publication_time, retrieval_time=truth.retrieval_time,
-            effective_time=truth.effective_time, revision_time=truth.revision_time,
-            simulation_eligible_time=truth.simulation_eligible_time,
-            time_precision=truth.precision, source_time_zone=truth.source_time_zone,
-            quality_flags=[flag.value for flag in truth.quality_flags], manifest_id=manifest_id,
-        ))
+        session.add(
+            EnergyObservation(
+                series_id=series.id,
+                source_value=row["source_value"],
+                numeric_value=row["value"],
+                event_time=truth.event_time,
+                observation_time=truth.observation_time,
+                publication_time=truth.publication_time,
+                retrieval_time=truth.retrieval_time,
+                effective_time=truth.effective_time,
+                revision_time=truth.revision_time,
+                simulation_eligible_time=truth.simulation_eligible_time,
+                time_precision=truth.precision,
+                source_time_zone=truth.source_time_zone,
+                quality_flags=[flag.value for flag in truth.quality_flags],
+                manifest_id=manifest_id,
+            )
+        )
         inserted += 1
     session.flush()
     return inserted, skipped

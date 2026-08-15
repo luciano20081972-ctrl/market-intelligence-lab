@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.0 - 2026-08-15
+
+- Added immutable Research Cases, deterministic Skeptic Reviews, structured challenges and evidence-bound resolutions, adversarial promotion blocking, confidence decomposition, assumptions, and fragility analysis.
+- Added declarative scenarios, bounded cycle-safe Economic Driver Graph transmission, constrained transmission functions, sensitivity tables, historical replay semantics, and Research Memory analogues.
+- Added isolated mechanism-conditioned counterfactual interventions, alternative-explanation testing, protected workspace APIs, research dossiers, reference cases, and scientific warning labels.
+- Added Alembic revision `e2517ff0412b`; runtime AI, causality claims, portfolio allocation, brokerage, real-money execution, and BUY/SELL recommendations remain out of scope.
+
 ## 0.10.0 - 2026-08-08
 
 - Added bounded, workspace-scoped research hypotheses with evidence-backed proposed mechanisms, declarative candidate features, measurable outcomes, strict lifecycle transitions, deduplication, budgets, and three differentiated reference cases.

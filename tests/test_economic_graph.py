@@ -83,9 +83,7 @@ def _evidence(session: object, key: str, eligible: datetime = FIXTURE_TIME) -> E
 def test_canonical_entity_and_relationship_catalogs_are_complete() -> None:
     assert len(ENTITY_TYPES) >= 22
     assert {"Company", "Facility", "EconomicSeries", "Event"} <= set(ENTITY_TYPES)
-    assert {"HAS_SECURITY", "DEPENDS_ON", "TRACKED_BY_SERIES"} <= set(
-        RELATIONSHIP_TYPES
-    )
+    assert {"HAS_SECURITY", "DEPENDS_ON", "TRACKED_BY_SERIES"} <= set(RELATIONSHIP_TYPES)
 
 
 def test_identifier_normalization_is_namespace_specific() -> None:
@@ -175,11 +173,14 @@ def test_identifier_ambiguity_creates_candidate_and_quality_issue(engine: object
         )
         assert isinstance(result, EntityResolutionCandidate)
         assert result.status == "ambiguous"
-        assert session.scalar(
-            select(func.count(GraphQualityIssue.id)).where(
-                GraphQualityIssue.issue_type == "ambiguous_identifier"
+        assert (
+            session.scalar(
+                select(func.count(GraphQualityIssue.id)).where(
+                    GraphQualityIssue.issue_type == "ambiguous_identifier"
+                )
             )
-        ) == 1
+            == 1
+        )
 
 
 def test_resolution_confirmation_and_rejection_are_explicit(engine: object) -> None:
@@ -207,11 +208,14 @@ def test_resolution_confirmation_and_rejection_are_explicit(engine: object) -> N
             user_id=LEGACY_USER_ID,
         )
         assert decision.decision == "confirmed"
-        assert session.scalar(
-            select(EntityIdentifier).where(
-                EntityIdentifier.normalized_value == "549300CONFIRMED0001"
+        assert (
+            session.scalar(
+                select(EntityIdentifier).where(
+                    EntityIdentifier.normalized_value == "549300CONFIRMED0001"
+                )
             )
-        ) is not None
+            is not None
+        )
         rejected = create_resolution_candidate(
             session,
             company,
@@ -290,9 +294,7 @@ def test_relationship_confidence_is_decomposed_and_versioned(engine: object) -> 
             )
         ).all()
         assert len(components) == len(CONFIDENCE_WEIGHTS)
-        assert {item.formula_version for item in components} == {
-            CONFIDENCE_FORMULA_VERSION
-        }
+        assert {item.formula_version for item in components} == {CONFIDENCE_FORMULA_VERSION}
         values = {item.component: item.value for item in components}
         assert aggregate_confidence(values) == relationship.confidence
 
@@ -328,9 +330,7 @@ def test_supporting_and_contradicting_evidence_are_preserved(engine: object) -> 
             )
         )
         assert directions == {"supporting", "contradicting"}
-        issues = scan_graph_quality(
-            session, workspace_id=LEGACY_WORKSPACE_ID, as_of=FIXTURE_TIME
-        )
+        issues = scan_graph_quality(session, workspace_id=LEGACY_WORKSPACE_ID, as_of=FIXTURE_TIME)
         assert "conflicting_evidence" in {item.issue_type for item in issues}
 
 
@@ -400,9 +400,7 @@ def test_historical_graph_excludes_future_relationships(engine: object) -> None:
             start_entity_id=company.id,
             as_of=future_time,
         )
-        assert str(relationship.id) not in {
-            item["id"] for item in before["relationships"]
-        }
+        assert str(relationship.id) not in {item["id"] for item in before["relationships"]}
         assert str(relationship.id) in {item["id"] for item in at_time["relationships"]}
 
 
@@ -419,8 +417,7 @@ def test_traversal_detects_cycles_and_enforces_limits(engine: object) -> None:
             max_nodes=100,
         )
         assert all(
-            len(path["entity_ids"]) == len(set(path["entity_ids"]))
-            for path in graph["paths"]
+            len(path["entity_ids"]) == len(set(path["entity_ids"])) for path in graph["paths"]
         )
         with pytest.raises(GraphLimitError, match="node limit"):
             bounded_graph_as_of(
@@ -446,9 +443,7 @@ def test_relationship_expiry_removes_edge_from_later_graph(engine: object) -> No
     with session_scope(factory) as session:
         company = _company(session, "Silica Systems")
         relationship = session.scalar(
-            select(EconomicRelationship).where(
-                EconomicRelationship.subject_entity_id == company.id
-            )
+            select(EconomicRelationship).where(EconomicRelationship.subject_entity_id == company.id)
         )
         assert relationship is not None
         expiry = FIXTURE_TIME + timedelta(days=1)
@@ -459,9 +454,7 @@ def test_relationship_expiry_removes_edge_from_later_graph(engine: object) -> No
             start_entity_id=company.id,
             as_of=expiry,
         )
-        assert str(relationship.id) not in {
-            item["id"] for item in graph["relationships"]
-        }
+        assert str(relationship.id) not in {item["id"] for item in graph["relationships"]}
 
 
 def test_reference_company_profiles_and_routes_differ_materially(engine: object) -> None:
@@ -596,11 +589,14 @@ def test_sec_structured_extraction_is_idempotent_and_conservative(engine: object
             )
         )
         assert predicates == {"HAS_SECURITY", "OWNS", "HAS_SEGMENT", "LOCATED_IN"}
-        assert session.scalar(
-            select(func.count(EconomicEntity.id)).where(
-                EconomicEntity.canonical_name == "Must Not Be Inferred"
+        assert (
+            session.scalar(
+                select(func.count(EconomicEntity.id)).where(
+                    EconomicEntity.canonical_name == "Must Not Be Inferred"
+                )
             )
-        ) == 0
+            == 0
+        )
 
 
 def test_economic_series_links_through_intermediate_entity(engine: object) -> None:
@@ -680,11 +676,14 @@ def test_workspace_scope_hides_other_graph_entities(engine: object) -> None:
         )
     with session_scope(factory) as session:
         session.info["workspace_id"] = LEGACY_WORKSPACE_ID
-        assert session.scalar(
-            select(EconomicEntity).where(
-                EconomicEntity.canonical_name == "Other Workspace Company"
+        assert (
+            session.scalar(
+                select(EconomicEntity).where(
+                    EconomicEntity.canonical_name == "Other Workspace Company"
+                )
             )
-        ) is None
+            is None
+        )
 
 
 def test_graph_api_exposes_bounded_explainable_reference_data(client: object) -> None:
@@ -709,8 +708,7 @@ def test_graph_api_exposes_bounded_explainable_reference_data(client: object) ->
     )
     assert relevance.status_code == 200
     assert any(
-        item["dataset_id"] == "commerce.semiconductors"
-        and item["decision"] == "PROCESS"
+        item["dataset_id"] == "commerce.semiconductors" and item["decision"] == "PROCESS"
         for item in relevance.json()["items"]
     )
 

@@ -88,6 +88,12 @@ import {
   ResearchRegimeContextPage,
   SignalIndependencePage,
 } from "./pages/ResearchIntelligence";
+import {
+  AdversarialReviewPage, ChallengeDetailPage, CounterfactualDetailPage,
+  CounterfactualLabPage, ResearchConfidencePage, ResearchDossierDetailPage,
+  ResearchDossierPage, ScenarioComparisonPage, ScenarioDetailPage,
+  ScenarioLabPage, SkepticChallengesPage,
+} from "./pages/AdversarialIntelligence";
 
 export { queryClient };
 
@@ -149,6 +155,17 @@ export function App() {
       <Route path="research/divergence/:id" element={<DivergenceDetailPage />} />
       <Route path="research/information-value" element={<InformationValuePage />} />
       <Route path="research/method-reliability" element={<ResearchMethodReliabilityPage />} />
+      <Route path="research/skeptic" element={<AdversarialReviewPage />} />
+      <Route path="research/skeptic/reviews/:id" element={<ChallengeDetailPage />} />
+      <Route path="research/skeptic/challenges" element={<SkepticChallengesPage />} />
+      <Route path="research/scenarios" element={<ScenarioLabPage />} />
+      <Route path="research/scenarios/compare" element={<ScenarioComparisonPage />} />
+      <Route path="research/scenarios/:id" element={<ScenarioDetailPage />} />
+      <Route path="research/counterfactuals" element={<CounterfactualLabPage />} />
+      <Route path="research/counterfactuals/:id" element={<CounterfactualDetailPage />} />
+      <Route path="research/confidence" element={<ResearchConfidencePage />} />
+      <Route path="research/dossiers" element={<ResearchDossierPage />} />
+      <Route path="research/dossiers/:id" element={<ResearchDossierDetailPage />} />
       <Route path="providers" element={<Providers />} />
       <Route path="providers/:id" element={<ProviderDetail />} />
       <Route path="imports" element={<ImportJobs />} />

@@ -286,9 +286,7 @@ def create_import(
                 select(SecFiling).where(SecFiling.accession_number == value["accession_number"])
             )
             if filing is None:
-                checksum = hashlib.sha256(
-                    json.dumps(value, sort_keys=True).encode()
-                ).hexdigest()
+                checksum = hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
                 filing = SecFiling(
                     company_id=company.id,
                     accession_number=value["accession_number"],

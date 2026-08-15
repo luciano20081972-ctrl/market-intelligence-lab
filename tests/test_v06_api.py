@@ -82,27 +82,33 @@ def test_upstream_status_and_license_labels(client) -> None:  # type: ignore[no-
 
 
 def test_v06_api_rejects_unsafe_inputs(client) -> None:  # type: ignore[no-untyped-def]
-    assert client.post(
-        "/api/v1/upstream/engines/lean/fixture",
-        json={
-            "strategy": "buy_and_hold",
-            "symbols": ["AAPL"],
-            "start": "2025-01-01",
-            "end": "2025-12-31",
-            "initial_cash": "10000",
-            "fee_per_order": "1",
-            "slippage_bps": "5",
-            "live_mode": True,
-        },
-    ).status_code == 422
-    assert client.post(
-        "/api/v1/optimization/experiments",
-        json={
-            "model": "minimum_variance",
-            "asset_returns": {"AAA": [0.1, 0.2, 0.3], "BBB": [0.2, 0.1, 0.0]},
-            "training_start": "2025-01-01",
-            "training_end": "2025-12-01",
-            "validation_start": "2025-11-01",
-            "validation_end": "2025-12-31",
-        },
-    ).status_code == 422
+    assert (
+        client.post(
+            "/api/v1/upstream/engines/lean/fixture",
+            json={
+                "strategy": "buy_and_hold",
+                "symbols": ["AAPL"],
+                "start": "2025-01-01",
+                "end": "2025-12-31",
+                "initial_cash": "10000",
+                "fee_per_order": "1",
+                "slippage_bps": "5",
+                "live_mode": True,
+            },
+        ).status_code
+        == 422
+    )
+    assert (
+        client.post(
+            "/api/v1/optimization/experiments",
+            json={
+                "model": "minimum_variance",
+                "asset_returns": {"AAA": [0.1, 0.2, 0.3], "BBB": [0.2, 0.1, 0.0]},
+                "training_start": "2025-01-01",
+                "training_end": "2025-12-01",
+                "validation_start": "2025-11-01",
+                "validation_end": "2025-12-31",
+            },
+        ).status_code
+        == 422
+    )

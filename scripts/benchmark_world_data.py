@@ -33,8 +33,10 @@ def benchmark(row_count: int) -> dict[str, float | int]:
             stop = min(offset + batch, row_count)
             connection.executemany(
                 "INSERT INTO observations VALUES (?,?,?,?,?,?,?)",
-                ((index, index % 100, index // 10, index, index, index / 100, index % 1000)
-                 for index in range(offset, stop)),
+                (
+                    (index, index % 100, index // 10, index, index, index / 100, index % 1000)
+                    for index in range(offset, stop)
+                ),
             )
         connection.commit()
         insert_seconds = elapsed(started)
@@ -62,7 +64,8 @@ def benchmark(row_count: int) -> dict[str, float | int]:
         footprint = database.stat().st_size
         plan = connection.execute(
             "EXPLAIN QUERY PLAN SELECT * FROM observations WHERE series_id=? "
-            "AND observation_time BETWEEN ? AND ?", (42, 0, row_count)
+            "AND observation_time BETWEEN ? AND ?",
+            (42, 0, row_count),
         ).fetchall()
         connection.close()
     return {

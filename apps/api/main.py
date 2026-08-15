@@ -12,6 +12,7 @@ from starlette.responses import JSONResponse, Response
 
 from apps.api.dependencies import get_db, get_workspace_context
 from apps.api.routers import (
+    adversarial_intelligence,
     analytics,
     assets,
     backtests,
@@ -165,6 +166,7 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.include_router(world_data.router, prefix="/api/v1", dependencies=protected)
     app.include_router(research.router, prefix="/api/v1", dependencies=protected)
     app.include_router(research_intelligence.router, prefix="/api/v1", dependencies=protected)
+    app.include_router(adversarial_intelligence.router, prefix="/api/v1", dependencies=protected)
     app.include_router(hypotheses.router, prefix="/api/v1", dependencies=protected)
     return app
 

@@ -33,7 +33,27 @@ test("research memory, independence, and divergence remain research-only", async
   await expect(page.getByText(/Research Candidate/)).toBeVisible();
 
   await page.getByRole("link", { name: "Information Value" }).click();
-  await expect(page.getByText(/research-resource efficiency/)).toBeVisible();
+  await expect(page.getByText(/research.*efficiency/i)).toBeVisible();
+
+  await page.getByRole("link", { name: "Adversarial Review" }).click();
+  await page.getByRole("button", { name: "Load adversarial reference cases" }).click();
+  await expect(page.getByText("BLOCKED")).toBeVisible({ timeout: 90_000 });
+  await expect(page.getByText("WHAT COULD BE WRONG?")).toBeVisible();
+  await page.getByRole("link", { name: "Skeptic Challenges" }).click();
+  await expect(page.getByText("CRITICAL").first()).toBeVisible();
+  await page.getByRole("link", { name: "Scenario Lab" }).click();
+  await expect(page.getByText("THIS IS A SCENARIO, NOT A FORECAST")).toBeVisible();
+  await page.getByRole("link", { name: "Inspect scenario" }).first().click();
+  await page.getByRole("button", { name: "Run deterministic scenario" }).click();
+  await expect(page.getByText(/transmission_path/)).toBeVisible();
+  await page.getByRole("link", { name: "Counterfactual Lab" }).click();
+  await page.getByRole("link", { name: "Inspect counterfactual" }).first().click();
+  await page.getByRole("button", { name: "Run isolated counterfactual" }).click();
+  await expect(page.getByText(/SIMULATED_MECHANISM/)).toBeVisible();
+  await page.getByRole("link", { name: "Research Confidence" }).click();
+  await expect(page.getByText(/not a probability/i)).toBeVisible();
+  await page.getByRole("link", { name: "Research Dossiers" }).click();
+  await expect(page.getByText(/never a BUY\/SELL recommendation/i)).toBeVisible();
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole("img", { name: "Market Intelligence Lab" })).toBeVisible();

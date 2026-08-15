@@ -3170,6 +3170,253 @@ class ResearchOutcomeAttribution(Base):
     simulation_eligible_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
 
 
+class ResearchCase(Base):
+    __tablename__ = "research_cases"
+    __table_args__ = (UniqueConstraint("workspace_id", "checksum", name="uq_research_case_sum"),)
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    subject_entity_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("economic_entities.id", ondelete="RESTRICT"), index=True
+    )
+    hypothesis_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("research_hypotheses.id", ondelete="SET NULL"), index=True
+    )
+    experiment_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("factor_experiments.id", ondelete="SET NULL"), index=True
+    )
+    title: Mapped[str] = mapped_column(String(200))
+    references: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    promotion_state: Mapped[str] = mapped_column(String(40), default="REVIEW_REQUIRED")
+    as_of_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    simulation_eligible_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    checksum: Mapped[str] = mapped_column(String(64), index=True)
+
+
+class SkepticReview(Base):
+    __tablename__ = "skeptic_reviews"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('DRAFT','RUNNING','NEEDS_EVIDENCE','QUALIFIED','BLOCKED',"
+            "'INVALIDATED','COMPLETED')",
+            name="skeptic_review_status",
+        ),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    research_case_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_cases.id", ondelete="RESTRICT"), index=True
+    )
+    status: Mapped[str] = mapped_column(String(24), index=True)
+    policy_version: Mapped[str] = mapped_column(String(40))
+    manifest: Mapped[dict[str, Any]] = mapped_column(JSON)
+    as_of_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    simulation_eligible_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+
+class SkepticChallenge(Base):
+    __tablename__ = "skeptic_challenges"
+    __table_args__ = (
+        CheckConstraint(
+            "severity IN ('LOW','MEDIUM','HIGH','CRITICAL')", name="skeptic_challenge_severity"
+        ),
+        CheckConstraint(
+            "status IN ('OPEN','TESTING','RESOLVED','ACCEPTED_RISK','INVALIDATES_CLAIM')",
+            name="skeptic_challenge_status",
+        ),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    review_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("skeptic_reviews.id", ondelete="CASCADE"), index=True
+    )
+    category: Mapped[str] = mapped_column(String(48), index=True)
+    severity: Mapped[str] = mapped_column(String(16), index=True)
+    title: Mapped[str] = mapped_column(String(200))
+    challenge: Mapped[str] = mapped_column(Text)
+    evidence: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    affected_claim: Mapped[str] = mapped_column(Text)
+    falsification_condition: Mapped[str] = mapped_column(Text)
+    proposed_test: Mapped[str] = mapped_column(Text)
+    resolution: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(24), default="OPEN", index=True)
+    confidence: Mapped[Decimal] = mapped_column(Numeric(7, 6))
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    simulation_eligible_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+
+
+class ResearchAssumption(Base):
+    __tablename__ = "research_assumptions"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    research_case_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_cases.id", ondelete="CASCADE"), index=True
+    )
+    assumption_type: Mapped[str] = mapped_column(String(32), index=True)
+    statement: Mapped[str] = mapped_column(Text)
+    evidence: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    importance: Mapped[str] = mapped_column(String(16))
+    sensitivity: Mapped[str] = mapped_column(String(24))
+    status: Mapped[str] = mapped_column(String(24))
+
+
+class ResearchConfidenceProfile(Base):
+    __tablename__ = "research_confidence_profiles"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    research_case_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_cases.id", ondelete="RESTRICT"), index=True
+    )
+    formula_version: Mapped[str] = mapped_column(String(40))
+    components: Mapped[dict[str, Any]] = mapped_column(JSON)
+    classification: Mapped[str] = mapped_column(String(32))
+    manifest: Mapped[dict[str, Any]] = mapped_column(JSON)
+    as_of_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    checksum: Mapped[str] = mapped_column(String(64), unique=True)
+
+
+class ResearchFragilityAnalysis(Base):
+    __tablename__ = "research_fragility_analyses"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    research_case_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_cases.id", ondelete="CASCADE"), index=True
+    )
+    classification: Mapped[str] = mapped_column(String(32), index=True)
+    components: Mapped[dict[str, Any]] = mapped_column(JSON)
+    as_of_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+
+
+class ScenarioDefinition(Base):
+    __tablename__ = "scenario_definitions"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "checksum", name="uq_scenario_definition_sum"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    title: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str] = mapped_column(Text)
+    scenario_type: Mapped[str] = mapped_column(String(32), index=True)
+    plausibility: Mapped[str] = mapped_column(String(16))
+    horizon: Mapped[str] = mapped_column(String(80))
+    assumptions: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    source_evidence: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    as_of_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    version: Mapped[int] = mapped_column(Integer)
+    checksum: Mapped[str] = mapped_column(String(64), index=True)
+
+
+class ScenarioShock(Base):
+    __tablename__ = "scenario_shocks"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    scenario_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("scenario_definitions.id", ondelete="CASCADE"), index=True
+    )
+    target: Mapped[str] = mapped_column(String(200), index=True)
+    operation: Mapped[str] = mapped_column(String(40))
+    value: Mapped[Decimal | None] = mapped_column(Numeric(18, 8))
+    units: Mapped[str] = mapped_column(String(40))
+    timing: Mapped[dict[str, Any]] = mapped_column(JSON)
+    recovery: Mapped[dict[str, Any]] = mapped_column(JSON)
+    confidence: Mapped[Decimal] = mapped_column(Numeric(7, 6))
+    source_assumption: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+
+class ScenarioRun(Base):
+    __tablename__ = "scenario_runs"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    scenario_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("scenario_definitions.id", ondelete="RESTRICT"), index=True
+    )
+    status: Mapped[str] = mapped_column(String(24))
+    manifest: Mapped[dict[str, Any]] = mapped_column(JSON)
+    results: Mapped[dict[str, Any]] = mapped_column(JSON)
+    as_of_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    checksum: Mapped[str] = mapped_column(String(64), unique=True)
+
+
+class ScenarioImpact(Base):
+    __tablename__ = "scenario_impacts"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("scenario_runs.id", ondelete="CASCADE"), index=True
+    )
+    subject: Mapped[str] = mapped_column(String(200), index=True)
+    impact_type: Mapped[str] = mapped_column(String(48))
+    value: Mapped[Decimal] = mapped_column(Numeric(18, 8))
+    units: Mapped[str] = mapped_column(String(40))
+    transmission_path: Mapped[list[dict[str, Any]]] = mapped_column(JSON)
+    sensitivity: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+
+class CounterfactualDefinition(Base):
+    __tablename__ = "counterfactual_definitions"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    title: Mapped[str] = mapped_column(String(200))
+    reference_state: Mapped[dict[str, Any]] = mapped_column(JSON)
+    intervention: Mapped[dict[str, Any]] = mapped_column(JSON)
+    mechanism_path: Mapped[list[dict[str, Any]]] = mapped_column(JSON)
+    assumptions: Mapped[list[dict[str, Any]]] = mapped_column(JSON)
+    identification_status: Mapped[str] = mapped_column(String(32), default="SIMULATED_MECHANISM")
+    as_of_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    horizon: Mapped[str] = mapped_column(String(80))
+    version: Mapped[int] = mapped_column(Integer)
+
+
+class CounterfactualRun(Base):
+    __tablename__ = "counterfactual_runs"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    definition_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("counterfactual_definitions.id", ondelete="RESTRICT"), index=True
+    )
+    status: Mapped[str] = mapped_column(String(24))
+    manifest: Mapped[dict[str, Any]] = mapped_column(JSON)
+    comparison: Mapped[dict[str, Any]] = mapped_column(JSON)
+    identification_status: Mapped[str] = mapped_column(String(32))
+    as_of_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    checksum: Mapped[str] = mapped_column(String(64), unique=True)
+
+
+class ResearchDossier(Base):
+    __tablename__ = "research_dossiers"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    research_case_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("research_cases.id", ondelete="RESTRICT"), index=True
+    )
+    title: Mapped[str] = mapped_column(String(200))
+    sections: Mapped[dict[str, Any]] = mapped_column(JSON)
+    manifest: Mapped[dict[str, Any]] = mapped_column(JSON)
+    as_of_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    checksum: Mapped[str] = mapped_column(String(64), unique=True)
+
+
 @event.listens_for(ResearchMemoryEntry, "before_update")
 def _protect_historical_memory(
     _mapper: object, _connection: object, target: ResearchMemoryEntry
@@ -3184,6 +3431,25 @@ def _protect_historical_memory(
     if changed:
         raise ValueError(
             "completed research memory is immutable; create a new state or contradiction: "
+            + ", ".join(sorted(changed))
+        )
+
+
+@event.listens_for(SkepticReview, "before_update")
+@event.listens_for(ScenarioRun, "before_update")
+@event.listens_for(CounterfactualRun, "before_update")
+@event.listens_for(ResearchConfidenceProfile, "before_update")
+@event.listens_for(ResearchDossier, "before_update")
+def _protect_completed_research_artifact(
+    _mapper: object, _connection: object, target: object
+) -> None:
+    state = inspect(target)
+    if state is None:
+        raise ValueError("completed research artifact state is unavailable")
+    changed = {attribute.key for attribute in state.attrs if attribute.history.has_changes()}
+    if changed:
+        raise ValueError(
+            "completed research artifact is immutable; create a new version: "
             + ", ".join(sorted(changed))
         )
 

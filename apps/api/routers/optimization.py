@@ -35,7 +35,9 @@ def create_experiment(
     session: Session = Depends(get_db),
 ) -> dict[str, object]:
     if not (
-        payload.training_start < payload.training_end < payload.validation_start
+        payload.training_start
+        < payload.training_end
+        < payload.validation_start
         < payload.validation_end
     ):
         raise HTTPException(

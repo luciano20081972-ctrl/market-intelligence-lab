@@ -145,9 +145,7 @@ class FixtureSecAdapter:
         ]
         accepted = {item["accession_number"] for item in payload["filings"]}
         for key in ("facts", "insider_transactions", "institutional_holdings"):
-            payload[key] = [
-                item for item in payload[key] if item["accession_number"] in accepted
-            ]
+            payload[key] = [item for item in payload[key] if item["accession_number"] in accepted]
         payload["retrieved_at"] = datetime(2026, 3, 1, 12, tzinfo=UTC).isoformat()
         payload["checksum"] = payload_checksum(payload)
         payload["edgartools_version"] = "5.43.1-fixture"

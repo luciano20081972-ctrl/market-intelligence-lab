@@ -115,24 +115,31 @@ def benchmark_postgres(url: str, entity_count: int, relationship_count: int) -> 
         connection.execute(
             text("CREATE TEMP TABLE bench_entities(id bigint PRIMARY KEY) ON COMMIT DROP")
         )
-        connection.execute(text("""CREATE TEMP TABLE bench_relationships(
+        connection.execute(
+            text("""CREATE TEMP TABLE bench_relationships(
             id bigint PRIMARY KEY, subject_id bigint NOT NULL, object_id bigint NOT NULL,
-            status text NOT NULL, eligible timestamptz NOT NULL) ON COMMIT DROP"""))
+            status text NOT NULL, eligible timestamptz NOT NULL) ON COMMIT DROP""")
+        )
         connection.execute(
             text("INSERT INTO bench_entities SELECT generate_series(1,:count)"),
             {"count": entity_count},
         )
-        connection.execute(text("""INSERT INTO bench_relationships
+        connection.execute(
+            text("""INSERT INTO bench_relationships
             SELECT value, ((value-1) % :entities)+1,
                    (((value-1)*7919+104729) % :entities)+1,
                    'verified', TIMESTAMPTZ '2026-01-01 00:00:00+00'
-            FROM generate_series(1,:relationships) value"""), {
-                "entities": entity_count, "relationships": relationship_count,
-            })
+            FROM generate_series(1,:relationships) value"""),
+            {
+                "entities": entity_count,
+                "relationships": relationship_count,
+            },
+        )
         connection.execute(text("CREATE INDEX ON bench_relationships(subject_id,status,eligible)"))
         connection.execute(text("CREATE INDEX ON bench_relationships(object_id,status,eligible)"))
         connection.execute(text("ANALYZE bench_relationships"))
-        plan = connection.execute(text("""EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)
+        plan = connection.execute(
+            text("""EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)
             WITH RECURSIVE walk(entity_id,depth,path) AS (
               SELECT 1::bigint,0,ARRAY[1::bigint]
               UNION ALL
@@ -148,7 +155,8 @@ def benchmark_postgres(url: str, entity_count: int, relationship_count: int) -> 
                 AND NOT (CASE
                   WHEN r.subject_id=w.entity_id THEN r.object_id
                   ELSE r.subject_id END=ANY(w.path))
-            ) SELECT * FROM walk LIMIT 500""")).scalar_one()
+            ) SELECT * FROM walk LIMIT 500""")
+        ).scalar_one()
     engine.dispose()
     root = plan[0]
     return {

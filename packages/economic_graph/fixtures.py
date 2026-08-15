@@ -79,9 +79,7 @@ def fixture_confidence() -> dict[str, Decimal]:
     return {name: Decimal("0.90") for name in CONFIDENCE_WEIGHTS}
 
 
-def seed_reference_graph(
-    session: Session, workspace_id: uuid.UUID
-) -> dict[str, EconomicEntity]:
+def seed_reference_graph(session: Session, workspace_id: uuid.UUID) -> dict[str, EconomicEntity]:
     truth = fixture_truth()
     result: dict[str, EconomicEntity] = {}
     for sector, definition in REFERENCE_COMPANIES.items():

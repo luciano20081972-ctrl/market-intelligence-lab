@@ -84,15 +84,11 @@ def validate_inventory(
         errors.append("direct_dependencies must be a list")
         dependencies = []
     dependency_names = {
-        str(item.get("name", "")).lower()
-        for item in dependencies
-        if isinstance(item, dict)
+        str(item.get("name", "")).lower() for item in dependencies if isinstance(item, dict)
     }
     if required_dependencies:
         missing = sorted(
-            name.lower()
-            for name in required_dependencies
-            if name.lower() not in dependency_names
+            name.lower() for name in required_dependencies if name.lower() not in dependency_names
         )
         if missing:
             errors.append(f"missing direct dependencies: {', '.join(missing)}")

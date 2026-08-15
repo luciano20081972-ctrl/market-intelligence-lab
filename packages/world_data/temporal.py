@@ -38,8 +38,13 @@ class TemporalTruth(BaseModel):
     quality_flags: tuple[QualityFlag, ...] = ()
 
     @field_validator(
-        "event_time", "observation_time", "publication_time", "retrieval_time",
-        "effective_time", "revision_time", "simulation_eligible_time",
+        "event_time",
+        "observation_time",
+        "publication_time",
+        "retrieval_time",
+        "effective_time",
+        "revision_time",
+        "simulation_eligible_time",
     )
     @classmethod
     def require_aware_utc(cls, value: datetime) -> datetime:

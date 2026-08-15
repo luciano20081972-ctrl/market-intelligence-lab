@@ -114,12 +114,7 @@ def test_postgres_concurrent_claim_is_single_winner(postgres_factory) -> None:  
     assert results.count(str(job_id)) == 1
     with session_scope(postgres_factory) as session:
         assert session.scalar(select(ImportJob.status).where(ImportJob.id == job_id)) == "running"
-        assert (
-            session.scalar(
-                select(func.count(JobLease.id)).where(JobLease.job_id == job_id)
-            )
-            == 1
-        )
+        assert session.scalar(select(func.count(JobLease.id)).where(JobLease.job_id == job_id)) == 1
 
 
 def test_postgres_session_context_does_not_leak(postgres_factory) -> None:  # type: ignore[no-untyped-def]
@@ -136,8 +131,7 @@ def test_postgres_session_context_does_not_leak(postgres_factory) -> None:  # ty
 def test_postgres_rls_is_enabled_without_workspace_policies(postgres_factory) -> None:  # type: ignore[no-untyped-def]
     with session_scope(postgres_factory) as session:
         enabled = session.execute(
-            select(func.count())
-            .select_from(
+            select(func.count()).select_from(
                 text(
                     "pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
                     "AND n.nspname='public' AND c.relrowsecurity"
@@ -145,9 +139,7 @@ def test_postgres_rls_is_enabled_without_workspace_policies(postgres_factory) ->
             )
         ).scalar_one()
         policies = session.scalar(
-            select(func.count()).select_from(text("pg_policies")).where(
-                text("schemaname='public'")
-            )
+            select(func.count()).select_from(text("pg_policies")).where(text("schemaname='public'"))
         )
     assert enabled >= 47
     assert policies == 0
@@ -175,9 +167,7 @@ def test_postgres_workspace_loader_and_write_guards(postgres_factory) -> None:  
             )
         )
         session.flush()
-        session.add(
-            WorkspaceMembership(workspace_id=workspace_id, user_id=user_id, role="viewer")
-        )
+        session.add(WorkspaceMembership(workspace_id=workspace_id, user_id=user_id, role="viewer"))
         session.add(Watchlist(workspace_id=workspace_id, name=f"private-{uuid.uuid4()}"))
     with session_scope(postgres_factory) as session:
         session.info["workspace_id"] = LEGACY_WORKSPACE_ID

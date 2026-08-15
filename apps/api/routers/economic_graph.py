@@ -150,7 +150,8 @@ def get_entity_relationships(
     if cutoff.tzinfo is None:
         raise HTTPException(status_code=422, detail="as_of must include a timezone")
     items = session.scalars(
-        select(EconomicRelationship).where(
+        select(EconomicRelationship)
+        .where(
             or_(
                 EconomicRelationship.subject_entity_id == entity_id,
                 EconomicRelationship.object_entity_id == entity_id,
@@ -158,15 +159,14 @@ def get_entity_relationships(
             EconomicRelationship.simulation_eligible_time <= cutoff,
             EconomicRelationship.valid_from <= cutoff,
             or_(EconomicRelationship.valid_to.is_(None), EconomicRelationship.valid_to > cutoff),
-        ).order_by(EconomicRelationship.predicate, EconomicRelationship.id)
+        )
+        .order_by(EconomicRelationship.predicate, EconomicRelationship.id)
     ).all()
     return {"items": [_relationship(item) for item in items], "total": len(items), "as_of": cutoff}
 
 
 @router.get("/entities/{entity_id}/evidence")
-def get_entity_evidence(
-    entity_id: uuid.UUID, session: Session = Depends(get_db)
-) -> dict[str, Any]:
+def get_entity_evidence(entity_id: uuid.UUID, session: Session = Depends(get_db)) -> dict[str, Any]:
     rows = session.execute(
         select(RelationshipEvidence, EvidenceRecord, EconomicRelationship)
         .join(EvidenceRecord, EvidenceRecord.id == RelationshipEvidence.evidence_id)
@@ -199,9 +199,7 @@ def get_entity_evidence(
     }
 
 
-def _latest_profile(
-    session: Session, company_id: uuid.UUID
-) -> CompanyDriverProfile:
+def _latest_profile(session: Session, company_id: uuid.UUID) -> CompanyDriverProfile:
     profile = session.scalar(
         select(CompanyDriverProfile)
         .where(CompanyDriverProfile.company_entity_id == company_id)
@@ -214,9 +212,7 @@ def _latest_profile(
 
 
 @router.get("/companies/{company_id}/driver-profile")
-def get_driver_profile(
-    company_id: uuid.UUID, session: Session = Depends(get_db)
-) -> dict[str, Any]:
+def get_driver_profile(company_id: uuid.UUID, session: Session = Depends(get_db)) -> dict[str, Any]:
     profile = _latest_profile(session, company_id)
     entries = session.scalars(
         select(CompanyDriverEntry)
@@ -296,9 +292,7 @@ def get_driver_paths(
 
 
 @router.get("/companies/{company_id}/data-relevance")
-def get_data_relevance(
-    company_id: uuid.UUID, session: Session = Depends(get_db)
-) -> dict[str, Any]:
+def get_data_relevance(company_id: uuid.UUID, session: Session = Depends(get_db)) -> dict[str, Any]:
     profile = _latest_profile(session, company_id)
     items = session.scalars(
         select(DataRelevanceDecision)

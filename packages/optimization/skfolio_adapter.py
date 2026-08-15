@@ -39,8 +39,7 @@ class SkfolioOptimizerAdapter:
             ),
             version=UpstreamVersionInfo("skfolio", "1.0", version or "0.20.1-fixture", None),
             message=(
-                "Deterministic constrained foundation available; "
-                "skfolio dependency is optional"
+                "Deterministic constrained foundation available; skfolio dependency is optional"
             ),
         )
 

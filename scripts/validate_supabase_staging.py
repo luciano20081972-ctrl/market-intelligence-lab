@@ -50,9 +50,7 @@ def _load_settings() -> Settings:
     return settings
 
 
-def _create_user(
-    client: httpx.Client, email: str, password: str
-) -> tuple[str, dict[str, Any]]:
+def _create_user(client: httpx.Client, email: str, password: str) -> tuple[str, dict[str, Any]]:
     response = client.post(
         "/auth/v1/admin/users",
         json={
@@ -70,9 +68,7 @@ def _create_user(
     return user_id, payload
 
 
-def _sign_in(
-    client: httpx.Client, email: str, password: str
-) -> tuple[str, str, dict[str, Any]]:
+def _sign_in(client: httpx.Client, email: str, password: str) -> tuple[str, str, dict[str, Any]]:
     response = client.post(
         "/auth/v1/token",
         params={"grant_type": "password"},
@@ -115,9 +111,7 @@ def _delete_user(client: httpx.Client, user_id: str) -> None:
     _require_status(response, {200, 204}, "temporary Auth user deletion")
 
 
-def _verify_token(
-    verifier: SupabaseJwtVerifier, token: str, expected_user_id: str
-) -> None:
+def _verify_token(verifier: SupabaseJwtVerifier, token: str, expected_user_id: str) -> None:
     principal = verifier.verify(token)
     if principal.subject != expected_user_id:
         raise RuntimeError("JWT subject does not match the temporary Auth user")
@@ -125,8 +119,10 @@ def _verify_token(
     if claims.get("iss") != verifier.issuer:
         raise RuntimeError("JWT issuer does not match staging")
     audience = claims.get("aud")
-    valid_audience = verifier.audience in audience if isinstance(audience, list) else (
-        audience == verifier.audience
+    valid_audience = (
+        verifier.audience in audience
+        if isinstance(audience, list)
+        else (audience == verifier.audience)
     )
     if not valid_audience:
         raise RuntimeError("JWT audience does not match the application")
@@ -136,9 +132,7 @@ def _verify_token(
         raise RuntimeError("JWT subject claim does not match staging")
 
 
-def _validate_data_api_denial(
-    public_client: httpx.Client, access_token: str | None = None
-) -> None:
+def _validate_data_api_denial(public_client: httpx.Client, access_token: str | None = None) -> None:
     headers = {"Authorization": f"Bearer {access_token}"} if access_token else {}
     response = public_client.get(
         "/rest/v1/assets",
@@ -169,9 +163,7 @@ def _validate_application_authorization(
         headers_a = {"Authorization": f"Bearer {token_a}"}
         headers_b = {"Authorization": f"Bearer {token_b}"}
         with TestClient(app) as client:
-            _require_api_status(
-                client.get("/api/v1/auth/me"), {401}, "missing-token rejection"
-            )
+            _require_api_status(client.get("/api/v1/auth/me"), {401}, "missing-token rejection")
             _require_api_status(
                 client.get(
                     "/api/v1/auth/me",

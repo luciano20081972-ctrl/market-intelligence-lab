@@ -47,8 +47,10 @@ def data_source_health(dataset_id: str, session: Session = Depends(get_db)) -> d
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Data source not found") from exc
     latest = session.scalars(
-        select(DataManifest).where(DataManifest.dataset_id == dataset_id)
-        .order_by(DataManifest.retrieval_time.desc()).limit(1)
+        select(DataManifest)
+        .where(DataManifest.dataset_id == dataset_id)
+        .order_by(DataManifest.retrieval_time.desc())
+        .limit(1)
     ).first()
     return {
         **_dataset(definition),
@@ -118,15 +120,17 @@ def macro_series_detail(series_id: uuid.UUID, session: Session = Depends(get_db)
 
 
 @router.get("/macro/series/{series_id}/observations")
-def macro_observations(
-    series_id: uuid.UUID, session: Session = Depends(get_db)
-) -> dict[str, Any]:
+def macro_observations(series_id: uuid.UUID, session: Session = Depends(get_db)) -> dict[str, Any]:
     items = session.scalars(
-        select(MacroObservation).where(MacroObservation.series_id == series_id)
+        select(MacroObservation)
+        .where(MacroObservation.series_id == series_id)
         .order_by(MacroObservation.observation_time, MacroObservation.revision_time)
     ).all()
-    return {"items": [_observation(item) for item in items], "total": len(items),
-            "label": "latest revised; use /as-of for point-in-time research"}
+    return {
+        "items": [_observation(item) for item in items],
+        "total": len(items),
+        "label": "latest revised; use /as-of for point-in-time research",
+    }
 
 
 @router.get("/macro/series/{series_id}/as-of")
@@ -151,8 +155,12 @@ def macro_as_of(
     latest_by_period: dict[datetime, MacroObservation] = {}
     for row in rows:
         latest_by_period.setdefault(row.observation_time, row)
-    return {"items": [_observation(item) for item in latest_by_period.values()],
-            "total": len(latest_by_period), "as_of": as_of, "point_in_time_safe": True}
+    return {
+        "items": [_observation(item) for item in latest_by_period.values()],
+        "total": len(latest_by_period),
+        "as_of": as_of,
+        "point_in_time_safe": True,
+    }
 
 
 @router.get("/energy/series")
@@ -162,11 +170,10 @@ def energy_series(session: Session = Depends(get_db)) -> dict[str, Any]:
 
 
 @router.get("/energy/series/{series_id}/observations")
-def energy_observations(
-    series_id: uuid.UUID, session: Session = Depends(get_db)
-) -> dict[str, Any]:
+def energy_observations(series_id: uuid.UUID, session: Session = Depends(get_db)) -> dict[str, Any]:
     items = session.scalars(
-        select(EnergyObservation).where(EnergyObservation.series_id == series_id)
+        select(EnergyObservation)
+        .where(EnergyObservation.series_id == series_id)
         .order_by(EnergyObservation.observation_time)
     ).all()
     return {"items": [_observation(item) for item in items], "total": len(items)}
