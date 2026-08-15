@@ -88,7 +88,7 @@ test("authenticated workspace research workflow has no severe console errors", a
   await page.getByRole("button", { name: "Submit simulated order" }).click();
   await expect(page.getByText("Simulation recorded")).toBeVisible();
   const workspaceName = `E2E Workspace B ${Date.now()}`;
-  const workspaceResponse = await page.request.post("http://127.0.0.1:8000/api/v1/workspaces", {
+  const workspaceResponse = await page.request.post("http://127.0.0.1:8012/api/v1/workspaces", {
     data: { name: workspaceName, slug: `e2e-workspace-b-${Date.now()}` },
   });
   expect(workspaceResponse.ok()).toBeTruthy();

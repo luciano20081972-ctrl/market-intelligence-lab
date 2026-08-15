@@ -67,3 +67,5 @@ The world-data suite covers UTC normalization, naive-time rejection, publication
 # v0.11 verification
 
 The research-intelligence suite covers positive and negative memory, applicability, suppression and override audit, as-of leakage boundaries, deterministic Pearson/Spearman/residual statistics, redundant-versus-independent behavior, divergence without trade eligibility, contradiction/regime/cluster semantics, lifecycle immutability, and workspace scope. Frontend tests cover all new views; Playwright covers the integrated signed-in navigation path. Database gates include clean, incremental, repeated, drift, identifier-length, and rollback checks on disposable PostgreSQL 17 when configured.
+
+Run the complete browser gate with `pnpm --dir apps/web test:e2e` from an activated project virtual environment. Playwright launches `scripts/e2e.py`, which creates a disposable migrated SQLite database, seeds deterministic fixtures, waits for the API and import worker, and then starts the frontend on isolated test ports. It never reuses an unrelated local development or production service.

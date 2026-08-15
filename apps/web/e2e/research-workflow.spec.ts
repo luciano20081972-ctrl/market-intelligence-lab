@@ -33,7 +33,7 @@ test("progressive research fixture is temporal, explainable, and budgeted", asyn
   await expect(page.getByRole("heading", { name: "Research Budget Dashboard" })).toBeVisible();
   await expect(page.getByText("Maximum companies: 3")).toBeVisible();
 
-  const response = await page.request.get("http://127.0.0.1:8000/api/v1/research/candidates");
+  const response = await page.request.get("http://127.0.0.1:8012/api/v1/research/candidates");
   expect(response.ok()).toBeTruthy();
   const payload = await response.json() as { items: Array<{ id: string; archetype: string }> };
   for (const archetype of ["semiconductor", "airline", "agriculture"]) {
