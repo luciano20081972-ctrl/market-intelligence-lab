@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+import yaml
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, func, select
 
@@ -233,8 +234,8 @@ def test_operations_center_and_dependency_health_are_sanitized(client: TestClien
     assert dependencies.status_code == 200
     assert "database_url" not in dependencies.text.lower()
     manifest = client.get("/health/deployment").json()
-    assert manifest["application_version"] == "0.14.0"
-    assert manifest["alembic_revision"] == "5595df1fe1cf"
+    assert manifest["application_version"] == "0.14.1"
+    assert manifest["alembic_revision"] == "a141c0de0001"
 
 
 def test_backup_restore_fixture_round_trip_verifies_checksums(tmp_path: Path) -> None:
@@ -254,3 +255,29 @@ def test_backup_restore_fixture_round_trip_verifies_checksums(tmp_path: Path) ->
     )
     assert len(str(manifest["checksum"])) == 64
     assert manifest["verification_state"] == "UNVERIFIED"
+    assert manifest["configuration_template_version"] == "v0.14.1"
+    assert manifest["compose_checksum"] == "capture-at-deployment"
+    assert manifest["image_digests"] == []
+
+
+def test_production_compose_has_only_reconciled_mil_topology() -> None:
+    manifest = yaml.safe_load(Path("deploy/compose.production.yaml").read_text(encoding="utf-8"))
+    services = manifest["services"]
+    assert set(services) == {
+        "api",
+        "web",
+        "market-data-worker",
+        "scheduler",
+        "operations-worker",
+    }
+    assert "supervisor" not in services
+    assert "iamgodtranslator" not in str(manifest).lower()
+    for service in services.values():
+        assert service["restart"] == "unless-stopped"
+        assert service["mem_limit"]
+        assert service["cpus"]
+        assert service["healthcheck"]
+    assert services["scheduler"]["depends_on"]["api"]["condition"] == "service_healthy"
+    assert services["operations-worker"]["depends_on"]["api"]["condition"] == (
+        "service_healthy"
+    )

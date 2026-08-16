@@ -5,7 +5,12 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, inspect, text
 
-from packages.core.config import EXPECTED_SCHEMA_REVISION, get_settings
+from packages.core.config import EXPECTED_SCHEMA_REVISION, Settings, get_settings
+from packages.database.phase5_reconciliation import (
+    LEGACY_TABLES,
+    inspect_phase5_reconciliation,
+)
+from scripts.private_beta_readiness import evaluate
 
 
 def test_clean_database_migration(tmp_path: Path, monkeypatch: object) -> None:
@@ -30,7 +35,42 @@ def test_clean_database_migration(tmp_path: Path, monkeypatch: object) -> None:
     assert "factor_experiments" in tables
     assert "factor_experiment_folds" in tables
     assert "experiment_manifests" in tables
+    assert LEGACY_TABLES.issubset(tables)
+    assert "scheduled_task_occurrences" in tables
     command.check(config)
+    get_settings.cache_clear()
+
+
+def test_phase5_legacy_branch_reconciles_without_stamping(
+    tmp_path: Path, monkeypatch: object
+) -> None:
+    database = tmp_path / "phase5-reconciliation.db"
+    database_url = f"sqlite:///{database.as_posix()}"
+    monkeypatch.setenv("MIL_DATABASE_URL", database_url)  # type: ignore[attr-defined]
+    get_settings.cache_clear()
+    config = Config("alembic.ini")
+    command.upgrade(config, "3b2f6c7d8e90")
+    engine = create_engine(database_url)
+    with engine.connect() as connection:
+        before = inspect_phase5_reconciliation(connection)
+    assert before["status"] == "WARN"
+    assert before["state"] == "RECONCILIATION_REQUIRED"
+    assert before["current_revisions"] == ["3b2f6c7d8e90"]
+    readiness_before = evaluate(Settings(database_url=database_url), root=tmp_path)
+    assert readiness_before["checks"]["DATABASE"]["status"] == "WARN"  # type: ignore[index]
+    assert readiness_before["reconciliation"]["state"] == "RECONCILIATION_REQUIRED"  # type: ignore[index]
+    command.upgrade(config, "head")
+    command.upgrade(config, "head")
+    with engine.connect() as connection:
+        after = inspect_phase5_reconciliation(connection)
+    assert after["status"] == "PASS"
+    assert after["state"] == "RECONCILED"
+    assert after["current_revisions"] == [EXPECTED_SCHEMA_REVISION]
+    readiness_after = evaluate(Settings(database_url=database_url), root=tmp_path)
+    assert readiness_after["checks"]["DATABASE"]["status"] == "PASS"  # type: ignore[index]
+    assert readiness_after["reconciliation"]["state"] == "RECONCILED"  # type: ignore[index]
+    command.check(config)
+    engine.dispose()
     get_settings.cache_clear()
 
 

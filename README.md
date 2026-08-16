@@ -1,6 +1,6 @@
 # Market Intelligence Lab
 
-Current version: **0.14.0** — Private Beta Operations, Live Data Automation, and Reliability. PostgreSQL-backed schedules, leases, retries, quarantine, freshness, worker/scheduler health, alerts, readiness checks, and backup/restore procedures keep approved data and paper-only research workflows recoverable and resource bounded. This is private-beta reliability, not high availability or brokerage execution.
+Current version: **0.14.1** — Production Reconciliation and Deployment Compatibility. The patch preserves the production Phase-5 database branch while joining it formally to the v0.14 private-beta migration history. It remains paper-only and is not a deployment or v1.0 release.
 
 Run `python -m scripts.private_beta_readiness` before a private-beta deployment. Start durable processes with `python -m packages.market_data.worker` and `python -m packages.operations.scheduler`. See [the operator guide](docs/operations/private-beta.md).
 

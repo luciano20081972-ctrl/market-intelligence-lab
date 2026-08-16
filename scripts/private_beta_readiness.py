@@ -8,11 +8,17 @@ from pathlib import Path
 from sqlalchemy import create_engine, text
 
 from packages.core.config import EXPECTED_SCHEMA_REVISION, Settings, get_settings
+from packages.database.phase5_reconciliation import inspect_phase5_reconciliation
 
 
 def evaluate(settings: Settings, *, root: Path | None = None) -> dict[str, object]:
     base = (root or Path.cwd()).resolve()
     checks: dict[str, dict[str, str]] = {}
+    reconciliation: dict[str, object] = {
+        "status": "FAIL",
+        "state": "DATABASE_UNAVAILABLE",
+    }
+    provider_rows: list[tuple[str, bool, str]] = []
 
     def check(name: str, passed: bool, message: str, *, warning: bool = False) -> None:
         checks[name] = {
@@ -23,13 +29,23 @@ def evaluate(settings: Settings, *, root: Path | None = None) -> dict[str, objec
     try:
         engine = create_engine(settings.database_url)
         with engine.connect() as connection:
-            connection.execute(text("SELECT 1"))
-            revision = connection.scalar(text("SELECT version_num FROM alembic_version"))
-        check(
-            "DATABASE",
-            revision == EXPECTED_SCHEMA_REVISION,
-            "Database and migration revision verified",
-        )
+            reconciliation = inspect_phase5_reconciliation(connection)
+            provider_rows = [
+                (str(row.code), bool(row.is_enabled), str(row.health))
+                for row in connection.execute(text("SELECT code,is_enabled,health FROM providers"))
+            ]
+        reconciliation_state = str(reconciliation["state"])
+        if reconciliation_state == "RECONCILED":
+            check("DATABASE", True, "Database reconciled at the v0.14.1 head")
+        elif reconciliation_state == "RECONCILIATION_REQUIRED":
+            check(
+                "DATABASE",
+                False,
+                "RECONCILIATION REQUIRED: recognized Phase-5 database; do not stamp",
+                warning=True,
+            )
+        else:
+            check("DATABASE", False, "Database migration history is not deployment-compatible")
     except Exception as exc:  # readiness must classify sanitized failures
         check("DATABASE", False, f"Database unavailable ({type(exc).__name__})")
     check(
@@ -58,7 +74,22 @@ def evaluate(settings: Settings, *, root: Path | None = None) -> dict[str, objec
         warning=not settings.scheduler_enabled,
     )
     check("WORKERS", settings.max_concurrent_ingestion_jobs > 0, "Worker budget is configured")
-    check("DATA", True, "Live providers remain explicitly configurable")
+    required_providers = set(settings.required_live_providers)
+    ready_providers = {
+        code for code, enabled, health in provider_rows if enabled and health == "healthy"
+    }
+    unavailable_required = sorted(required_providers - ready_providers)
+    check(
+        "DATA",
+        not unavailable_required,
+        (
+            "Required providers are healthy"
+            if required_providers and not unavailable_required
+            else f"Required providers unavailable: {', '.join(unavailable_required)}"
+            if unavailable_required
+            else "Optional providers may remain intentionally disabled or degraded"
+        ),
+    )
     check(
         "BACKUP",
         Path(base / settings.backup_root).exists(),
@@ -80,6 +111,7 @@ def evaluate(settings: Settings, *, root: Path | None = None) -> dict[str, objec
         "status": overall,
         "version": settings.version,
         "schema_revision": EXPECTED_SCHEMA_REVISION,
+        "reconciliation": reconciliation,
         "checks": checks,
     }
 

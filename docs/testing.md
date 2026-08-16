@@ -1,5 +1,11 @@
 # Testing
 
+v0.14.1 retains PostgreSQL 17 coverage and adds a PostgreSQL 18.4 job that
+builds the exact Phase-5 branch at `3b2f6c7d8e90`, inserts deterministic
+identity/workspace/compute/supervisor/alert fixtures, upgrades without stamping,
+and proves counts, checksums, foreign keys, owner linkage, one final head,
+repeated-upgrade idempotency, and drift cleanliness at `a141c0de0001`.
+
 v0.14 release gates add duplicate-scheduler, stale-lease recovery, bounded retry, weekend freshness, alert deduplication, production configuration, secret redaction, backup manifest, readiness, and Operations Center coverage. PostgreSQL CI verifies clean/repeated upgrade and concurrency. Live provider checks remain bounded and opt-in. Canonical E2E remains `python -m scripts.e2e` with isolated services.
 
 v0.13 release gates explicitly cover forecast locking, maturity rejection, evaluation-mode isolation, as-of leakage, probability/continuous/interval/rank scoring, sample safeguards, critical skeptic blocking, optimizer subordination, no shorting/leverage, scenario rejection, idempotent paper previews, and visible simulated labels.

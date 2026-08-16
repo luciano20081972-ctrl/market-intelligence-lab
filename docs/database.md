@@ -1,5 +1,12 @@
 # Database
 
+v0.14.1 adds the historical Phase-5 production branch `3b2f6c7d8e90` without
+rewriting it and joins it with official v0.14 head `5595df1fe1cf` at merge head
+`a141c0de0001`. Seven legacy operational tables are preserved read-only; the
+active v0.14 models use distinct tables. Downgrade is intentionally unsupported:
+rollback requires a fresh verified snapshot restore. See
+`docs/operations/phase5-v014-reconciliation.md`.
+
 The v0.14 migration descends from `4e398fc4c9a1` and adds scheduled task definitions/occurrences, scheduler heartbeats, circuit breakers, freshness statuses, operational alerts, backup manifests, restore verifications, and maintenance state. Existing import schedules, jobs, leases, workers, provider health/quota state, and checkpoints remain canonical and are not duplicated. PostgreSQL 17 is authoritative for `SKIP LOCKED`, lease concurrency, and unique occurrence behavior.
 
 The v0.13 schema head is `4e398fc4c9a1` (parent `e2517ff0412b`). It adds versioned target definitions, immutable forecasts/outcomes/scores/calibration/reliability artifacts, bounded feedback, and paper-only eligibility, candidate, construction-policy, plan, and evaluation records. Historical migrations are unchanged.

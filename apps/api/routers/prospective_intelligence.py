@@ -128,7 +128,7 @@ def post_forecast(body: ForecastCreate, session: Session = Depends(get_db)) -> d
         )
         session.add(target)
         session.flush()
-    manifest = {**body.manifest, "paper_only": True, "software_version": "0.14.0"}
+    manifest = {**body.manifest, "paper_only": True, "software_version": "0.14.1"}
     checksum = digest({**body.model_dump(), "workspace_id": workspace, "manifest": manifest})
     item = ResearchForecast(
         workspace_id=workspace,

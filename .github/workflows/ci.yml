@@ -102,6 +102,41 @@ jobs:
       - run: python -m scripts.benchmark_prospective_intelligence
       - run: python -m scripts.benchmark_private_beta_operations --database-url-env MIL_POSTGRES_TEST_DATABASE_URL
 
+  postgres18-reconciliation:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18.4-bookworm
+        env:
+          POSTGRES_USER: mil_test
+          POSTGRES_PASSWORD: mil_test
+          POSTGRES_DB: mil_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U mil_test -d mil_test"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      MIL_DATABASE_URL: postgresql+psycopg://mil_test:mil_test@127.0.0.1:5432/mil_test
+      MIL_POSTGRES_TEST_DATABASE_URL: postgresql+psycopg://mil_test:mil_test@127.0.0.1:5432/mil_test
+      MIL_ENVIRONMENT: test
+      MIL_PHASE5_FIXTURE_EXPECTED: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12", cache: pip}
+      - run: pip install -e ".[dev,postgres,integrations]"
+      - run: alembic upgrade 3b2f6c7d8e90
+      - run: python -m scripts.seed_phase5_reconciliation_fixture
+      - run: python -m scripts.phase5_reconciliation_check --json --snapshot-output phase5-before.json
+      - run: alembic upgrade head
+      - run: alembic upgrade head
+      - run: python -m scripts.phase5_reconciliation_check --require-head --json --compare-snapshot phase5-before.json
+      - run: alembic current
+      - run: alembic heads
+      - run: alembic history
+      - run: alembic check
+      - run: pytest -m postgres tests/test_phase5_reconciliation.py
+
   supply-chain:
     runs-on: ubuntu-latest
     steps:

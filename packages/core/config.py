@@ -7,7 +7,7 @@ from pathlib import Path
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-EXPECTED_SCHEMA_REVISION = "5595df1fe1cf"
+EXPECTED_SCHEMA_REVISION = "a141c0de0001"
 
 
 def normalize_database_url(value: str) -> str:
@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Market Intelligence Lab"
-    version: str = "0.14.0"
+    version: str = "0.14.1"
     environment: str = "development"
     database_url: str = "sqlite:///./data/market_intelligence.db"
     migration_database_url: str | None = None
@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     supabase_jwt_audience: str = "authenticated"
     supabase_publishable_key: str | None = None
     supabase_secret_key: str | None = None
+    supabase_secret_key_file: str | None = None
     run_live_supabase_tests: bool = False
     twelve_data_api_key: str | None = None
     trusted_hosts: list[str] = ["127.0.0.1", "localhost", "testserver"]
@@ -73,6 +74,7 @@ class Settings(BaseSettings):
     git_sha: str = "unknown"
     build_time: str = "unknown"
     run_live_world_data_tests: bool = False
+    required_live_providers: list[str] = Field(default_factory=list)
     lean_executable: str | None = None
 
     @field_validator("database_url", "migration_database_url")
@@ -142,6 +144,15 @@ class Settings(BaseSettings):
             "demonstration_mode": self.seed_demo_data,
             "authentication_mode": self.auth_mode,
         }
+
+    def load_supabase_secret_key(self) -> str | None:
+        """Load an optional backend-only key without exposing it in summaries."""
+        if self.supabase_secret_key:
+            return self.supabase_secret_key
+        if not self.supabase_secret_key_file:
+            return None
+        value = Path(self.supabase_secret_key_file).read_text(encoding="utf-8").strip()
+        return value or None
 
 
 @lru_cache

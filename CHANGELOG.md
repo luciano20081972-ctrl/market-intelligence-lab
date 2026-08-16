@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.1 - Production Reconciliation and Deployment Compatibility
+
+- Preserve the historical Phase-5 production migration and join it to the official v0.14 history.
+- Add PostgreSQL 18 legacy-upgrade verification, reconciliation readiness tooling, and a hardened production Compose template.
+- Document forward-migration/snapshot-restore rollback and retirement of the legacy supervisor.
+
 ## 0.14.0 - Private Beta Operations, Live Data Automation, and Reliability
 
 - Added PostgreSQL-coordinated durable task schedules, unique occurrences, scheduler heartbeats, expiring leases, crash recovery, bounded retry timing, and quarantine-ready failure records.
