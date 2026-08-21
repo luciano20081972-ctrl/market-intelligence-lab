@@ -8,9 +8,9 @@ The v0.10 Hypothesis Factory and Factor Validation and v0.11 Research Memory rem
 
 The reference seed demonstrates three materially different business models: semiconductor, airline, and agriculture. See [the entity model](docs/graph/entity-model.md), [driver profiles](docs/graph/company-driver-profiles.md), [routing](docs/graph/relevance-routing.md), and [query limits](docs/graph/query-limits.md).
 
-Market Intelligence Lab is a workspace-isolated research workbench for historical market and official world data, explainable signals, reproducible backtests, simulated paper trading, SEC filing intelligence, portfolio analytics, constrained optimization, bounded progressive research, and scientifically controlled factor experiments. v0.10 builds on the point-in-time feature store without adding predictive-alpha claims, brokerage, or real-money execution.
+Market Intelligence Lab is a workspace-isolated research workbench for historical market and official world data, explainable signals, reproducible backtests, simulated paper trading, SEC filing intelligence, portfolio analytics, constrained optimization, bounded progressive research, and scientifically controlled factor experiments. v0.15 adds the real-market foundation without predictive-alpha claims, brokerage, or real-money execution.
 
-The v0.10 application schema is at Alembic revision `ed23735efb90` (parent `2f9e39afd435`). The v0.5.1 Supabase
+The v0.15 application schema is at Alembic revision `f01500000001` (parent `a141c0de0001`). The v0.5.1 Supabase
 Auth/JWKS and deny-by-default PostgREST behavior were live-verified with
 temporary users that were removed after the rehearsal. Direct
 FastAPI-to-staging PostgreSQL runtime connectivity remains unverified because
