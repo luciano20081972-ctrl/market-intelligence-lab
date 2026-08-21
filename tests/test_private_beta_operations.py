@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import yaml
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine, func, select
+from sqlalchemy import Engine, func, select, update
 
 from packages.core.config import Settings
 from packages.database.models import (
@@ -55,6 +55,7 @@ def test_two_scheduler_instances_do_not_duplicate_occurrence(engine: Engine) -> 
     factory = make_session_factory(engine)
     now = datetime(2026, 8, 15, 12, tzinfo=UTC)
     with session_scope(factory) as session:
+        session.execute(update(ScheduledTaskDefinition).values(enabled=False))
         session.add(_definition(now))
     with session_scope(factory) as session:
         assert len(claim_due_occurrences(session, "scheduler-a", now=now)) == 1
@@ -67,6 +68,7 @@ def test_operational_worker_completes_approved_task_and_quarantines_unknown(engi
     factory = make_session_factory(engine)
     now = datetime(2026, 8, 15, 12, tzinfo=UTC)
     with session_scope(factory) as session:
+        session.execute(update(ScheduledTaskDefinition).values(enabled=False))
         approved = _definition(now)
         approved.task_type = "DATA_FRESHNESS"
         session.add(approved)
@@ -234,8 +236,8 @@ def test_operations_center_and_dependency_health_are_sanitized(client: TestClien
     assert dependencies.status_code == 200
     assert "database_url" not in dependencies.text.lower()
     manifest = client.get("/health/deployment").json()
-    assert manifest["application_version"] == "0.14.1"
-    assert manifest["alembic_revision"] == "a141c0de0001"
+    assert manifest["application_version"] == "0.15.0"
+    assert manifest["alembic_revision"] == "f01500000001"
 
 
 def test_backup_restore_fixture_round_trip_verifies_checksums(tmp_path: Path) -> None:

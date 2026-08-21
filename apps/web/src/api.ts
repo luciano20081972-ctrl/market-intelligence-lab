@@ -16,6 +16,7 @@ import type {
   ExperimentFold, FactorExperiment, FeatureValueRecord, PromotionEvent,
   ResearchEngineStatus, ResearchHypothesis, ScreeningRun,
   DivergenceEventRecord, ResearchMemory, SignalIndependence,
+  MarketFoundation,
 } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -71,6 +72,7 @@ export const api = {
   backtestValidation: (id: string) => request<BacktestValidation>(`/api/v1/backtests/${id}/validation-report`),
   health: () => request<{ status: string; database: string; version: string }>("/health"),
   systemInfo: () => request<SystemInfo>("/api/v1/system/info"),
+  marketFoundation: () => request<MarketFoundation>("/api/v1/system/market-foundation"),
   dataSources: () => request<DataSource[]>("/api/v1/system/data-sources"),
   assets: (params = "") => request<AssetPage>(`/api/v1/assets${params ? `?${params}` : ""}`),
   asset: (symbol: string) => request<Asset>(`/api/v1/assets/${encodeURIComponent(symbol)}`),
@@ -82,8 +84,8 @@ export const api = {
   renameWatchlist: (id: string, name: string) =>
     request<Watchlist>(`/api/v1/watchlists/${id}`, { method: "PATCH", body: JSON.stringify({ name }) }),
   deleteWatchlist: (id: string) => request<void>(`/api/v1/watchlists/${id}`, { method: "DELETE" }),
-  addAsset: (id: string, symbol: string) =>
-    request<Watchlist>(`/api/v1/watchlists/${id}/assets`, { method: "POST", body: JSON.stringify({ symbol }) }),
+  addAsset: (id: string, assetId: string) =>
+    request<Watchlist>(`/api/v1/watchlists/${id}/assets`, { method: "POST", body: JSON.stringify({ asset_id: assetId }) }),
   removeAsset: (id: string, symbol: string) =>
     request<Watchlist>(`/api/v1/watchlists/${id}/assets/${encodeURIComponent(symbol)}`, { method: "DELETE" }),
   strategies: () => request<StrategyPage>("/api/v1/strategies?page_size=100"),

@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class HealthResponse(BaseModel):
@@ -33,6 +33,10 @@ class AssetSummary(BaseModel):
     latest_price: Decimal | None = None
     latest_price_time: datetime | None = None
     is_demonstration_data: bool | None = None
+    capability: str = "UNAVAILABLE"
+    freshness: str = "UNAVAILABLE"
+    feed: str = "UNAVAILABLE"
+    provider: str | None = None
 
 
 class AssetPage(BaseModel):
@@ -93,12 +97,21 @@ class WatchlistUpdate(BaseModel):
 
 
 class WatchlistAssetCreate(BaseModel):
-    symbol: str = Field(min_length=1, max_length=16, pattern=r"^[A-Za-z][A-Za-z0-9.\-]*$")
+    asset_id: UUID | None = None
+    symbol: str | None = Field(
+        default=None, min_length=1, max_length=32, pattern=r"^[A-Za-z][A-Za-z0-9.\-]*$"
+    )
 
     @field_validator("symbol")
     @classmethod
-    def uppercase_symbol(cls, value: str) -> str:
-        return value.strip().upper()
+    def uppercase_symbol(cls, value: str | None) -> str | None:
+        return value.strip().upper() if value else None
+
+    @model_validator(mode="after")
+    def require_identifier(self) -> WatchlistAssetCreate:
+        if self.asset_id is None and self.symbol is None:
+            raise ValueError("asset_id or symbol is required")
+        return self
 
 
 class WatchlistAssetResponse(BaseModel):
@@ -108,6 +121,11 @@ class WatchlistAssetResponse(BaseModel):
     latest_price: Decimal | None
     latest_price_time: datetime | None
     is_demonstration_data: bool | None
+    daily_move_pct: Decimal | None = None
+    freshness: str = "UNAVAILABLE"
+    source: str | None = None
+    feed: str = "UNAVAILABLE"
+    capability: str = "UNAVAILABLE"
 
 
 class WatchlistResponse(BaseModel):

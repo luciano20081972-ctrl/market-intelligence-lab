@@ -121,9 +121,15 @@ def add_asset(
     watchlist_id: UUID, payload: WatchlistAssetCreate, session: Session = Depends(get_db)
 ) -> WatchlistResponse:
     watchlist = _find_watchlist(session, watchlist_id)
-    asset = session.scalar(select(Asset).where(Asset.symbol == payload.symbol))
+    if payload.asset_id is None and payload.symbol is None:
+        raise HTTPException(status_code=422, detail="asset_id or symbol is required")
+    asset = (
+        session.get(Asset, payload.asset_id)
+        if payload.asset_id is not None
+        else session.scalar(select(Asset).where(Asset.symbol == payload.symbol))
+    )
     if asset is None:
-        raise HTTPException(status_code=404, detail=f"Asset '{payload.symbol}' was not found")
+        raise HTTPException(status_code=404, detail="Canonical asset was not found")
     try:
         session.add(WatchlistAsset(watchlist_id=watchlist.id, asset_id=asset.id))
         session.flush()

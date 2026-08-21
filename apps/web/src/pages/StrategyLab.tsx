@@ -3,13 +3,14 @@ import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { api } from "../api";
 import { ErrorState, LoadingState } from "../components/States";
+import { AssetSearch } from "../components/AssetSearch";
 
 export function StrategyLab() {
   const navigate = useNavigate();
   const query = useQuery({ queryKey: ["strategies"], queryFn: api.strategies });
   const [strategyId, setStrategyId] = useState("");
-  const [symbols, setSymbols] = useState("AAPL,MSFT");
-  const [benchmark, setBenchmark] = useState("SPY");
+  const [symbols, setSymbols] = useState<string[]>([]);
+  const [benchmark, setBenchmark] = useState("");
   const [start, setStart] = useState("2025-01-02");
   const [end, setEnd] = useState("2025-06-18");
   const [dataSourceMode, setDataSourceMode] = useState("synthetic");
@@ -44,8 +45,8 @@ export function StrategyLab() {
     run.mutate({
       strategy_version_id: selected,
       parameters: parsed,
-      symbols: symbols.split(",").map(value => value.trim().toUpperCase()).filter(Boolean),
-      benchmark_symbol: benchmark.trim().toUpperCase(),
+      symbols,
+      benchmark_symbol: benchmark,
       start_time: `${start}T21:00:00Z`,
       end_time: `${end}T21:00:00Z`,
       initial_cash: cash,
@@ -65,8 +66,8 @@ export function StrategyLab() {
     <form className="panel research-form" onSubmit={submit}>
       <div className="form-grid">
         <label><span>Strategy</span><select aria-label="Strategy" value={selected} onChange={event => { setStrategyId(event.target.value); const value = strategies.find(item => item.latest_version.id === event.target.value); setParameters(JSON.stringify(value?.latest_version.parameters ?? {}, null, 2)); }}>{strategies.map(strategy => <option key={strategy.id} value={strategy.latest_version.id}>{strategy.name} · v{strategy.latest_version.version}</option>)}</select></label>
-        <label><span>Symbols</span><input aria-label="Symbols" required value={symbols} onChange={event => setSymbols(event.target.value)} /></label>
-        <label><span>Benchmark</span><input aria-label="Benchmark" required value={benchmark} onChange={event => setBenchmark(event.target.value)} /></label>
+        <div><AssetSearch label="Research assets" onSelect={asset => setSymbols(current => current.includes(asset.symbol) ? current : [...current, asset.symbol])} /><div className="tag-row">{symbols.map(symbol => <button key={symbol} type="button" onClick={() => setSymbols(current => current.filter(item => item !== symbol))}>{symbol} ×</button>)}</div></div>
+        <AssetSearch label="Benchmark" onSelect={asset => setBenchmark(asset.symbol)} value={benchmark} />
         <label><span>Data source</span><select aria-label="Backtest data source" value={dataSourceMode} onChange={event => setDataSourceMode(event.target.value)}><option value="synthetic">Synthetic demonstration</option><option value="imported">Imported external</option><option value="auto">Auto (mixed rejected)</option></select></label>
         <label><span>Adjustment</span><select aria-label="Backtest adjustment" value={adjustmentPreference} onChange={event => setAdjustmentPreference(event.target.value)}><option value="provider_default">Provider default</option><option value="unadjusted">Unadjusted</option><option value="adjusted">Adjusted</option></select></label>
         <label><span>Initial cash</span><input aria-label="Initial cash" type="number" min="1" required value={cash} onChange={event => setCash(event.target.value)} /></label>
@@ -80,7 +81,7 @@ export function StrategyLab() {
         <label className="parameter-field"><span>Parameters (JSON)</span><textarea aria-label="Strategy parameters" value={parameters} onChange={event => setParameters(event.target.value)} /></label>
       </div>
       {validation ? <p className="validation-error" role="alert">{validation}</p> : null}
-      <div className="form-actions"><p className="muted">Shared cash · next eligible bar · commission, spread, and slippage included.</p><button disabled={run.isPending || !selected}>{run.isPending ? "Running…" : "Run backtest"}</button></div>
+      <div className="form-actions"><p className="muted">Shared cash · next eligible bar · commission, spread, and slippage included. Insufficient history is rejected explicitly.</p><button disabled={run.isPending || !selected || !symbols.length || !benchmark}>{run.isPending ? "Running…" : "Run backtest"}</button></div>
     </form>
     {run.error ? <ErrorState error={run.error} /> : null}
     <div className="strategy-grid">{strategies.map(strategy => <article className="panel strategy-card" key={strategy.id}><div className="panel-title"><div><p className="eyebrow">{strategy.strategy_type.replaceAll("_", " ")}</p><h2>{strategy.name}</h2></div><span className="tag">v{strategy.latest_version.version}</span></div><p>{strategy.description}</p><dl className="detail-list"><div><dt>Parameters</dt><dd>{Object.keys(strategy.latest_version.parameters).length || "None"}</dd></div><div><dt>Built in</dt><dd>{strategy.is_builtin ? "Yes" : "No"}</dd></div></dl><details><summary>Calculation notes</summary><p>{strategy.latest_version.calculation_notes}</p></details></article>)}</div>

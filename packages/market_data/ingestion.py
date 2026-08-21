@@ -67,6 +67,8 @@ def create_import_job(
     idempotency_key: str | None = None,
     queue_name: str = "manual",
     workspace_id: UUID | None = None,
+    priority: int = 100,
+    resource_class: str = "IO_STANDARD",
 ) -> ImportJob:
     provider = session.scalar(select(Provider).where(Provider.code == provider_code.lower()))
     if provider is None:
@@ -83,6 +85,8 @@ def create_import_job(
         raise ValueError("start and end must be timezone-aware and start must precede end")
     if max_attempts < 1 or max_attempts > 10:
         raise ValueError("max_attempts must be between 1 and 10")
+    if priority < 0 or priority > 1000:
+        raise ValueError("priority must be between 0 and 1000")
     if adjustment_preference not in {"adjusted", "unadjusted", "provider_default"}:
         raise ValueError("invalid adjustment preference")
     if idempotency_key:
@@ -109,6 +113,8 @@ def create_import_job(
         dry_run=dry_run,
         idempotency_key=idempotency_key,
         queue_name=queue_name,
+        priority=priority,
+        resource_class=resource_class,
     )
     session.add(job)
     session.flush()

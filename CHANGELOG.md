@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.15.0 - Real Market Foundation
+
+- Added additive issuer, listing, identifier, reference-observation, temporal provider-mapping, capability, dynamic-universe, and operating-state models at revision `f01500000001`.
+- Added fail-closed Nasdaq Trader and SEC reference adapters with idempotent reconciliation and historical identity preservation.
+- Added credential-gated Massive Basic end-of-day and Alpaca Basic `LIVE — IEX` adapters with explicit entitlement limits; Stooq remains best-effort and synthetic remains demo/test-only.
+- Added automatic reference refresh, resumable prioritized historical ingestion, dynamic-universe selection, and exchange-calendar operating-mode tasks without Redis, Kafka, brokerage, or production deployment.
+- Added server-side canonical asset search, capability/freshness/feed metadata, reusable mobile asset selection, and canonical watchlist, strategy, backtest, and simulated-order selection.
+- Updated Home and Asset Explorer to expose catalog coverage and to state `REAL MARKET DATA NOT CONFIGURED` until real bars exist.
+
 ## 0.14.1 - Production Reconciliation and Deployment Compatibility
 
 - Preserve the historical Phase-5 production migration and join it to the official v0.14 history.

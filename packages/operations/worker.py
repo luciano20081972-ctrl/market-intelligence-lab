@@ -15,6 +15,12 @@ from sqlalchemy.orm import Session
 from packages.core.config import get_settings
 from packages.database.models import ScheduledTaskDefinition, ScheduledTaskOccurrence
 from packages.database.session import create_database_engine, make_session_factory, session_scope
+from packages.market_data.foundation_tasks import (
+    refresh_dynamic_universe,
+    refresh_operating_mode,
+    refresh_reference_universe,
+    schedule_historical_ingestion,
+)
 from packages.market_data.observability import configure_logging, operational_log
 from packages.operations.service import (
     claim_next_occurrence,
@@ -33,6 +39,10 @@ def _refresh_freshness(session: Session, _definition: ScheduledTaskDefinition) -
 
 HANDLERS: dict[str, Handler] = {
     "DATA_FRESHNESS": _refresh_freshness,
+    "REFERENCE_UNIVERSE_REFRESH": refresh_reference_universe,
+    "HISTORICAL_BACKFILL": schedule_historical_ingestion,
+    "DYNAMIC_UNIVERSE": refresh_dynamic_universe,
+    "MARKET_OPERATING_MODE": refresh_operating_mode,
 }
 
 

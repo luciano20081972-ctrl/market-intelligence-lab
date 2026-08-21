@@ -11,7 +11,8 @@ export const asset: Asset = {
   id: "asset-1", symbol: "AAPL", name: "Apple Inc.", asset_type: "Stock",
   exchange: "NASDAQ", currency: "USD", sector: "Technology", industry: "Consumer Electronics",
   is_active: true, latest_price: "201.25", latest_price_time: "2025-06-18T21:00:00Z",
-  is_demonstration_data: true,
+  is_demonstration_data: true, capability: "HISTORICAL_AVAILABLE", freshness: "DEMO",
+  feed: "DEMO", provider: "synthetic",
 };
 
 export const bar: PriceBar = {

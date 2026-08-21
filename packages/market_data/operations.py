@@ -115,7 +115,7 @@ def claim_next_job(
             ),
             ~select(JobLease.id).where(JobLease.job_id == ImportJob.id).exists(),
         )
-        .order_by(ImportJob.requested_at, ImportJob.id)
+        .order_by(ImportJob.priority, ImportJob.requested_at, ImportJob.id)
         .limit(1)
     )
     if candidate is None:

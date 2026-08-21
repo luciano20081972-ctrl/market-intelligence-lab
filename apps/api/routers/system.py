@@ -1,12 +1,66 @@
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy import func, select, text
+from sqlalchemy import desc, func, select, text
 from sqlalchemy.orm import Session
 
 from apps.api.dependencies import get_db
 from apps.api.schemas import DataSourceResponse, SystemInfoResponse
-from packages.database.models import Asset, DataSource, PriceBar, Watchlist
+from packages.database.models import (
+    Asset,
+    AssetCapability,
+    DataSource,
+    MarketOperatingState,
+    PriceBar,
+    ScheduledTaskDefinition,
+    UniverseLayerMembership,
+    Watchlist,
+)
 
 router = APIRouter(prefix="/system", tags=["system"])
+
+
+@router.get("/market-foundation")
+def market_foundation(session: Session = Depends(get_db)) -> dict[str, object]:
+    real_bars = session.scalar(
+        select(func.count(PriceBar.id)).where(PriceBar.is_demonstration_data.is_(False))
+    ) or 0
+    historical_assets = session.scalar(
+        select(func.count(func.distinct(AssetCapability.asset_id))).where(
+            AssetCapability.status == "HISTORICAL_AVAILABLE",
+            AssetCapability.feed_type != "DEMO",
+        )
+    ) or 0
+    realtime_assets = session.scalar(
+        select(func.count(UniverseLayerMembership.id)).where(
+            UniverseLayerMembership.layer == "REALTIME",
+            UniverseLayerMembership.effective_to.is_(None),
+        )
+    ) or 0
+    mode = session.scalar(
+        select(MarketOperatingState).order_by(desc(MarketOperatingState.effective_at)).limit(1)
+    )
+    automation = session.scalar(
+        select(func.count(ScheduledTaskDefinition.id)).where(
+            ScheduledTaskDefinition.task_type.in_(
+                ("REFERENCE_UNIVERSE_REFRESH", "HISTORICAL_BACKFILL")
+            ),
+            ScheduledTaskDefinition.enabled.is_(True),
+        )
+    ) or 0
+    configured = real_bars > 0
+    return {
+        "catalog_securities": session.scalar(select(func.count(Asset.id))) or 0,
+        "historical_assets": historical_assets,
+        "real_price_bars": real_bars,
+        "realtime_active": realtime_assets,
+        "operating_mode": mode.mode if mode else "ECONOMY",
+        "automatic_refresh": "ACTIVE" if automation >= 2 else "NOT_SCHEDULED",
+        "real_market_status": "CONFIGURED" if configured else "NOT_CONFIGURED",
+        "message": (
+            "Real market data is available."
+            if configured
+            else "REAL MARKET DATA NOT CONFIGURED"
+        ),
+    }
 
 
 @router.get("/info", response_model=SystemInfoResponse)

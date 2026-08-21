@@ -44,7 +44,7 @@ class PaperTradingEngine:
             .limit(1)
         )
         if bar is None:
-            raise ValueError(f"Asset '{request.symbol}' has no stored price bar")
+            raise ValueError("PRICE DATA UNAVAILABLE OR STALE")
         base_price, outcome, triggered = self._eligible_price(request, bar, False)
         price = (
             self._apply_friction(base_price, request.side, request.limit_price)

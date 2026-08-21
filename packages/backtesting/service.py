@@ -129,7 +129,9 @@ def run_backtest(
         bars_by_symbol[symbol] = [_historical_bar(bar, symbol) for bar in bars]
     if any(not bars_by_symbol[symbol] for symbol in symbols):
         empty = [symbol for symbol in symbols if not bars_by_symbol[symbol]]
-        raise ValueError(f"No price history in range for: {', '.join(empty)}")
+        raise ValueError(
+            f"INSUFFICIENT HISTORICAL DATA: {', '.join(empty)}"
+        )
     if len(classifications) > 1 and not config.allow_mixed_data:
         raise ValueError("Mixed synthetic and imported series are rejected by default")
 

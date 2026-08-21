@@ -175,6 +175,13 @@ code { color: #8be6c2; background: #101d1a; padding: .15rem .3rem; border-radius
 .auth-brand span, .auth-brand small { display: block; }
 .auth-brand span { font-size: 1.05rem; font-weight: 700; }
 .auth-brand small { color: #8391a0; margin-top: .3rem; }
+.asset-search { position: relative; min-width: min(100%, 320px); }
+.asset-search-results { background: #0c141a; border: 1px solid #33434e; border-radius: 8px; box-shadow: 0 14px 32px #0008; display: grid; left: 0; max-height: 340px; overflow-y: auto; position: absolute; right: 0; top: calc(100% + 4px); z-index: 30; }
+.asset-search-results button { align-items: center; background: transparent; border: 0; border-radius: 0; display: grid; gap: .55rem; grid-template-columns: 58px minmax(0, 1fr) auto; padding: .7rem; text-align: left; }
+.asset-search-results button:hover, .asset-search-results button.active { background: #173027; }
+.asset-search-results button span, .asset-search-results button small { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.asset-search-results button small, .asset-search-results button i { color: #8494a0; font-size: .68rem; font-style: normal; }
+.asset-search-state { color: #8494a0; padding: .8rem; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .research-funnel { display: grid; gap: .5rem; grid-template-columns: repeat(5, minmax(120px, 1fr)); margin: 1.25rem 0; }

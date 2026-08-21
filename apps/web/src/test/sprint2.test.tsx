@@ -12,7 +12,7 @@ import type { PaperPortfolio, Strategy } from "../types";
 import { renderPage } from "./render";
 
 vi.mock("../api", () => ({ api: {
-  strategies: vi.fn(), createBacktest: vi.fn(), backtests: vi.fn(), backtest: vi.fn(),
+  strategies: vi.fn(), assets: vi.fn(), createBacktest: vi.fn(), backtests: vi.fn(), backtest: vi.fn(),
   backtestTrades: vi.fn(), backtestEquity: vi.fn(), paperPortfolios: vi.fn(),
   createPaperPortfolio: vi.fn(), paperPortfolio: vi.fn(), paperOrders: vi.fn(),
   paperFills: vi.fn(), paperPerformance: vi.fn(), previewOrder: vi.fn(), submitOrder: vi.fn(), cancelOrder: vi.fn(),
@@ -43,7 +43,13 @@ beforeEach(() => {
   mocked.paperOrders.mockResolvedValue([]);
   mocked.paperFills.mockResolvedValue([]);
   mocked.paperPerformance.mockResolvedValue({ portfolio_id: "portfolio-1", starting_cash: "100000", current_value: "100000", total_return: "0", realized_pnl: "0", unrealized_pnl: "0", points: [{ event_time: "2026-01-01T00:00:00Z", equity: "100000", cash: "100000" }], warning: "Hypothetical" });
+  mocked.assets.mockResolvedValue({ items: [{ id: "asset-1", symbol: "AAPL", name: "Apple Inc.", asset_type: "equity", exchange: "NASDAQ", currency: "USD", sector: "Technology", industry: null, is_active: true, latest_price: "201.25", latest_price_time: "2025-06-18T21:00:00Z", is_demonstration_data: true, capability: "HISTORICAL_AVAILABLE", freshness: "DEMO", feed: "DEMO", provider: "synthetic" }], pagination: { page: 1, page_size: 8, total: 1, pages: 1 } });
 });
+
+async function chooseAsset(label: string) {
+  await userEvent.type(screen.getByLabelText(label), "AAPL");
+  await userEvent.click(await screen.findByRole("option", { name: /AAPL/ }));
+}
 
 describe("Sprint 2 research workflows", () => {
   it("submits a transparent backtest configuration", async () => {
@@ -58,14 +64,18 @@ describe("Sprint 2 research workflows", () => {
     });
     renderPage(<StrategyLab />, "/strategies");
     expect(await screen.findByText("Buy and Hold")).toBeInTheDocument();
+    await chooseAsset("Research assets");
+    await chooseAsset("Benchmark");
     await userEvent.click(screen.getByRole("button", { name: "Run backtest" }));
     await waitFor(() => expect(mocked.createBacktest).toHaveBeenCalled());
-    expect(mocked.createBacktest.mock.calls[0]?.[0]).toMatchObject({ symbols: ["AAPL", "MSFT"], execution_delay: 1 });
+    expect(mocked.createBacktest.mock.calls[0]?.[0]).toMatchObject({ symbols: ["AAPL"], execution_delay: 1 });
   });
 
   it("validates strategy parameters before submission", async () => {
     renderPage(<StrategyLab />, "/strategies");
     const input = await screen.findByLabelText("Strategy parameters");
+    await chooseAsset("Research assets");
+    await chooseAsset("Benchmark");
     await userEvent.clear(input); await userEvent.type(input, "not-json");
     await userEvent.click(screen.getByRole("button", { name: "Run backtest" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("valid JSON object");
@@ -94,6 +104,7 @@ describe("Sprint 2 research workflows", () => {
   it("previews risk checks before simulated submission", async () => {
     mocked.previewOrder.mockResolvedValue({ outcome: "would_fill", estimated_price: "201.25", estimated_value: "2012.50", estimated_fees: "1", rejection_reasons: [], source_price_bar_id: "bar-source-1", assumptions: { gap_rule: "marketable gaps use bar open" }, is_triggered: false });
     renderPage(<SimulatedOrderTicket />, "/paper-portfolios/portfolio-1/order", "/paper-portfolios/:id/order");
+    await chooseAsset("Order asset");
     await userEvent.click(screen.getByRole("button", { name: "Preview risk checks" }));
     expect(await screen.findByText("All enabled portfolio risk checks passed.")).toBeInTheDocument();
     expect(mocked.previewOrder).toHaveBeenCalled();
@@ -102,6 +113,7 @@ describe("Sprint 2 research workflows", () => {
   it("shows risk rejection details and validates conditional order fields", async () => {
     mocked.previewOrder.mockResolvedValue({ outcome: "rejected", estimated_price: "201.25", estimated_value: "100625", estimated_fees: "1", rejection_reasons: ["Order value exceeds maximum order value 50000.00."], source_price_bar_id: "bar-source-1", assumptions: { gap_rule: "marketable gaps use bar open" }, is_triggered: false });
     renderPage(<SimulatedOrderTicket />, "/paper-portfolios/portfolio-1/order", "/paper-portfolios/:id/order");
+    await chooseAsset("Order asset");
     await userEvent.click(screen.getByRole("button", { name: "Preview risk checks" }));
     expect(await screen.findByText(/exceeds maximum order value/)).toBeInTheDocument();
     await userEvent.selectOptions(screen.getByLabelText("Order type"), "limit");

@@ -15,19 +15,19 @@ export function Overview() {
   const info = useQuery({ queryKey: ["system-info"], queryFn: api.systemInfo });
   const health = useQuery({ queryKey: ["health"], queryFn: api.health });
   const sources = useQuery({ queryKey: ["sources"], queryFn: api.dataSources });
-  if (info.isLoading || health.isLoading || sources.isLoading) return <LoadingState label="Loading your dashboard" />;
-  const error = info.error || health.error || sources.error;
+  const foundation = useQuery({ queryKey: ["market-foundation"], queryFn: api.marketFoundation });
+  if (info.isLoading || health.isLoading || sources.isLoading || foundation.isLoading) return <LoadingState label="Loading your dashboard" />;
+  const error = info.error || health.error || sources.error || foundation.error;
   if (error) return <ErrorState error={error} />;
 
   const systemWorking = health.data!.status === "healthy" && info.data!.database_health === "healthy";
   const sourceItems = sources.data!;
-  const freshSources = sourceItems.filter(source => source.freshness_status === "fresh").length;
   const cards = [
-    ["Markets available", info.data!.tracked_assets], ["Watchlists", info.data!.watchlists],
-    ["Historical records", info.data!.demonstration_bars.toLocaleString()], ["Data sources", sourceItems.length],
+    ["Catalog securities", foundation.data!.catalog_securities], ["Historical coverage", foundation.data!.historical_assets],
+    ["Realtime active", foundation.data!.realtime_active], ["Operating mode", foundation.data!.operating_mode],
   ];
   return <section>
-    <div className="page-heading"><div><p className="eyebrow">HOME</p><h1>Research dashboard</h1><p>Check your data, continue your research, and review simulated results from one place.</p></div><Link className="button primary" to="/imports">Refresh market data</Link></div>
+    <div className="page-heading"><div><p className="eyebrow">HOME</p><h1>Research dashboard</h1><p>Check automatically maintained market coverage, continue research, and review simulated results.</p></div></div>
 
     <div className={`status-banner ${systemWorking ? "ready" : "attention"}`} role="status">
       <div><strong>{systemWorking ? "System ready" : "System needs attention"}</strong><span>{systemWorking ? "The application and research database are working." : "Open System Status for details before starting new research."}</span></div>
@@ -43,14 +43,15 @@ export function Overview() {
 
     <div className="dashboard-grid">
       <article className="panel getting-started"><p className="eyebrow">NEXT STEPS</p><h2>Getting started</h2><ol>
-        <li><Link to="/imports">Import or refresh market data</Link><span>Start with current, documented historical records.</span></li>
+        <li><Link to="/assets">Search the U.S. security catalog</Link><span>Start with canonical securities and explicit data capabilities.</span></li>
         <li><Link to="/watchlists">Create or open a watchlist</Link><span>Choose a manageable group of markets to follow.</span></li>
         <li><Link to="/strategies">Test a strategy with a backtest</Link><span>Use historical tests to challenge an idea—not prove future profits.</span></li>
         <li><Link to="/backtests">Review the results and assumptions</Link><span>Check costs, data coverage, and validation warnings.</span></li>
         <li><Link to="/paper-portfolios">Practice in a paper portfolio</Link><span>Use simulated money before considering real-world decisions.</span></li>
       </ol></article>
 
-      <article className="panel"><div className="panel-title"><div><p className="eyebrow">MARKET DATA</p><h2>Is the data current?</h2></div><span className="health"><i />{sourceItems.length ? `${freshSources}/${sourceItems.length} current` : "Not configured"}</span></div>
+      <article className="panel"><div className="panel-title"><div><p className="eyebrow">MARKET DATA</p><h2>{foundation.data!.message}</h2></div><span className="health"><i />{foundation.data!.automatic_refresh}</span></div>
+        <p>Coverage: {foundation.data!.historical_assets} assets · {foundation.data!.real_price_bars.toLocaleString()} real bars · {foundation.data!.realtime_active} realtime symbols.</p>
         {sourceItems.length ? sourceItems.map(source => <div className="source-row" key={source.id}><div><b>{source.name}</b><small>{source.last_successful_retrieval ? `Last refreshed ${new Date(source.last_successful_retrieval).toLocaleString()}` : "No successful refresh recorded"}</small></div><span className="data-state">{source.freshness_status}</span></div>) : <p className="muted">No market data sources are configured yet. Import market data to begin.</p>}
         <Link className="text-link" to="/data-sources">Review market data</Link>
       </article>

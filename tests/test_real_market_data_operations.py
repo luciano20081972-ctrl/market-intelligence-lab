@@ -545,7 +545,7 @@ def test_operations_api_health_events_schedules_and_reconciliation(client) -> No
     health = client.get("/api/v1/operations/health")
     assert health.status_code == 200
     assert health.json()["database"] == "healthy"
-    assert client.get("/health/live").json()["version"] == "0.14.1"
+    assert client.get("/health/live").json()["version"] == "0.15.0"
     assert client.get("/health/ready").json()["database"] == "healthy"
 
 

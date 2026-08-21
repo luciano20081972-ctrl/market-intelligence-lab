@@ -125,6 +125,198 @@ class Asset(Base):
     )
 
 
+class Issuer(Base):
+    __tablename__ = "issuers"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    canonical_name: Mapped[str] = mapped_column(String(240))
+    search_name: Mapped[str] = mapped_column(String(240), index=True)
+    cik: Mapped[str | None] = mapped_column(String(10), unique=True, index=True)
+    country: Mapped[str | None] = mapped_column(String(2))
+    provenance: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+
+class AssetListing(Base):
+    __tablename__ = "asset_listings"
+    __table_args__ = (
+        UniqueConstraint(
+            "exchange_code", "normalized_symbol", "valid_from", name="uq_listing_symbol_period"
+        ),
+        CheckConstraint("valid_to IS NULL OR valid_to > valid_from", name="listing_valid_range"),
+        Index("ix_listing_active_search", "is_active", "normalized_symbol"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE"), index=True
+    )
+    issuer_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("issuers.id", ondelete="SET NULL"), index=True
+    )
+    symbol: Mapped[str] = mapped_column(String(32), index=True)
+    normalized_symbol: Mapped[str] = mapped_column(String(32), index=True)
+    security_name: Mapped[str] = mapped_column(String(240))
+    exchange_code: Mapped[str] = mapped_column(String(32), index=True)
+    mic: Mapped[str | None] = mapped_column(String(8), index=True)
+    asset_type: Mapped[str] = mapped_column(String(32), index=True)
+    listing_status: Mapped[str] = mapped_column(String(24), default="ACTIVE", index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    is_test_issue: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    is_etf: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    eligibility_status: Mapped[str] = mapped_column(String(32), default="ELIGIBLE", index=True)
+    exclusion_reason: Mapped[str | None] = mapped_column(String(160))
+    valid_from: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    valid_to: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
+    source: Mapped[str] = mapped_column(String(64), index=True)
+    source_record_key: Mapped[str] = mapped_column(String(160), index=True)
+    provenance: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+
+class AssetIdentifier(Base):
+    __tablename__ = "asset_identifiers"
+    __table_args__ = (
+        UniqueConstraint(
+            "asset_id", "identifier_type", "source", "valid_from", name="uq_asset_identifier_period"
+        ),
+        CheckConstraint(
+            "valid_to IS NULL OR valid_to > valid_from", name="asset_identifier_valid_range"
+        ),
+        Index("ix_asset_identifier_lookup", "identifier_type", "identifier_value"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE"), index=True
+    )
+    issuer_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("issuers.id", ondelete="SET NULL"), index=True
+    )
+    identifier_type: Mapped[str] = mapped_column(String(32), index=True)
+    identifier_value: Mapped[str] = mapped_column(String(160), index=True)
+    source: Mapped[str] = mapped_column(String(64), index=True)
+    valid_from: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    valid_to: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
+    provenance: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+
+
+class ReferenceObservation(Base):
+    __tablename__ = "reference_observations"
+    __table_args__ = (
+        UniqueConstraint("source", "checksum", name="uq_reference_observation_checksum"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    source: Mapped[str] = mapped_column(String(64), index=True)
+    source_record_key: Mapped[str] = mapped_column(String(160), index=True)
+    retrieval_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    source_version: Mapped[str | None] = mapped_column(String(120))
+    checksum: Mapped[str] = mapped_column(String(64), index=True)
+    raw_object_reference: Mapped[str | None] = mapped_column(String(700))
+    media_type: Mapped[str] = mapped_column(String(120))
+    reconciliation_outcome: Mapped[str] = mapped_column(String(32), index=True)
+    asset_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("assets.id", ondelete="SET NULL"), index=True
+    )
+    issuer_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("issuers.id", ondelete="SET NULL"), index=True
+    )
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class AssetCapability(Base):
+    __tablename__ = "asset_capabilities"
+    __table_args__ = (
+        UniqueConstraint(
+            "asset_id", "capability", "provider_code", name="uq_asset_capability_provider"
+        ),
+        Index("ix_asset_capability_status", "capability", "status"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE"), index=True
+    )
+    capability: Mapped[str] = mapped_column(String(40), index=True)
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    provider_code: Mapped[str] = mapped_column(String(64), default="aggregate", index=True)
+    feed_type: Mapped[str] = mapped_column(String(24), default="UNAVAILABLE", index=True)
+    as_of_time: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    valid_until: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
+    reason: Mapped[str | None] = mapped_column(String(240))
+    details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+
+class UniverseSelectionRun(Base):
+    __tablename__ = "universe_selection_runs"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    effective_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    policy_version: Mapped[str] = mapped_column(String(40), index=True)
+    provider_code: Mapped[str | None] = mapped_column(String(64))
+    realtime_capacity: Mapped[int] = mapped_column(Integer, default=0)
+    input_asset_count: Mapped[int] = mapped_column(Integer, default=0)
+    candidate_count: Mapped[int] = mapped_column(Integer, default=0)
+    active_count: Mapped[int] = mapped_column(Integer, default=0)
+    realtime_count: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(24), default="RUNNING", index=True)
+    checksum: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    summary: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class UniverseLayerMembership(Base):
+    __tablename__ = "universe_layer_memberships"
+    __table_args__ = (
+        UniqueConstraint(
+            "selection_run_id", "layer", "asset_id", name="uq_universe_layer_run_asset"
+        ),
+        Index("ix_universe_layer_current", "workspace_id", "layer", "effective_to"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    selection_run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("universe_selection_runs.id", ondelete="CASCADE"), index=True
+    )
+    workspace_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE"), index=True
+    )
+    layer: Mapped[str] = mapped_column(String(32), index=True)
+    rank: Mapped[int | None] = mapped_column(Integer)
+    score: Mapped[Decimal | None] = mapped_column(Numeric(18, 8))
+    score_components: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    reason_codes: Mapped[list[str]] = mapped_column(JSON, default=list)
+    effective_from: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    effective_to: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
+
+
+class MarketOperatingState(Base):
+    __tablename__ = "market_operating_states"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    calendar_code: Mapped[str] = mapped_column(String(32), index=True)
+    mode: Mapped[str] = mapped_column(String(24), index=True)
+    effective_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    session_date: Mapped[str | None] = mapped_column(String(10), index=True)
+    market_open: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    market_close: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    next_transition_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
+    reason: Mapped[str] = mapped_column(String(240))
+    scheduler_state: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
 class DataSource(Base):
     __tablename__ = "data_sources"
 
@@ -866,6 +1058,12 @@ class ImportJob(Base):
     queue_name: Mapped[str] = mapped_column(
         String(32), default="manual", server_default="manual", index=True
     )
+    priority: Mapped[int] = mapped_column(Integer, default=100, server_default="100", index=True)
+    resource_class: Mapped[str] = mapped_column(
+        String(32), default="IO_STANDARD", server_default="IO_STANDARD", index=True
+    )
+    queue_wait_ms: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    peak_memory_mb: Mapped[int | None] = mapped_column(Integer)
 
     provider: Mapped[Provider] = relationship(back_populates="import_jobs")
     batches: Mapped[list[ImportBatch]] = relationship(
@@ -1327,6 +1525,39 @@ class ProviderSymbolMapping(Base):
     provider_symbol: Mapped[str] = mapped_column(String(64), index=True)
     exchange_code: Mapped[str] = mapped_column(String(32), default="XNYS")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+
+
+class ProviderAssetMapping(Base):
+    __tablename__ = "provider_asset_mappings"
+    __table_args__ = (
+        UniqueConstraint(
+            "provider_id", "asset_id", "valid_from", name="uq_provider_asset_mapping_period"
+        ),
+        UniqueConstraint(
+            "provider_id", "provider_symbol", "valid_from", name="uq_provider_symbol_period"
+        ),
+        CheckConstraint(
+            "valid_to IS NULL OR valid_to > valid_from", name="provider_asset_mapping_valid_range"
+        ),
+        Index("ix_provider_asset_mapping_current", "provider_id", "asset_id", "valid_to"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    provider_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("providers.id", ondelete="CASCADE"), index=True
+    )
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE"), index=True
+    )
+    provider_symbol: Mapped[str] = mapped_column(String(64), index=True)
+    exchange_code: Mapped[str] = mapped_column(String(32), default="XNYS")
+    valid_from: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, index=True)
+    valid_to: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    source: Mapped[str] = mapped_column(String(64), default="manual", server_default="manual")
     metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)

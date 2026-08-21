@@ -14,6 +14,8 @@ test("authenticated workspace research workflow has no severe console errors", a
   await expect(page.getByText("Deterministic Synthetic Demonstration Provider")).toBeVisible();
   await expect(page.getByText("Stooq Historical Daily Data")).toBeVisible();
   await expect(page.getByText("Twelve Data Historical Daily Data")).toBeVisible();
+  await expect(page.getByText("Massive Basic")).toBeVisible();
+  await expect(page.getByText("Alpaca Basic")).toBeVisible();
   await page.getByRole("link", { name: "Stooq Historical Daily Data" }).click();
   await expect(page.getByRole("heading", { name: "Stooq Historical Daily Data" })).toBeVisible();
   await expect(page.getByText("No API key required")).toBeVisible();
@@ -45,7 +47,10 @@ test("authenticated workspace research workflow has no severe console errors", a
   }, { timeout: 20_000 }).toContain("succeeded");
   await expect(page.getByRole("heading", { name: "Provenance" })).toBeVisible();
   await page.getByRole("link", { name: "Strategy Lab" }).click();
-  await page.getByLabel("Symbols").fill("AAPL");
+  await page.getByLabel("Research assets").fill("AAPL");
+  await page.getByRole("option", { name: /AAPL/ }).click();
+  await page.getByLabel("Benchmark").fill("SPY");
+  await page.getByRole("option", { name: /SPY/ }).click();
   await page.getByLabel("Backtest data source").selectOption("imported");
   await page.getByLabel("Start date").fill("2026-07-06");
   await page.getByLabel("End date").fill("2026-08-14");
@@ -74,7 +79,7 @@ test("authenticated workspace research workflow has no severe console errors", a
   await page.getByRole("button", { name: "Create watchlist" }).click();
   const watchlist = page.locator("article.watchlist").filter({ has: page.getByRole("heading", { name: watchlistName }) });
   await watchlist.getByLabel(`Add asset to ${watchlistName}`).fill("AAPL");
-  await watchlist.getByRole("button", { name: "Add" }).click();
+  await watchlist.getByRole("option", { name: /AAPL/ }).click();
   await watchlist.getByRole("link", { name: /AAPL/ }).click();
   await expect(page.getByRole("heading", { name: "AAPL" })).toBeVisible();
   await page.getByRole("link", { name: "Paper Portfolios" }).click();
@@ -83,6 +88,8 @@ test("authenticated workspace research workflow has no severe console errors", a
   await page.getByRole("button", { name: "Create portfolio" }).click();
   await page.getByRole("link", { name: new RegExp(portfolioName) }).click();
   await page.getByRole("link", { name: "Simulate order" }).click();
+  await page.getByLabel("Order asset").fill("AAPL");
+  await page.getByRole("option", { name: /AAPL/ }).click();
   await page.getByRole("button", { name: "Preview risk checks" }).click();
   await expect(page.getByText("All enabled portfolio risk checks passed.")).toBeVisible();
   await page.getByRole("button", { name: "Submit simulated order" }).click();
@@ -98,9 +105,9 @@ test("authenticated workspace research workflow has no severe console errors", a
   await expect(page.getByText(watchlistName)).not.toBeVisible();
   await page.getByLabel("New watchlist name").fill("Workspace B Private Watchlist");
   await page.getByRole("button", { name: "Create watchlist" }).click();
-  await expect(page.getByText("Workspace B Private Watchlist")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Workspace B Private Watchlist" })).toBeVisible();
   await page.getByLabel("Workspace", { exact: true }).selectOption({ label: "Legacy Development Workspace" });
-  await expect(page.getByText("Workspace B Private Watchlist")).not.toBeVisible();
+  await expect(page.getByRole("heading", { name: "Workspace B Private Watchlist" })).not.toBeVisible();
   await page.getByRole("link", { name: "Data Provider Status" }).click();
   await page.getByRole("link", { name: "Twelve Data Historical Daily Data" }).click();
   await expect(page.getByText(/fixture-tested, not live-verified/i)).toBeVisible();

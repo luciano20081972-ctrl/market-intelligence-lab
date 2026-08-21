@@ -10,6 +10,7 @@ from packages.market_data.adapters import (
     SyntheticHistoricalAdapter,
     TwelveDataAdapter,
 )
+from packages.market_data.real_providers import AlpacaBasicAdapter, MassiveBasicAdapter
 from packages.market_data.types import MarketDataAdapter
 
 
@@ -65,6 +66,16 @@ def build_default_registry() -> ProviderRegistry:
         TwelveDataAdapter(),
         enabled_by_default=False,
         credential_environment_keys=("MIL_TWELVE_DATA_API_KEY",),
+    )
+    registry.register(
+        MassiveBasicAdapter(),
+        enabled_by_default=False,
+        credential_environment_keys=("MIL_MASSIVE_API_KEY",),
+    )
+    registry.register(
+        AlpacaBasicAdapter(),
+        enabled_by_default=False,
+        credential_environment_keys=("MIL_ALPACA_API_KEY_ID", "MIL_ALPACA_API_SECRET"),
     )
     for definition in PROVIDER_DEFINITIONS:
         code = str(definition["code"])

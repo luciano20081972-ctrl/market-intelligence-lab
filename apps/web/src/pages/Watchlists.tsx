@@ -3,17 +3,17 @@ import { FormEvent, useState } from "react";
 import { Link } from "react-router";
 import { api } from "../api";
 import { EmptyState, ErrorState, LoadingState } from "../components/States";
+import { AssetSearch } from "../components/AssetSearch";
 
 export function Watchlists() {
   const client = useQueryClient();
   const [name, setName] = useState("");
-  const [symbols, setSymbols] = useState<Record<string, string>>({});
   const query = useQuery({ queryKey: ["watchlists"], queryFn: api.watchlists });
   const refresh = () => client.invalidateQueries({ queryKey: ["watchlists"] });
   const create = useMutation({ mutationFn: api.createWatchlist, onSuccess: () => { setName(""); refresh(); } });
   const rename = useMutation({ mutationFn: ({ id, name: value }: { id: string; name: string }) => api.renameWatchlist(id, value), onSuccess: refresh });
   const remove = useMutation({ mutationFn: api.deleteWatchlist, onSuccess: refresh });
-  const addAsset = useMutation({ mutationFn: ({ id, symbol }: { id: string; symbol: string }) => api.addAsset(id, symbol), onSuccess: (_, variables) => { setSymbols(old => ({ ...old, [variables.id]: "" })); refresh(); } });
+  const addAsset = useMutation({ mutationFn: ({ id, assetId }: { id: string; assetId: string }) => api.addAsset(id, assetId), onSuccess: refresh });
   const removeAsset = useMutation({ mutationFn: ({ id, symbol }: { id: string; symbol: string }) => api.removeAsset(id, symbol), onSuccess: refresh });
   const submit = (event: FormEvent) => { event.preventDefault(); if (name.trim()) create.mutate(name.trim()); };
   if (query.isLoading) return <LoadingState label="Loading watchlists" />;
@@ -25,8 +25,8 @@ export function Watchlists() {
     {mutationError && <ErrorState error={mutationError} />}
     {query.data!.length === 0 ? <EmptyState title="No watchlists yet" detail="Create your first watchlist above, then add a tracked symbol." /> : <div className="watchlist-grid">{query.data!.map(list => <article className="panel watchlist" key={list.id}>
       <div className="panel-title"><div><p className="eyebrow">{list.assets.length} ASSETS</p><h2>{list.name}</h2></div><div className="actions"><button onClick={() => { const value = window.prompt("Rename watchlist", list.name); if (value?.trim()) rename.mutate({ id: list.id, name: value.trim() }); }}>Rename</button><button className="danger" onClick={() => { if (window.confirm(`Delete ${list.name}?`)) remove.mutate(list.id); }}>Delete</button></div></div>
-      <form className="inline-form" onSubmit={e => { e.preventDefault(); const symbol = symbols[list.id]?.trim(); if (symbol) addAsset.mutate({ id: list.id, symbol }); }}><input aria-label={`Add asset to ${list.name}`} value={symbols[list.id] ?? ""} onChange={e => setSymbols(old => ({ ...old, [list.id]: e.target.value.toUpperCase() }))} placeholder="Add symbol" /><button>Add</button></form>
-      {list.assets.length === 0 ? <p className="muted">No assets in this watchlist.</p> : <div className="watch-assets">{list.assets.map(asset => <div key={asset.symbol}><Link className="symbol" to={`/assets/${asset.symbol}`}>{asset.symbol}<small>{asset.name}</small></Link><div className="price"><b>{asset.latest_price ? `$${Number(asset.latest_price).toFixed(2)}` : "—"}</b><small>{asset.latest_price_time ? new Date(asset.latest_price_time).toLocaleDateString() : "No data"}</small></div><button aria-label={`Remove ${asset.symbol}`} onClick={() => removeAsset.mutate({ id: list.id, symbol: asset.symbol })}>×</button></div>)}</div>}
+      <AssetSearch label={`Add asset to ${list.name}`} onSelect={asset => addAsset.mutate({ id: list.id, assetId: asset.id })} />
+      {list.assets.length === 0 ? <p className="muted">No assets in this watchlist.</p> : <div className="watch-assets">{list.assets.map(asset => <div key={asset.symbol}><Link className="symbol" to={`/assets/${asset.symbol}`}>{asset.symbol}<small>{asset.name}</small></Link><div className="price"><b>{asset.latest_price ? `$${Number(asset.latest_price).toFixed(2)}` : "—"}</b><small>{asset.daily_move_pct ? `${Number(asset.daily_move_pct).toFixed(2)}% · ` : ""}{asset.feed} · {asset.freshness}</small></div><button aria-label={`Remove ${asset.symbol}`} onClick={() => removeAsset.mutate({ id: list.id, symbol: asset.symbol })}>×</button></div>)}</div>}
     </article>)}</div>}
   </section>;
 }

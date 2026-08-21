@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from packages.database.models import ExchangeCalendar, Provider, ProviderCredential
 from packages.market_data.calendars import XNYS_HOLIDAYS, generate_maintained_sessions
+from packages.market_data.foundation_tasks import seed_foundation_tasks
 from packages.market_data.registry import default_registry
 
 PLATFORM_NAMESPACE = uuid.UUID("b5437530-e21b-4bb1-99a7-1c522be8b0ec")
@@ -81,6 +82,21 @@ def seed_market_data_platform(
             }
             provider.is_enabled = configured
             provider.health = "unknown" if configured else "unconfigured"
+        if registered.code in {"massive", "alpaca"}:
+            configured = all(bool(os.getenv(key)) for key in registered.credential_environment_keys)
+            provider.configuration = {
+                "network_enabled": configured,
+                "authentication_required": True,
+                "live_verified": False,
+                "feed": "END_OF_DAY" if registered.code == "massive" else "LIVE — IEX",
+                "realtime_capacity": (
+                    int(os.getenv("MIL_ALPACA_REALTIME_CAPACITY", "30"))
+                    if registered.code == "alpaca"
+                    else 0
+                ),
+            }
+            provider.is_enabled = configured
+            provider.health = "unknown" if configured else "unconfigured"
         for environment_key in registered.credential_environment_keys:
             exists = session.scalar(
                 select(ProviderCredential).where(
@@ -121,8 +137,10 @@ def seed_market_data_platform(
         calendar_start,
         calendar_end,
     )
+    inserted_tasks = seed_foundation_tasks(session, now=datetime(2025, 1, 1, tzinfo=UTC))
     return {
         "providers_inserted": inserted_providers,
         "credentials_inserted": inserted_credentials,
         "sessions_inserted": inserted_sessions,
+        "scheduled_tasks_inserted": inserted_tasks,
     }

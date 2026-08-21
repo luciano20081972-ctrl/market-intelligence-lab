@@ -13,6 +13,10 @@ export interface Asset {
   latest_price: string | null;
   latest_price_time: string | null;
   is_demonstration_data: boolean | null;
+  capability: string;
+  freshness: string;
+  feed: string;
+  provider: string | null;
 }
 
 export interface AssetPage { items: Asset[]; pagination: PageInfo }
@@ -44,6 +48,17 @@ export interface WatchlistAsset {
   latest_price: string | null;
   latest_price_time: string | null;
   is_demonstration_data: boolean | null;
+  daily_move_pct: string | null;
+  freshness: string;
+  source: string | null;
+  feed: string;
+  capability: string;
+}
+
+export interface MarketFoundation {
+  catalog_securities: number; historical_assets: number; real_price_bars: number;
+  realtime_active: number; operating_mode: string; automatic_refresh: string;
+  real_market_status: string; message: string;
 }
 
 export interface Watchlist {

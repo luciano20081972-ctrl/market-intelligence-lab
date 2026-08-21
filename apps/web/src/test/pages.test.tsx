@@ -11,7 +11,7 @@ import { asset, bar, systemInfo, watchlist } from "./fixtures";
 import { renderPage } from "./render";
 
 vi.mock("../api", () => ({ api: {
-  health: vi.fn(), systemInfo: vi.fn(), dataSources: vi.fn(), assets: vi.fn(), asset: vi.fn(),
+  health: vi.fn(), systemInfo: vi.fn(), marketFoundation: vi.fn(), dataSources: vi.fn(), assets: vi.fn(), asset: vi.fn(),
   prices: vi.fn(), watchlists: vi.fn(), createWatchlist: vi.fn(), renameWatchlist: vi.fn(),
   deleteWatchlist: vi.fn(), addAsset: vi.fn(), removeAsset: vi.fn(),
 }}));
@@ -31,6 +31,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocked.health.mockResolvedValue({ status: "healthy", database: "healthy", version: "0.14.1" });
   mocked.systemInfo.mockResolvedValue(systemInfo);
+  mocked.marketFoundation.mockResolvedValue({ catalog_securities: 9, historical_assets: 0, real_price_bars: 0, realtime_active: 0, operating_mode: "ECONOMY", automatic_refresh: "ACTIVE", real_market_status: "NOT_CONFIGURED", message: "REAL MARKET DATA NOT CONFIGURED" });
   mocked.dataSources.mockResolvedValue([]);
   mocked.watchlists.mockResolvedValue([]);
   mocked.assets.mockResolvedValue({ items: [], pagination: { page: 1, page_size: 10, total: 0, pages: 0 } });
@@ -93,12 +94,13 @@ describe("watchlist workflow", () => {
 
   it("adds an asset to a watchlist", async () => {
     mocked.watchlists.mockResolvedValue([watchlist]);
-    mocked.addAsset.mockResolvedValue({ ...watchlist, assets: [{ symbol: "AAPL", name: "Apple Inc.", added_at: bar.event_time, latest_price: bar.close, latest_price_time: bar.event_time, is_demonstration_data: true }] });
+    mocked.assets.mockResolvedValue({ items: [asset], pagination: { page: 1, page_size: 8, total: 1, pages: 1 } });
+    mocked.addAsset.mockResolvedValue({ ...watchlist, assets: [{ symbol: "AAPL", name: "Apple Inc.", added_at: bar.event_time, latest_price: bar.close, latest_price_time: bar.event_time, is_demonstration_data: true, daily_move_pct: "1.0", freshness: "DEMO", source: "synthetic", feed: "DEMO", capability: "HISTORICAL_AVAILABLE" }] });
     renderPage(<Watchlists />);
     const input = await screen.findByLabelText("Add asset to Core");
     await userEvent.type(input, "aapl");
-    await userEvent.click(screen.getByRole("button", { name: "Add" }));
-    await waitFor(() => expect(mocked.addAsset).toHaveBeenCalledWith("watch-1", "AAPL"));
+    await userEvent.click(await screen.findByRole("option", { name: /AAPL/ }));
+    await waitFor(() => expect(mocked.addAsset).toHaveBeenCalledWith("watch-1", "asset-1"));
   });
 });
 
