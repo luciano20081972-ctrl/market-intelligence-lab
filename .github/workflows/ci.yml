@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -84,7 +84,7 @@ jobs:
       MIL_ENVIRONMENT: test
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12", cache: pip }
       - run: pip install -e ".[dev,postgres,integrations]"
       - run: alembic upgrade 7f4af62df2fe
@@ -122,7 +122,7 @@ jobs:
       MIL_PHASE5_FIXTURE_EXPECTED: "true"
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with: {python-version: "3.12", cache: pip}
       - run: pip install -e ".[dev,postgres,integrations]"
       - run: alembic upgrade 3b2f6c7d8e90
@@ -141,7 +141,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12", cache: pip }
       - uses: actions/setup-node@v4
         with: { node-version: "22" }
