@@ -160,7 +160,7 @@ jobs:
         working-directory: apps/web
       - run: pnpm licenses list --json > npm-licenses.json
         working-directory: apps/web
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: supply-chain-reports
           path: |
