@@ -27,7 +27,7 @@ jobs:
       - run: coverage report --include="packages/auth/*,packages/security/*,packages/backtesting/engine.py,packages/paper_trading/*,packages/market_data/quality.py" --fail-under=80
       - run: coverage xml -o coverage.xml
       - name: Upload backend coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         continue-on-error: true
         with:
           files: coverage.xml
@@ -58,7 +58,7 @@ jobs:
       - run: pnpm test
       - run: pnpm exec vitest run --coverage
       - name: Upload frontend coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         continue-on-error: true
         with:
           files: apps/web/coverage/lcov.info
