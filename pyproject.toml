@@ -37,12 +37,12 @@ dev = [
 postgres = ["psycopg[binary]>=3.2,<4"]
 observability = ["sentry-sdk[fastapi]>=2,<3"]
 integrations = [
-  "edgartools==5.43.1",
-  "numpy==2.5.1",
+  "edgartools==5.50.1",
+  "numpy==2.5.2",
   "quantstats==0.0.81",
   "scikit-learn==1.9.0",
   "scipy==1.18.0",
-  "skfolio==0.20.1",
+  "skfolio==0.20.2",
   "statsmodels==0.14.6",
 ]
 
