@@ -27,7 +27,9 @@ def main() -> None:
                     for constraint in Base.metadata.tables[table].constraints
                     if isinstance(constraint, CheckConstraint)
                 }
-                actual = {row["name"] for row in inspect(connection).get_check_constraints(table)}
+                actual = {
+                    str(row["name"]) for row in inspect(connection).get_check_constraints(table)
+                }
                 assert actual == expected, (table, actual, expected)
                 checks[table] = sorted(actual)
             version = connection.scalar(text("SELECT version()"))
