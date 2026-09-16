@@ -37,7 +37,7 @@ def _market_state(
     lookup_capability: bool = True,
 ) -> tuple[str, str, str, str | None]:
     capability = capability_record
-    if capability is None and lookup_capability:
+    if bar is None and capability is None and lookup_capability:
         capability = session.scalar(
             select(AssetCapability)
             .where(AssetCapability.asset_id == asset_id)
@@ -56,15 +56,13 @@ def _market_state(
     feed = (
         "DEMO"
         if bar.is_demonstration_data
-        else capability.feed_type
-        if capability
-        else "END_OF_DAY"
+        else str(bar.raw_provider_metadata.get("feed", "END_OF_DAY"))
     )
     return (
-        capability.status if capability else "HISTORICAL_AVAILABLE",
+        "HISTORICAL_AVAILABLE",
         freshness,
         feed,
-        capability.provider_code if capability else bar.data_source.name,
+        bar.data_source.name.removeprefix("provider:"),
     )
 
 

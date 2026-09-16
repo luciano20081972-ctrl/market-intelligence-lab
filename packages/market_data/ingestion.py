@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from packages.database.models import (
     Asset,
+    AssetCapability,
     AssetMetadataVersion,
     CorporateAction,
     DataSource,
@@ -23,6 +24,7 @@ from packages.database.models import (
     JobEvent,
     PriceBar,
     Provider,
+    ProviderAssetMapping,
     ProviderRateLimitState,
     ProviderSymbolMapping,
     TradingSession,
@@ -173,7 +175,19 @@ def _data_source(session: Session, provider: Provider) -> DataSource:
 
 
 def _asset(session: Session, provider: Provider, adapter: Any, symbol: str) -> Asset:
-    asset = session.scalar(select(Asset).where(Asset.symbol == symbol))
+    canonical_mapping = session.scalar(
+        select(ProviderAssetMapping).where(
+            ProviderAssetMapping.provider_id == provider.id,
+            ProviderAssetMapping.provider_symbol == symbol,
+            ProviderAssetMapping.is_active.is_(True),
+            ProviderAssetMapping.valid_to.is_(None),
+        )
+    )
+    asset = (
+        session.get(Asset, canonical_mapping.asset_id)
+        if canonical_mapping
+        else session.scalar(select(Asset).where(Asset.symbol == symbol))
+    )
     metadata = adapter.fetch_asset_metadata(symbol)
     if asset is None:
         asset = Asset(
@@ -209,6 +223,26 @@ def _asset(session: Session, provider: Provider, adapter: Any, symbol: str) -> A
             )
         )
     provider_symbol = str(metadata.metadata.get("provider_symbol", metadata.symbol))
+    if canonical_mapping is None:
+        canonical_mapping = session.scalar(
+            select(ProviderAssetMapping).where(
+                ProviderAssetMapping.provider_id == provider.id,
+                ProviderAssetMapping.asset_id == asset.id,
+                ProviderAssetMapping.is_active.is_(True),
+                ProviderAssetMapping.valid_to.is_(None),
+            )
+        )
+    if canonical_mapping is None:
+        session.add(
+            ProviderAssetMapping(
+                provider_id=provider.id,
+                asset_id=asset.id,
+                provider_symbol=provider_symbol,
+                exchange_code=asset.exchange or "UNKNOWN",
+                source=provider.code,
+                metadata_json={"source": "adapter_metadata"},
+            )
+        )
     mapping = session.scalar(
         select(ProviderSymbolMapping).where(
             ProviderSymbolMapping.provider_id == provider.id,
@@ -226,6 +260,39 @@ def _asset(session: Session, provider: Provider, adapter: Any, symbol: str) -> A
             )
         )
     return asset
+
+
+def _historical_capability(session: Session, provider: Provider, asset: Asset) -> None:
+    """Publish price availability from stored evidence, independently of reference state."""
+    session.flush()
+    bar = session.scalar(
+        select(PriceBar)
+        .where(PriceBar.asset_id == asset.id, PriceBar.provider_id == provider.id)
+        .order_by(PriceBar.event_time.desc())
+        .limit(1)
+    )
+    if bar is None:
+        return
+    capability = session.scalar(
+        select(AssetCapability).where(
+            AssetCapability.asset_id == asset.id,
+            AssetCapability.capability == "HISTORICAL",
+            AssetCapability.provider_code == provider.code,
+        )
+    )
+    if capability is None:
+        capability = AssetCapability(
+            asset_id=asset.id, capability="HISTORICAL", provider_code=provider.code
+        )
+        session.add(capability)
+    capability.status = "HISTORICAL_AVAILABLE"
+    capability.feed_type = (
+        "DEMO"
+        if bar.is_demonstration_data
+        else str(bar.raw_provider_metadata.get("feed", "END_OF_DAY"))
+    )
+    capability.as_of_time = bar.event_time
+    capability.details = {"bar_id": str(bar.id), "checksum": bar.checksum}
 
 
 def _valid_session_dates(session: Session, start: datetime, end: datetime) -> set[str]:
@@ -478,6 +545,8 @@ def run_import_job(
                 batch.records_inserted += 1
                 job.records_inserted += 1
             _persist_actions(session, provider, adapter, asset, symbol, start, end)
+            if not job.dry_run:
+                _historical_capability(session, provider, asset)
             batch.checksum = _checksum({"symbol": symbol, "checksums": checksums})
             batch.retrieval_timestamp = max(
                 (item.retrieval_time for item in records), default=datetime.now(UTC)
