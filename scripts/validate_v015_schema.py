@@ -8,6 +8,7 @@ from alembic.config import Config
 from alembic.script import ScriptDirectory
 from sqlalchemy import CheckConstraint, inspect, text
 
+from packages.database import models  # noqa: F401
 from packages.database.base import Base
 from packages.database.session import create_database_engine
 
