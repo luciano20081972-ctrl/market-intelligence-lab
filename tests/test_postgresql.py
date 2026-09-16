@@ -7,9 +7,10 @@ from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
 import pytest
-from sqlalchemy import func, select, text
+from sqlalchemy import CheckConstraint, func, inspect, select, text
 from sqlalchemy.exc import IntegrityError
 
+from packages.database.base import Base
 from packages.database.models import (
     LEGACY_WORKSPACE_ID,
     EconomicEntity,
@@ -63,6 +64,20 @@ def test_postgres_uuid_decimal_and_timezone_round_trip(postgres_factory) -> None
         assert isinstance(bar.id, uuid.UUID)
         assert isinstance(bar.close, Decimal)
         assert bar.event_time.tzinfo is not None
+
+
+def test_postgres_v015_check_constraint_names(postgres_factory) -> None:  # type: ignore[no-untyped-def]
+    with session_scope(postgres_factory) as session:
+        connection = session.connection()
+        inspector = inspect(connection)
+        for table in ("asset_listings", "asset_identifiers", "provider_asset_mappings"):
+            expected = {
+                connection.dialect.identifier_preparer.format_constraint(constraint)
+                for constraint in Base.metadata.tables[table].constraints
+                if isinstance(constraint, CheckConstraint)
+            }
+            actual = {row["name"] for row in inspector.get_check_constraints(table)}
+            assert actual == expected, (table, actual, expected)
 
 
 def test_postgres_transaction_rollback(postgres_factory) -> None:  # type: ignore[no-untyped-def]

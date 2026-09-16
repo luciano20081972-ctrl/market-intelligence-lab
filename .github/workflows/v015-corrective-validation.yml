@@ -1,0 +1,55 @@
+name: v0.15 corrective PostgreSQL validation
+
+on:
+  push:
+    branches: [feat/v0.15-real-market-foundation]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migration:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres: ["17.11-bookworm", "18.4-bookworm"]
+        baseline: ["base", "a141c0de0001"]
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}
+        env:
+          POSTGRES_USER: mil_validation
+          POSTGRES_DB: mil_validation
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U mil_validation -d mil_validation"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      MIL_DATABASE_URL: postgresql+psycopg://mil_validation@127.0.0.1:5432/mil_validation
+      MIL_ENVIRONMENT: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12", cache: pip}
+      - run: pip install -e ".[dev,postgres]"
+      - name: Migrate baseline through head twice and check drift
+        env:
+          BASELINE: ${{ matrix.baseline }}
+        run: |
+          set -euo pipefail
+          mkdir -p validation-evidence
+          alembic upgrade "$BASELINE"
+          alembic upgrade f01500000001
+          alembic upgrade head
+          alembic current | tee validation-evidence/current.txt
+          alembic heads | tee validation-evidence/heads.txt
+          alembic check | tee validation-evidence/drift.txt
+          python -m scripts.validate_v015_schema | tee validation-evidence/schema.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v015-pg-${{ matrix.postgres }}-${{ matrix.baseline }}
+          path: validation-evidence/

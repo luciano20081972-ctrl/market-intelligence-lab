@@ -3,14 +3,40 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import CheckConstraint, create_engine, inspect, text
 
 from packages.core.config import EXPECTED_SCHEMA_REVISION, Settings, get_settings
+from packages.database.base import Base
 from packages.database.phase5_reconciliation import (
     LEGACY_TABLES,
     inspect_phase5_reconciliation,
 )
 from scripts.private_beta_readiness import evaluate
+
+
+def test_v015_check_names_match_migrated_schema(tmp_path: Path, monkeypatch: object) -> None:
+    """Inspect checks explicitly: autogeneration alone may omit check-constraint drift."""
+    database_url = f"sqlite:///{(tmp_path / 'v015-checks.db').as_posix()}"
+    monkeypatch.setenv("MIL_DATABASE_URL", database_url)  # type: ignore[attr-defined]
+    get_settings.cache_clear()
+    config = Config("alembic.ini")
+    command.upgrade(config, "a141c0de0001")
+    command.upgrade(config, "f01500000001")
+    command.upgrade(config, "head")
+    engine = create_engine(database_url)
+    try:
+        inspector = inspect(engine)
+        for table in ("asset_listings", "asset_identifiers", "provider_asset_mappings"):
+            expected = {
+                str(constraint.name) for constraint in Base.metadata.tables[table].constraints
+                if isinstance(constraint, CheckConstraint)
+            }
+            actual = {row["name"] for row in inspector.get_check_constraints(table)}
+            assert actual == expected, (table, actual, expected)
+        command.check(config)
+    finally:
+        engine.dispose()
+        get_settings.cache_clear()
 
 
 def test_clean_database_migration(tmp_path: Path, monkeypatch: object) -> None:

@@ -71,7 +71,7 @@ def upgrade() -> None:
         sa.Column("provenance", sa.JSON(), nullable=False),
         *_timestamps(),
         sa.CheckConstraint(
-            "valid_to IS NULL OR valid_to > valid_from", name="ck_asset_listings_listing_valid_range"
+            "valid_to IS NULL OR valid_to > valid_from", name=op.f("ck_asset_listings_listing_valid_range")
         ),
         sa.ForeignKeyConstraint(
             ["asset_id"], ["assets.id"], name=op.f("fk_asset_listings_asset_id_assets"), ondelete="CASCADE"
@@ -107,7 +107,7 @@ def upgrade() -> None:
         sa.Column("provenance", sa.JSON(), nullable=False),
         sa.CheckConstraint(
             "valid_to IS NULL OR valid_to > valid_from",
-            name="ck_asset_identifiers_asset_identifier_valid_range",
+            name=op.f("ck_asset_identifiers_asset_identifier_valid_range"),
         ),
         sa.ForeignKeyConstraint(["asset_id"], ["assets.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["issuer_id"], ["issuers.id"], ondelete="SET NULL"),
@@ -180,7 +180,7 @@ def upgrade() -> None:
         sa.Column("metadata_json", sa.JSON(), nullable=False),
         *_timestamps(),
         sa.CheckConstraint(
-            "valid_to IS NULL OR valid_to > valid_from", name="ck_provider_asset_mappings_provider_asset_mapping_valid_range"
+            "valid_to IS NULL OR valid_to > valid_from", name=op.f("ck_provider_asset_mappings_provider_asset_mapping_valid_range")
         ),
         sa.ForeignKeyConstraint(["provider_id"], ["providers.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["asset_id"], ["assets.id"], ondelete="CASCADE"),
