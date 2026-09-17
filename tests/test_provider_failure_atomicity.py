@@ -300,6 +300,53 @@ def test_retry_budget_exhausts_without_immediate_queue_claim(engine: Engine) -> 
             assert_preserved(session, prior)
 
 
+def test_partial_batch_rolls_back_but_prior_checkpoint_survives(engine: Engine) -> None:
+    provider_id, _, prior = seed_good(engine)
+    factory = make_session_factory(engine)
+
+    class PartialAdapter(MassiveBasicAdapter):
+        def fetch_corporate_actions(self, symbol, start, end):  # type: ignore[no-untyped-def]
+            if symbol == "NEWFAIL":
+                pending = [bar for bar in active_session.new if isinstance(bar, PriceBar)]
+                assert len(pending) == 1 and pending[0].original_symbol == "NEWFAIL"
+                active_session.flush()
+                assert active_session.get(PriceBar, pending[0].id) is not None
+                raise ProviderNetworkError("failure after pending bar insertion")
+            return []
+
+    registry = ProviderRegistry()
+    registry.register(
+        PartialAdapter(
+            "fixture-only",
+            requests_per_minute=100,
+            transport=httpx.MockTransport(lambda _: response()),
+        )
+    )
+    with session_scope(factory) as session:
+        job_id = new_job(session, ["ATOMIC", "NEWFAIL"]).id
+    with session_scope(factory) as session:
+        job = session.get(ImportJob, job_id)
+        assert job is not None
+        active_session = session
+        run_import_job(session, job, registry)
+    with session_scope(factory) as session:
+        job = session.get(ImportJob, job_id)
+        assert job is not None and job.status == "retrying"
+        assert job.resume_cursor == {"symbol_index": 1}
+        assert job.records_inserted == 0 and job.records_skipped == 1
+        assert session.scalar(select(Asset).where(Asset.symbol == "NEWFAIL")) is None
+        assert session.get(Provider, provider_id).health == "unavailable"
+        assert_preserved(session, prior)
+        run_import_job(session, job, registry_for(lambda _: response()))
+    with session_scope(factory) as session:
+        job = session.get(ImportJob, job_id)
+        assert job is not None and job.status == "succeeded" and job.records_inserted == 1
+        assert job.records_skipped == 1 and job.resume_cursor == {"symbol_index": 2}
+        assert session.get(Provider, provider_id).health == "healthy"
+        assert len(snapshot(session)) == len(prior) + 1
+        assert all(snapshot(session)[key] == value for key, value in prior.items())
+
+
 @pytest.mark.parametrize("header,minimum", [("1200", 1200), ("bad", 0), ("-1", 0)])
 def test_retry_after_adapter_parsing(header: str, minimum: int) -> None:
     adapter = MassiveBasicAdapter(

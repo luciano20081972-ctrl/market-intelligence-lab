@@ -483,18 +483,14 @@ def run_import_job(
             for record in records:
                 checksum = _record_checksum(record)
                 checksums.append(checksum)
+                # Match the persisted canonical identity constraint. A checksum
+                # fingerprints content; equal content on another asset is not a replay.
                 duplicate = session.scalar(
                     select(PriceBar).where(
                         PriceBar.asset_id == asset.id,
                         PriceBar.interval == record.interval,
                         PriceBar.event_time == record.event_time,
                         PriceBar.data_source_id == source.id,
-                    )
-                )
-                checksum_duplicate = session.scalar(
-                    select(PriceBar.id).where(
-                        PriceBar.provider_id == provider.id,
-                        PriceBar.checksum == checksum,
                     )
                 )
                 if duplicate is not None:
@@ -519,10 +515,6 @@ def run_import_job(
                                 is_retryable=False,
                             )
                         )
-                    batch.records_skipped += 1
-                    job.records_skipped += 1
-                    continue
-                if checksum_duplicate is not None:
                     batch.records_skipped += 1
                     job.records_skipped += 1
                     continue
