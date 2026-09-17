@@ -6,6 +6,7 @@ import os
 import re
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
+from email.utils import parsedate_to_datetime
 from typing import Any
 
 import httpx
@@ -84,7 +85,20 @@ class _JsonProvider:
         if len(response.content) > self.max_response_bytes:
             raise ProviderResponseTooLargeError("Provider response exceeded the size limit")
         if response.status_code == 429:
-            raise ProviderRateLimitError("Provider rate limit reached; retry later")
+            retry_after = response.headers.get("retry-after", "")
+            delay: float | None = None
+            try:
+                if retry_after.isdigit():
+                    delay = float(int(retry_after))
+                elif retry_after:
+                    delay = max(
+                        0, (parsedate_to_datetime(retry_after) - datetime.now(UTC)).total_seconds()
+                    )
+            except (ValueError, TypeError, OverflowError):
+                delay = None
+            raise ProviderRateLimitError(
+                "Provider rate limit reached; retry later", retry_after_seconds=delay
+            )
         if response.status_code in {401, 403}:
             raise ProviderAccessDeniedError(
                 "Provider rejected configured credentials or entitlement"
@@ -129,10 +143,7 @@ class _JsonProvider:
                     event_time = datetime.fromtimestamp(int(raw_time) / 1000, UTC)
                 else:
                     event_time = datetime.fromisoformat(str(raw_time).replace("Z", "+00:00"))
-                prices = {
-                    key: Decimal(str(row[key]))
-                    for key in ("o", "h", "l", "c")
-                }
+                prices = {key: Decimal(str(row[key])) for key in ("o", "h", "l", "c")}
                 volume = int(row["v"])
             except (KeyError, ValueError, TypeError, InvalidOperation) as exc:
                 raise ProviderDataError("Provider bar contained an invalid value") from exc

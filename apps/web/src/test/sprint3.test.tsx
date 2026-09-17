@@ -63,6 +63,15 @@ describe("Sprint 3 market-data workflows", () => {
     await waitFor(() => expect(mocked.testProvider).toHaveBeenCalledWith("provider-1"));
   });
 
+  it.each(["degraded", "unavailable"])("renders persisted %s provider health", async (health) => {
+    mocked.providers.mockResolvedValue({
+      items: [{ ...provider, health }], meta: { page: 1, page_size: 100, total: 1 },
+    });
+    renderPage(<Providers />, "/providers");
+    expect(await screen.findByText(health)).toBeInTheDocument();
+    expect(screen.queryByText("healthy")).not.toBeInTheDocument();
+  });
+
   it("creates an incremental import job", async () => {
     renderPage(<ImportJobs />, "/imports");
     expect(await screen.findByText("5 inserted · 0 skipped")).toBeInTheDocument();

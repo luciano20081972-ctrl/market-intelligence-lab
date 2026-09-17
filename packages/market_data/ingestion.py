@@ -10,7 +10,7 @@ from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, SessionTransaction
 
 from packages.database.models import (
     Asset,
@@ -384,6 +384,9 @@ def run_import_job(
     session.flush()
     start_index = int(job.resume_cursor.get("symbol_index", 0))
     reports: list[dict[str, Any]] = list(job.validation_report.get("batches", []))
+    observed_records = False
+    batch_transaction: SessionTransaction | None = None
+    batch: ImportBatch | None = None
     try:
         for sequence, symbol in enumerate(job.symbols):
             if heartbeat:
@@ -410,6 +413,9 @@ def run_import_job(
                 session.flush()
             else:
                 batch.status = "running"
+            # Flush operational state before the savepoint. Only this batch's data
+            # and counters roll back; the caller still owns the single outer commit.
+            batch_transaction = session.begin_nested()
             asset = _asset(session, provider, adapter, symbol)
             fetch_start = start
             if job.mode == "incremental":
@@ -448,6 +454,12 @@ def run_import_job(
             batch.records_processed = len(records)
             job.records_processed += len(records)
             if not report.is_valid:
+                batch_transaction.rollback()
+                batch_transaction = None
+                batch.validation_report = report_data
+                batch.records_processed = len(records)
+                job.records_processed += len(records)
+                provider.health = source.health = "degraded"
                 for issue in report.issues:
                     if issue.severity == "error":
                         session.add(
@@ -557,28 +569,59 @@ def run_import_job(
             batch.effective_timestamp = max((item.effective_time for item in records), default=None)
             batch.status = "succeeded"
             batch.completed_at = datetime.now(UTC)
-            reports.append({"symbol": symbol, **report_data})
             job.resume_cursor = {"symbol_index": sequence + 1}
             session.flush()
+            batch_transaction.commit()
+            batch_transaction = None
+            observed_records = observed_records or bool(records)
+            reports.append({"symbol": symbol, **report_data})
             if heartbeat:
                 heartbeat()
         if job.status == "running":
             job.status = "succeeded"
-            provider.last_successful_import_at = datetime.now(UTC)
-            source.last_successful_retrieval = provider.last_successful_import_at
+            job.next_retry_at = None
+            job.error_summary = None
+            # A completed observation (including a verified duplicate) is recovery
+            # evidence; an empty incremental range is not a provider health probe.
+            if observed_records:
+                provider.health = source.health = "healthy"
+                rate_state = session.scalar(
+                    select(ProviderRateLimitState).where(
+                        ProviderRateLimitState.provider_id == provider.id
+                    )
+                )
+                if rate_state is not None:
+                    rate_state.reset_at = None
+                    rate_state.requests_remaining = None
+                    rate_state.last_response_status = None
+                provider.last_successful_import_at = datetime.now(UTC)
+                source.last_successful_retrieval = provider.last_successful_import_at
         if job.status in TERMINAL_STATUSES:
             job.completed_at = datetime.now(UTC)
     except ProviderTemporaryError as exc:
+        if batch_transaction is not None:
+            batch_transaction.rollback()
+        provider.health = source.health = "degraded" if exc.reachable else "unavailable"
+        if batch is not None:
+            batch.status = "failed"
+            batch.completed_at = datetime.now(UTC)
+        job.next_retry_at = None
+        delay: float = retry_delay_seconds(job.attempt)
         if isinstance(exc, ProviderRateLimitError):
+            delay = max(delay, exc.retry_after_seconds or 0)
             rate_state = session.scalar(
                 select(ProviderRateLimitState).where(
                     ProviderRateLimitState.provider_id == provider.id
                 )
             )
             if rate_state is None:
-                rate_state = ProviderRateLimitState(provider_id=provider.id)
+                # mapped_column(default=0) runs at INSERT, not construction.
+                # A newly observed provider has exactly zero prior rate-limit events.
+                rate_state = ProviderRateLimitState(provider_id=provider.id, rate_limit_events=0)
                 session.add(rate_state)
             rate_state.rate_limit_events += 1
+            rate_state.reset_at = datetime.now(UTC) + timedelta(seconds=delay)
+            rate_state.requests_remaining = 0
             rate_state.last_response_status = 429
             rate_state.updated_at = datetime.now(UTC)
         session.add(
@@ -596,13 +639,18 @@ def run_import_job(
         job.error_summary = str(exc)
         if job.attempt < job.max_attempts:
             job.status = "retrying"
-            job.next_retry_at = datetime.now(UTC) + timedelta(
-                seconds=retry_delay_seconds(job.attempt)
-            )
+            job.next_retry_at = datetime.now(UTC) + timedelta(seconds=delay)
         else:
             job.status = "failed"
             job.completed_at = datetime.now(UTC)
     except ProviderError as exc:
+        if batch_transaction is not None:
+            batch_transaction.rollback()
+        provider.health = source.health = "degraded" if exc.reachable else "unavailable"
+        if batch is not None:
+            batch.status = "failed"
+            batch.completed_at = datetime.now(UTC)
+        job.next_retry_at = None
         session.add(
             ImportError(
                 job_id=job.id,
@@ -619,6 +667,13 @@ def run_import_job(
         job.error_summary = str(exc)
         job.completed_at = datetime.now(UTC)
     except (ValueError, IntegrityError) as exc:
+        if batch_transaction is not None:
+            batch_transaction.rollback()
+        provider.health = source.health = "degraded"
+        if batch is not None:
+            batch.status = "failed"
+            batch.completed_at = datetime.now(UTC)
+        job.next_retry_at = None
         session.add(
             ImportError(
                 job_id=job.id,
