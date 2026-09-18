@@ -37,8 +37,7 @@ def main() -> int:
                 "VITE_API_BASE_URL": f"http://127.0.0.1:{API_PORT}",
             }
         )
-        environment.pop("VITE_SUPABASE_URL", None)
-        environment.pop("VITE_SUPABASE_PUBLISHABLE_KEY", None)
+        environment["VITE_AUTH_MODE"] = "disabled"
         subprocess.run(
             [sys.executable, "-m", "alembic", "upgrade", "head"],
             cwd=ROOT,
@@ -54,6 +53,8 @@ def main() -> int:
             "-m",
             "uvicorn",
             "apps.api.main:app",
+            "--no-proxy-headers",
+            "--no-access-log",
             "--host",
             "127.0.0.1",
             "--port",

@@ -1,5 +1,10 @@
 # Roadmap
 
+## v0.15 auth correction - MIL-AUTH-02
+
+Native PostgreSQL authentication is implemented as a bounded correction to the frozen market-data candidate. Local/disposable validation is recorded in the implementation report; independent security review, new CI, deployment rehearsal and production acceptance remain release gates. Production is still v0.14.1. Browser-memory opaque sessions preserve existing local identities and require sign-in after reload; recovery is operator-assisted. No open registration or external auth service is required in native mode.
+
+
 ## v0.14
 
 Private-beta operations, approved live-data automation, recoverable scheduling, operational health, and verified backup/restore procedures. No brokerage or live-money execution.

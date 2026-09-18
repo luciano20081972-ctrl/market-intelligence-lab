@@ -105,3 +105,7 @@ production architecture, while remaining useful in bounded tests where noted.
 Research Memory now consumes finalized Factor Validation artifacts and supplies pre-scheduling classification to research workflows. Contradiction and regime records contextualize those lessons. Signal Independence compares candidates with a versioned conventional baseline, while the Divergence Engine turns declarative cross-domain disagreement into evidence-backed research candidates. Information Value, method reliability, and outcome attribution describe research efficiency.
 
 All new records are workspace scoped. Memory and divergence use explicit simulation-eligible timestamps. The layer does not submit orders, infer causality, or implement the future Skeptic, Scenario, Counterfactual, portfolio-allocation, or autonomous self-modification systems.
+
+## MIL-AUTH-02 native authentication correction
+
+The selected v0.15 path is browser password -> existing MIL API -> Argon2id -> PostgreSQL session digest -> existing local user profile and workspace/RBAC. The browser holds an opaque bearer token only in memory; reload requires sign-in. External auth_subject is retained as provenance. Recovery uses explicit operator enrollment/reset, with no open registration. Supabase is not required for native runtime authentication. See [native authentication](operations/native-authentication.md) for schema, security and rollback details. Existing market-data and application ownership models are unchanged.

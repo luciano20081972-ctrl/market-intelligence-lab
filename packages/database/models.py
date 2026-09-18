@@ -43,6 +43,41 @@ class UserProfile(Base):
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
 
 
+class NativeCredential(Base):
+    __tablename__ = "native_credentials"
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user_profiles.id", ondelete="RESTRICT"), primary_key=True
+    )
+    login: Mapped[str] = mapped_column(String(160), unique=True)
+    password_hash: Mapped[str] = mapped_column(String(512))
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, onupdate=utc_now)
+    __table_args__ = (CheckConstraint("version > 0", name="credential_version"),)
+
+
+class NativeSession(Base):
+    __tablename__ = "native_sessions"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    token_digest: Mapped[str] = mapped_column(String(64), unique=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user_profiles.id", ondelete="RESTRICT"), index=True
+    )
+    credential_version: Mapped[int] = mapped_column(Integer)
+    issued_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    last_seen_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    idle_expires_at: Mapped[datetime] = mapped_column(UTCDateTime())
+    absolute_expires_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+
+class AuthRateBucket(Base):
+    __tablename__ = "auth_rate_buckets"
+    key: Mapped[str] = mapped_column(String(32), primary_key=True)
+    attempts: Mapped[int] = mapped_column(Integer)
+    expires_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+
+
 class Workspace(Base):
     __tablename__ = "workspaces"
 

@@ -10,7 +10,7 @@ The reference seed demonstrates three materially different business models: semi
 
 Market Intelligence Lab is a workspace-isolated research workbench for historical market and official world data, explainable signals, reproducible backtests, simulated paper trading, SEC filing intelligence, portfolio analytics, constrained optimization, bounded progressive research, and scientifically controlled factor experiments. v0.15 adds the real-market foundation without predictive-alpha claims, brokerage, or real-money execution.
 
-The v0.15 application schema is at Alembic revision `f01500000001` (parent `a141c0de0001`). The v0.5.1 Supabase
+The v0.15 auth-corrective schema is at Alembic revision `a015a0020001` (parent `f01500000001`). Native PostgreSQL authentication preserves local application identities; see [native authentication](docs/operations/native-authentication.md). Production remains v0.14.1 pending separate deployment authorization. The v0.5.1 Supabase
 Auth/JWKS and deny-by-default PostgREST behavior were live-verified with
 temporary users that were removed after the rehearsal. Direct
 FastAPI-to-staging PostgreSQL runtime connectivity remains unverified because
@@ -27,7 +27,7 @@ This release has no Fidelity or brokerage integration, brokerage login automatio
 - `apps/api`: FastAPI HTTP application and `/api/v1` routes.
 - `apps/web`: React, TypeScript, Vite, TanStack Query, React Router, and Recharts client.
 - `packages/database`: SQLAlchemy 2 models, UTC-aware types, and transaction helpers.
-- `packages/auth` and `packages/security`: provider-neutral identity, Supabase JWT verification, workspace roles, and tenant query/write guards.
+- `packages/auth` and `packages/security`: local credentials, opaque bearer sessions, legacy JWT compatibility, workspace roles, and tenant query/write guards.
 - `packages/market_data`: Stooq, Twelve Data, and synthetic adapters, durable jobs and leases, worker/schedules, calendars, comparison, validation, and observability.
 - `packages/provenance`: append-only application audit events.
 - `packages/strategies`: seven versioned, parameter-validated transparent strategies and technical indicators.
@@ -74,7 +74,7 @@ Set-Location ../..
 
 ## Environment setup
 
-Copy `.env.example` to `.env` and adjust only local, non-secret values. `.env` is ignored by Git. The application reads variables prefixed with `MIL_`; the browser reads `VITE_` configuration at build time. `MIL_AUTH_MODE=disabled` is local/test only and production refuses it. Supabase mode requires its URL/audience and the browser's public publishable key. Twelve Data uses backend-only `MIL_TWELVE_DATA_API_KEY`. Never expose a Supabase service-role key or provider key to the browser.
+Copy `.env.example` to `.env` and adjust only local, non-secret values. `.env` is ignored by Git. The application reads variables prefixed with `MIL_`; the browser reads `VITE_` configuration at build time. `MIL_AUTH_MODE=disabled` is local/test only and production refuses it. Native mode requires exact allowed HTTPS origins in production and uses existing PostgreSQL; browser sessions live only in memory. Supabase settings remain for explicit backend legacy compatibility. Twelve Data uses backend-only `MIL_TWELVE_DATA_API_KEY`. Never expose a Supabase service-role key or provider key to the browser.
 
 ```powershell
 Copy-Item .env.example .env

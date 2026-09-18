@@ -85,6 +85,8 @@ class SupabaseJwtVerifier:
 
 
 def authenticate_request(settings: Settings, authorization: str | None) -> AuthPrincipal:
+    if settings.auth_mode == "native":
+        raise AuthError("Native authentication requires database session verification")
     if settings.auth_mode == "disabled":
         return AuthPrincipal(
             user_id=LEGACY_USER_ID,

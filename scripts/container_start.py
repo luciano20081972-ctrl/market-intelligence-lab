@@ -20,6 +20,8 @@ def main() -> None:
             "-m",
             "uvicorn",
             "apps.api.main:app",
+            "--no-proxy-headers",
+            "--no-access-log",
             "--host",
             "0.0.0.0",
             "--port",

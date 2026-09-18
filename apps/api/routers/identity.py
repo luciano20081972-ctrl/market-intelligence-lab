@@ -12,7 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from apps.api.dependencies import get_db, get_principal
-from packages.auth import AuthError, AuthPrincipal, authenticate_request
+from packages.auth import AuthError, AuthPrincipal, authenticate_request, native
 from packages.core.time import utc_now
 from packages.database.models import (
     AuditEvent,
@@ -119,8 +119,13 @@ def auth_me(
 
 
 @router.get("/auth/health")
-def auth_health(request: Request) -> dict[str, object]:
+def auth_health(request: Request, session: Session = Depends(get_db)) -> dict[str, object]:
     settings = request.app.state.settings
+    if settings.auth_mode == "native":
+        healthy = native.ready(session)
+        if not healthy:
+            raise HTTPException(503, "Authentication not ready")
+        return {"status": "healthy", "mode": "native", "provider_configured": True}
     return {
         "status": "healthy"
         if settings.auth_mode == "disabled" or settings.supabase_url
@@ -134,6 +139,8 @@ def auth_health(request: Request) -> dict[str, object]:
 def record_auth_event(
     payload: AuthAuditPayload, request: Request, session: Session = Depends(get_db)
 ) -> dict[str, bool]:
+    if request.app.state.settings.auth_mode == "native":
+        raise HTTPException(404, "Not found")
     try:
         principal = authenticate_request(
             request.app.state.settings, request.headers.get("Authorization")

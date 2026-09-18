@@ -4,6 +4,8 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import Engine, select, text
 from sqlalchemy.exc import SQLAlchemyError
@@ -23,6 +25,7 @@ from apps.api.routers import (
     identity,
     infrastructure,
     market_data,
+    native_auth,
     operations,
     optimization,
     paper_portfolios,
@@ -37,6 +40,7 @@ from apps.api.routers import (
     world_data,
 )
 from apps.api.schemas import HealthResponse
+from packages.auth import AuthError, native
 from packages.core.config import Settings, get_settings
 from packages.database.models import MaintenanceState
 from packages.database.session import create_database_engine, make_session_factory
@@ -73,6 +77,60 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
         ],
     )
     app.middleware("http")(correlation_middleware)
+
+    @app.exception_handler(RequestValidationError)
+    async def safe_validation(request: Request, exc: RequestValidationError) -> Response:
+        if request.url.path.startswith("/api/v1/auth/"):
+            return JSONResponse(
+                status_code=422, content={"detail": "Invalid authentication request"}
+            )
+        return await request_validation_exception_handler(request, exc)
+
+    @app.exception_handler(AuthError)
+    async def auth_failure(request: Request, exc: AuthError) -> Response:
+        error = native_auth.public_error(exc)
+        return JSONResponse(
+            status_code=error.status_code, content={"detail": error.detail}, headers=error.headers
+        )
+
+    @app.middleware("http")
+    async def native_boundary(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        if app_settings.auth_mode != "native":
+            return await call_next(request)
+        is_api = request.url.path.startswith("/api/v1/")
+        is_auth = request.url.path.startswith("/api/v1/auth/")
+        origin = request.headers.get("origin")
+        if is_api and origin is not None and origin not in app_settings.auth_allowed_origins:
+            return JSONResponse(status_code=403, content={"detail": "Origin is not allowed"})
+        if is_api and (
+            request.headers.get("cookie")
+            or any(
+                key.lower()
+                in {"token", "access_token", "password", "authorization", "session_token"}
+                for key in request.query_params
+            )
+        ):
+            return JSONResponse(status_code=400, content={"detail": "Unsupported credentials"})
+        if is_auth and request.method == "POST":
+            if origin not in app_settings.auth_allowed_origins:
+                return JSONResponse(status_code=403, content={"detail": "Origin is required"})
+            if request.query_params:
+                return JSONResponse(status_code=400, content={"detail": "Query is not allowed"})
+            body = bytearray()
+            async for chunk in request.stream():
+                body.extend(chunk)
+                if len(body) > 4096:
+                    return JSONResponse(status_code=413, content={"detail": "Request too large"})
+            request._body = bytes(body)
+        try:
+            response = await call_next(request)
+        except SQLAlchemyError:
+            return JSONResponse(status_code=503, content={"detail": "Service unavailable"})
+        if is_api:
+            response.headers["Cache-Control"] = "no-store"
+        return response
 
     @app.middleware("http")
     async def security_headers(
@@ -126,6 +184,8 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     def readiness(session: Session = Depends(get_db)) -> dict[str, str]:
         try:
             session.execute(text("SELECT 1"))
+            if app_settings.auth_mode == "native" and not native.ready(session):
+                raise HTTPException(503, "Authentication not ready")
         except SQLAlchemyError as exc:
             raise HTTPException(
                 status_code=503,
@@ -195,6 +255,7 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
 
     protected = [Depends(get_workspace_context)]
     app.include_router(identity.router, prefix="/api/v1")
+    app.include_router(native_auth.router, prefix="/api/v1")
     app.include_router(system.router, prefix="/api/v1", dependencies=protected)
     app.include_router(assets.router, prefix="/api/v1", dependencies=protected)
     app.include_router(watchlists.router, prefix="/api/v1", dependencies=protected)

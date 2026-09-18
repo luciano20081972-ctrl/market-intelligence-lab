@@ -36,13 +36,17 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const authHeaders: Record<string, string> = {};
-  if (accessToken) authHeaders.Authorization = `Bearer ${accessToken}`;
+  const requestToken = accessToken;
+  if (requestToken) authHeaders.Authorization = `Bearer ${requestToken}`;
   if (workspaceId) authHeaders["X-Workspace-ID"] = workspaceId;
   const response = await fetch(`${BASE_URL}${path}`, {
     ...init,
+    credentials: "omit",
     headers: { "Content-Type": "application/json", ...authHeaders, ...init?.headers },
   });
-  if (response.status === 401) window.dispatchEvent(new Event("mil:session-expired"));
+  if (response.status === 401 && requestToken && requestToken === accessToken) {
+    window.dispatchEvent(new Event("mil:session-expired"));
+  }
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as {
       detail?: string | { message?: string };
@@ -55,6 +59,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  login: (login: string, password: string) => request<{ access_token: string; token_type: string }>("/api/v1/auth/login", { method: "POST", body: JSON.stringify({ login, password }) }),
+  logout: () => request<void>("/api/v1/auth/logout", { method: "POST" }),
+  changePassword: (current: string, next: string) => request<void>("/api/v1/auth/password", { method: "POST", body: JSON.stringify({ current_password: current, new_password: next }) }),
   currentUser: () => request<CurrentUser>("/api/v1/auth/me"),
   authHealth: () => request<{ status: string; mode: string; provider_configured: boolean }>("/api/v1/auth/health"),
   auditAuth: (action: string, result: "success" | "failure") => request<{ recorded: boolean }>("/api/v1/auth/events", { method: "POST", body: JSON.stringify({ action, result }) }),

@@ -4,9 +4,10 @@ from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from packages.auth import AuthError, AuthPrincipal, authenticate_request
+from packages.auth import AuthError, AuthPrincipal, authenticate_request, native
 from packages.auth.bootstrap import ensure_legacy_workspace
 from packages.database.models import UserProfile, WorkspaceMembership
 from packages.security import WorkspaceContext
@@ -22,6 +23,18 @@ def get_db(request: Request) -> Iterator[Session]:
 
 
 def get_principal(request: Request, session: Session = Depends(get_db)) -> AuthPrincipal:
+    if request.app.state.settings.auth_mode == "native":
+        try:
+            principal = native.authenticate(
+                request.app.state.session_factory,
+                request.app.state.settings,
+                request.headers.get("Authorization"),
+            )
+        except (AuthError, SQLAlchemyError) as exc:
+            raise HTTPException(401, "Invalid or expired session") from exc
+        session.info["actor_user_id"] = principal.user_id
+        session.info["correlation_id"] = getattr(request.state, "correlation_id", None)
+        return principal
     try:
         principal = authenticate_request(
             request.app.state.settings, request.headers.get("Authorization")

@@ -3,11 +3,12 @@ from __future__ import annotations
 import tempfile
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-EXPECTED_SCHEMA_REVISION = "f01500000001"
+EXPECTED_SCHEMA_REVISION = "a015a0020001"
 
 
 def normalize_database_url(value: str) -> str:
@@ -43,6 +44,13 @@ class Settings(BaseSettings):
     json_logs: bool = False
     expensive_request_limit_per_minute: int = Field(default=10, ge=1, le=1000)
     auth_mode: str = "disabled"
+    auth_allowed_origins: list[str] = ["http://127.0.0.1:5173", "http://localhost:5173"]
+    auth_idle_seconds: int = Field(default=1800, ge=300, le=3600)
+    auth_absolute_seconds: int = Field(default=28800, ge=1800, le=86400)
+    auth_touch_seconds: int = Field(default=60, ge=10, le=120)
+    auth_account_limit: int = Field(default=10, ge=1, le=30)
+    auth_source_limit: int = Field(default=30, ge=1, le=120)
+    auth_global_limit: int = Field(default=60, ge=1, le=240)
     supabase_project_ref: str | None = None
     supabase_url: str | None = None
     supabase_jwt_audience: str = "authenticated"
@@ -97,8 +105,8 @@ class Settings(BaseSettings):
     @classmethod
     def validate_auth_mode(cls, value: str) -> str:
         normalized = value.strip().lower()
-        if normalized not in {"disabled", "supabase"}:
-            raise ValueError("MIL_AUTH_MODE must be disabled or supabase")
+        if normalized not in {"disabled", "supabase", "native"}:
+            raise ValueError("MIL_AUTH_MODE must be disabled, supabase or native")
         return normalized
 
     @model_validator(mode="after")
@@ -106,6 +114,32 @@ class Settings(BaseSettings):
         production = self.environment.lower() == "production"
         if production and self.auth_mode == "disabled":
             raise ValueError("MIL_AUTH_MODE=disabled is forbidden in production")
+        if self.auth_mode == "disabled" and self.environment.lower() not in {"development", "test"}:
+            raise ValueError("Disabled authentication is restricted to development/test")
+        if self.auth_idle_seconds > self.auth_absolute_seconds:
+            raise ValueError("Idle expiration must not exceed absolute expiration")
+        if self.auth_mode == "native":
+            if not self.auth_allowed_origins:
+                raise ValueError("Native authentication requires exact allowed origins")
+            for origin in self.auth_allowed_origins:
+                parsed = urlsplit(origin)
+                if (
+                    parsed.scheme not in {"http", "https"}
+                    or not parsed.hostname
+                    or parsed.username
+                    or parsed.password
+                    or parsed.path
+                    or parsed.query
+                    or parsed.fragment
+                    or "*" in origin
+                ):
+                    raise ValueError("Authentication origins must be exact origins")
+                if self.environment.lower() not in {"development", "test"} and (
+                    parsed.scheme != "https"
+                ):
+                    raise ValueError("Native production authentication requires HTTPS origins")
+            if production and not set(self.cors_origins).issubset(self.auth_allowed_origins):
+                raise ValueError("Production CORS must be restricted to authentication origins")
         if production and any(origin == "*" for origin in self.cors_origins):
             raise ValueError("Wildcard CORS is forbidden in production")
         if production and any(host == "*" for host in self.trusted_hosts):

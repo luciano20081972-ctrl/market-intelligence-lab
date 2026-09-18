@@ -61,6 +61,8 @@ def main() -> int:
         "-m",
         "uvicorn",
         "apps.api.main:app",
+        "--no-proxy-headers",
+        "--no-access-log",
         "--host",
         settings.api_host,
         "--port",

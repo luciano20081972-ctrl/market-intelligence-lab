@@ -1,3 +1,9 @@
+# Native authentication operations
+
+For the v0.15 corrective implementation, follow [native authentication operations](native-authentication.md). Native mode does not use Supabase credentials, JWKS or email recovery. Production remains unchanged until a separately authorized deployment/enrollment.
+
+## Historical Supabase operations
+
 # Authentication operations
 
 The browser receives only the Supabase URL and publishable key. Server secret keys never enter the

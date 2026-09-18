@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router";
+import { useState } from "react";
 import { useAuth } from "../auth";
 import { DemoWarning } from "./States";
 
@@ -111,6 +112,12 @@ function NavigationLinks({ section }: { section: NavigationSection }) {
 
 export function Layout() {
   const auth = useAuth();
+  const [logoutError, setLogoutError] = useState("");
+  async function signOut() {
+    setLogoutError("");
+    try { await auth.signOut(); }
+    catch { setLogoutError("Sign-out could not be confirmed. Please retry."); }
+  }
   const location = useLocation();
   const advancedRouteActive = advancedSections.some(section =>
     section.links.some(link => location.pathname === link.to || location.pathname.startsWith(`${link.to}/`))
@@ -137,7 +144,8 @@ export function Layout() {
     <div className="main-column">
       <header className="topbar"><div><b>{auth.workspace?.name ?? "Research workspace"}</b><span>Simulation only · {auth.workspace?.role}</span></div>
         <select aria-label="Workspace" value={auth.workspace?.id ?? ""} onChange={(event) => auth.switchWorkspace(event.target.value)}>{auth.workspaces.map((workspace) => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}</select>
-        <button onClick={() => void auth.signOut()}>Sign out</button><span className="version-chip">v0.15.0</span></header>
+        <button onClick={() => void signOut()}>Sign out</button><span className="version-chip">v0.15.0</span></header>
+      {logoutError && <p role="alert">{logoutError}</p>}
       <DemoWarning />
       <main><Outlet /></main>
     </div>

@@ -17,7 +17,7 @@ const state = vi.hoisted(() => ({
   workspace: { id: "workspace-a", name: "Workspace A", slug: "workspace-a", role: "viewer", created_at: "", updated_at: "" },
   workspaces: [] as Array<Record<string, string>>,
   sessionExpired: false,
-  signIn: vi.fn(), signOut: vi.fn(), requestReset: vi.fn(), completeReset: vi.fn(), switchWorkspace: vi.fn(),
+  signIn: vi.fn(), signOut: vi.fn(), changePassword: vi.fn(), switchWorkspace: vi.fn(),
 }));
 
 vi.mock("../auth", () => ({ useAuth: () => state }));
@@ -46,7 +46,7 @@ describe("Sprint 5 secure multi-user workflows", () => {
     expect(screen.getByRole("img", { name: "Market Intelligence Lab" })).toHaveAttribute(
       "src", "/assets/branding/market-intelligence-lab-logo-512.webp"
     );
-    await userEvent.type(screen.getByLabelText("Email"), "user@example.test");
+    await userEvent.type(screen.getByLabelText("Login"), "user@example.test");
     await userEvent.type(screen.getByLabelText("Password"), "never-display-this");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Sign-in failed");

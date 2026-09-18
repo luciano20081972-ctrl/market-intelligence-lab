@@ -6,7 +6,9 @@ import shutil
 from pathlib import Path
 
 from sqlalchemy import create_engine, text
+from sqlalchemy.orm import Session
 
+from packages.auth.native import ready as native_ready
 from packages.core.config import EXPECTED_SCHEMA_REVISION, Settings, get_settings
 from packages.database.phase5_reconciliation import inspect_phase5_reconciliation
 
@@ -19,6 +21,7 @@ def evaluate(settings: Settings, *, root: Path | None = None) -> dict[str, objec
         "state": "DATABASE_UNAVAILABLE",
     }
     provider_rows: list[tuple[str, bool, str]] = []
+    auth_ready = settings.auth_mode != "disabled"
 
     def check(name: str, passed: bool, message: str, *, warning: bool = False) -> None:
         checks[name] = {
@@ -29,6 +32,9 @@ def evaluate(settings: Settings, *, root: Path | None = None) -> dict[str, objec
     try:
         engine = create_engine(settings.database_url)
         with engine.connect() as connection:
+            if settings.auth_mode == "native":
+                with Session(bind=connection) as session:
+                    auth_ready = native_ready(session)
             reconciliation = inspect_phase5_reconciliation(connection)
             provider_rows = [
                 (str(row.code), bool(row.is_enabled), str(row.health))
@@ -47,11 +53,13 @@ def evaluate(settings: Settings, *, root: Path | None = None) -> dict[str, objec
         else:
             check("DATABASE", False, "Database migration history is not deployment-compatible")
     except Exception as exc:  # readiness must classify sanitized failures
+        if settings.auth_mode == "native":
+            auth_ready = False
         check("DATABASE", False, f"Database unavailable ({type(exc).__name__})")
     check(
         "AUTH",
-        settings.auth_mode != "disabled",
-        "Authentication is configured",
+        auth_ready,
+        "Authentication readiness checked",
         warning=settings.environment != "production",
     )
     raw_path = (base / settings.raw_object_store_root).resolve()

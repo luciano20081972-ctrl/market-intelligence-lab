@@ -10,6 +10,7 @@ LEGACY_REVISION = "3b2f6c7d8e90"
 OFFICIAL_V014_REVISION = "5595df1fe1cf"
 RECONCILIATION_REVISION = "a141c0de0001"
 REAL_MARKET_FOUNDATION_REVISION = "f01500000001"
+NATIVE_AUTH_REVISION = "a015a0020001"
 
 LEGACY_TABLES = {
     "compute_jobs",
@@ -65,7 +66,9 @@ def inspect_phase5_reconciliation(connection: Connection) -> dict[str, Any]:
         }
 
     revisions = sorted(connection.scalars(text("SELECT version_num FROM alembic_version")))
-    at_target = revisions in ([RECONCILIATION_REVISION], [REAL_MARKET_FOUNDATION_REVISION])
+    at_target = revisions in (
+        [RECONCILIATION_REVISION], [REAL_MARKET_FOUNDATION_REVISION], [NATIVE_AUTH_REVISION]
+    )
     legacy_revision = LEGACY_REVISION in revisions
     recognized = legacy_revision or at_target
     legacy_present = LEGACY_TABLES.issubset(tables)
@@ -110,6 +113,7 @@ def inspect_phase5_reconciliation(connection: Connection) -> dict[str, Any]:
         LEGACY_REVISION,
         RECONCILIATION_REVISION,
         REAL_MARKET_FOUNDATION_REVISION,
+        NATIVE_AUTH_REVISION,
     }
     path_available = bool(revisions) and set(revisions).issubset(known_revisions)
     orphan_free = all(

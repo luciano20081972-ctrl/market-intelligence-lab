@@ -1,3 +1,11 @@
+# Native authentication for v0.15
+
+MIL-AUTH-02 uses PostgreSQL-backed credentials and revocable opaque bearer sessions, with browser-memory storage, operator-assisted recovery and no open registration. Existing `user_profiles.id` remains canonical; external `auth_subject` is retained as provenance. Reload requires sign-in. See [implementation and security controls](../operations/native-authentication.md). Supabase is not a runtime dependency in native mode. Production enrollment/deployment remain separately authorized actions.
+
+## Historical Supabase implementation
+
+The following records the earlier implementation, not the selected native browser lifecycle.
+
 # Authentication
 
 `MIL_AUTH_MODE=disabled|supabase`. Disabled mode creates a deterministic local owner and is accepted only in development/test; production settings reject it. Supabase mode requires `MIL_SUPABASE_URL`; FastAPI accepts only Bearer tokens verified against the project's asymmetric JWKS with issuer, audience, expiry, issued-at, and subject checks. JWKS keys cache for five minutes and refresh on rotation/key miss.
