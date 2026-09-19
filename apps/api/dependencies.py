@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Callable, Iterator
 from dataclasses import replace
 from uuid import UUID
@@ -30,7 +31,10 @@ def get_principal(request: Request, session: Session = Depends(get_db)) -> AuthP
                 request.app.state.settings,
                 request.headers.get("Authorization"),
             )
-        except (AuthError, SQLAlchemyError) as exc:
+        except SQLAlchemyError as exc:
+            logging.getLogger(__name__).warning("Database unavailable during native authentication")
+            raise HTTPException(503, "Authentication unavailable") from exc
+        except AuthError as exc:
             raise HTTPException(401, "Invalid or expired session") from exc
         session.info["actor_user_id"] = principal.user_id
         session.info["correlation_id"] = getattr(request.state, "correlation_id", None)
@@ -98,7 +102,7 @@ def get_workspace_context(
     session.info["workspace_id"] = context.workspace_id
     session.info["workspace_role"] = context.role
     permission = permission_for_request(request.method, request.url.path)
-    if not context.allows(permission):
+    if permission == "unmapped.write" or not context.allows(permission):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={"code": "permission_denied", "message": "Permission denied"},

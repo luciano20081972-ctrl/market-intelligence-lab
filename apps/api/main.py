@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
@@ -47,6 +48,8 @@ from packages.database.session import create_database_engine, make_session_facto
 from packages.market_data.observability import correlation_middleware
 from packages.observability.sentry import configure_sentry
 from packages.security.tenant import install_workspace_guards
+
+logger = logging.getLogger(__name__)
 
 
 def create_app(settings: Settings | None = None, engine: Engine | None = None) -> FastAPI:
@@ -127,6 +130,7 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
         try:
             response = await call_next(request)
         except SQLAlchemyError:
+            logger.warning("Database unavailable during native API request")
             return JSONResponse(status_code=503, content={"detail": "Service unavailable"})
         if is_api:
             response.headers["Cache-Control"] = "no-store"
@@ -144,10 +148,14 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
         if body_size > app_settings.max_request_bytes:
             return JSONResponse(status_code=413, content={"detail": "Request body is too large"})
         if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
-            with app.state.session_factory() as maintenance_session:
-                maintenance = maintenance_session.scalar(
-                    select(MaintenanceState).where(MaintenanceState.enabled.is_(True))
-                )
+            try:
+                with app.state.session_factory() as maintenance_session:
+                    maintenance = maintenance_session.scalar(
+                        select(MaintenanceState).where(MaintenanceState.enabled.is_(True))
+                    )
+            except SQLAlchemyError:
+                logger.warning("Database unavailable during maintenance check")
+                return JSONResponse(status_code=503, content={"detail": "Service unavailable"})
             if maintenance is not None:
                 return JSONResponse(
                     status_code=503,

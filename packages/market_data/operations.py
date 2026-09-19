@@ -231,13 +231,26 @@ def execute_claimed_job(
 
 
 def recover_abandoned_jobs(session: Session, *, now: datetime | None = None) -> list[UUID]:
+    """Recover visible parent jobs; unscoped worker sessions are trusted system work.
+
+    Lease ownership derives from job_id, not from the worker (which can move
+    between jobs/workspaces). Lock/claim leases before changing any related state.
+    """
     current = now or datetime.now(UTC)
-    leases = session.scalars(select(JobLease).where(JobLease.expires_at <= current)).all()
+    candidates = session.execute(
+        select(JobLease, ImportJob)
+        .join(ImportJob, ImportJob.id == JobLease.job_id)
+        .where(JobLease.expires_at <= current)
+        .with_for_update(skip_locked=True, of=JobLease)
+    ).all()
     recovered: list[UUID] = []
-    for lease in leases:
-        job = session.get(ImportJob, lease.job_id)
-        worker = session.get(WorkerInstance, lease.worker_id)
-        if job is not None and job.status == "running":
+    for lease, job in candidates:
+        claimed = session.execute(
+            delete(JobLease).where(JobLease.id == lease.id, JobLease.expires_at <= current)
+        )
+        if getattr(claimed, "rowcount", 0) != 1:
+            continue
+        if job.status == "running":
             target = "retrying" if job.attempt < job.max_attempts else "dead_letter"
             job.status = target
             job.next_retry_at = current if target == "retrying" else None
@@ -252,10 +265,11 @@ def recover_abandoned_jobs(session: Session, *, now: datetime | None = None) -> 
                 )
             )
             recovered.append(job.id)
-        if worker is not None:
-            worker.status = "unavailable"
-            worker.current_job_id = None
-        session.delete(lease)
+        session.execute(
+            update(WorkerInstance)
+            .where(WorkerInstance.id == lease.worker_id, WorkerInstance.current_job_id == job.id)
+            .values(status="unavailable", current_job_id=None)
+        )
     session.flush()
     return recovered
 

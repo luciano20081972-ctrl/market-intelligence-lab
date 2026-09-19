@@ -51,6 +51,14 @@ class WorkspaceContext:
 def permission_for_request(method: str, path: str) -> str:
     if method == "GET":
         return "workspace.read"
+    if "/operations/occurrences/" in path:
+        return "schedules.manage"
+    if path.endswith("/operations/recover-abandoned"):
+        return "recovery.manage"
+    if "/import/" in path:
+        return "schedules.manage"
+    if "/paper/" in path:
+        return "paper.manage"
     if "/paper-portfolios/" in path and "/orders" in path:
         return "orders.submit"
     if "/paper-portfolios" in path:
@@ -75,4 +83,4 @@ def permission_for_request(method: str, path: str) -> str:
         return "research.write"
     if "/entity-resolution/" in path:
         return "graph.manage"
-    return "workspace.read"
+    return "unmapped.write"

@@ -313,9 +313,18 @@ def import_errors(
         filters.append(ImportError.job_id == job_id)
     if retryable is not None:
         filters.append(ImportError.is_retryable == retryable)
-    total = session.scalar(select(func.count(ImportError.id)).where(*filters)) or 0
+    # Both pagination totals and rows derive authorization from the owning job.
+    total = (
+        session.scalar(
+            select(func.count(ImportError.id))
+            .join(ImportJob, ImportJob.id == ImportError.job_id)
+            .where(*filters)
+        )
+        or 0
+    )
     rows = session.scalars(
         select(ImportError)
+        .join(ImportJob, ImportJob.id == ImportError.job_id)
         .where(*filters)
         .order_by(ImportError.occurred_at.desc())
         .offset((page - 1) * page_size)

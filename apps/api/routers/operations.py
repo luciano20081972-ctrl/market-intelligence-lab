@@ -5,10 +5,10 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy import desc, func, select
+from sqlalchemy import desc, func, select, update
 from sqlalchemy.orm import Session
 
-from apps.api.dependencies import get_db
+from apps.api.dependencies import get_db, require_permission
 from apps.api.schemas_sprint4 import (
     ImportPreviewRequest,
     ReconciliationRequest,
@@ -19,6 +19,7 @@ from packages.core.config import get_settings
 from packages.database.models import (
     BackupManifest,
     DataFreshnessStatus,
+    ImportJob,
     ImportSchedule,
     JobEvent,
     MaintenanceState,
@@ -46,6 +47,7 @@ from packages.market_data.reconciliation import preview_reconciliation, run_reco
 from packages.market_data.registry import default_registry
 from packages.market_data.types import ProviderError
 from packages.operations.service import queue_age_seconds
+from packages.security import WorkspaceContext
 
 router = APIRouter(tags=["operations"])
 limiter = InProcessRateLimiter(
@@ -222,7 +224,8 @@ def retry_job(job_id: UUID, session: Session = Depends(get_db)) -> dict[str, Any
         return {"id": job.id, "status": job.status}
     except ValueError as exc:
         session.rollback()
-        raise _error("job_not_retryable", str(exc), 409) from exc
+        code = 404 if "not found" in str(exc) else 409
+        raise _error("job_not_retryable", str(exc), code) from exc
 
 
 @router.get("/import/jobs/{job_id}/events")
@@ -262,9 +265,19 @@ def operation_workers(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=25, ge=1, le=100),
 ) -> dict[str, Any]:
-    total = session.scalar(select(func.count(WorkerInstance.id))) or 0
+    # Workers are global processes; expose only their current authorized job
+    # association here. Idle/system workers remain visible to internal health checks.
+    total = (
+        session.scalar(
+            select(func.count(WorkerInstance.id)).join(
+                ImportJob, ImportJob.id == WorkerInstance.current_job_id
+            )
+        )
+        or 0
+    )
     rows = session.scalars(
         select(WorkerInstance)
+        .join(ImportJob, ImportJob.id == WorkerInstance.current_job_id)
         .order_by(WorkerInstance.last_heartbeat_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
@@ -478,34 +491,61 @@ def task_occurrences(session: Session = Depends(get_db)) -> list[dict[str, Any]]
 
 @router.post("/operations/occurrences/{occurrence_id}/{action}")
 def resolve_quarantined_occurrence(
-    occurrence_id: UUID, action: str, session: Session = Depends(get_db)
+    occurrence_id: UUID,
+    action: str,
+    session: Session = Depends(get_db),
+    context: WorkspaceContext = Depends(require_permission("schedules.manage")),
 ) -> dict[str, Any]:
-    occurrence = session.get(ScheduledTaskOccurrence, occurrence_id)
+    occurrence = session.scalar(
+        select(ScheduledTaskOccurrence).where(
+            ScheduledTaskOccurrence.id == occurrence_id,
+            ScheduledTaskOccurrence.workspace_id == context.workspace_id,
+        )
+    )
     if occurrence is None:
         raise _error("occurrence_not_found", "Scheduled occurrence was not found", 404)
     if occurrence.status != "QUARANTINED":
         raise _error("occurrence_not_quarantined", "Only quarantined work can be resolved", 409)
     normalized = action.upper()
+    changes: dict[str, Any]
     if normalized == "RETRY":
-        occurrence.status = "RETRY_WAIT"
-        occurrence.next_retry_at = datetime.now(UTC)
-        occurrence.finished_at = None
+        changes = {"status": "RETRY_WAIT", "next_retry_at": datetime.now(UTC), "finished_at": None}
     elif normalized == "DISMISS":
-        occurrence.status = "CANCELLED"
-        occurrence.finished_at = datetime.now(UTC)
+        changes = {"status": "CANCELLED", "finished_at": datetime.now(UTC)}
     elif normalized == "SUPERSEDE":
-        occurrence.status = "CANCELLED"
-        occurrence.finished_at = datetime.now(UTC)
-        occurrence.result_manifest = {**occurrence.result_manifest, "resolution": "SUPERSEDED"}
+        changes = {
+            "status": "CANCELLED",
+            "finished_at": datetime.now(UTC),
+            "result_manifest": {**occurrence.result_manifest, "resolution": "SUPERSEDED"},
+        }
     else:
         raise _error("invalid_quarantine_action", "Action must be RETRY, DISMISS, or SUPERSEDE")
+    changed = session.execute(
+        update(ScheduledTaskOccurrence)
+        .where(
+            ScheduledTaskOccurrence.id == occurrence_id,
+            ScheduledTaskOccurrence.workspace_id == context.workspace_id,
+            ScheduledTaskOccurrence.status == "QUARANTINED",
+        )
+        .values(**changes)
+    )
+    if changed.rowcount != 1:  # type: ignore[attr-defined]
+        session.rollback()
+        raise _error("occurrence_not_quarantined", "Only quarantined work can be resolved", 409)
     session.commit()
-    return {"id": occurrence.id, "status": occurrence.status, "action": normalized}
+    return {"id": occurrence.id, "status": changes["status"], "action": normalized}
 
 
 @router.post("/operations/recover-abandoned")
-def recover_operations(request: Request, session: Session = Depends(get_db)) -> dict[str, Any]:
+def recover_operations(
+    request: Request,
+    session: Session = Depends(get_db),
+    context: WorkspaceContext = Depends(require_permission("recovery.manage")),
+) -> dict[str, Any]:
     _guard(request)
+    # The same service supports trusted unscoped worker maintenance. HTTP must
+    # always carry the authenticated workspace before selecting parent jobs.
+    session.info["workspace_id"] = context.workspace_id
     recovered = recover_abandoned_jobs(session)
     session.commit()
     return {"recovered_job_ids": recovered, "count": len(recovered)}
