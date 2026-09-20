@@ -211,6 +211,7 @@ projects:
 
 direct_dependencies:
   - { ecosystem: python, name: alembic, version: ">=1.14,<2", license: MIT }
+  - { ecosystem: python, name: argon2-cffi, version: "==25.1.0", license: MIT }
   - { ecosystem: python, name: fastapi, version: ">=0.115,<1", license: MIT }
   - { ecosystem: python, name: exchange-calendars, version: ">=4.13,<5", license: Apache-2.0 }
   - { ecosystem: python, name: httpx, version: ">=0.28,<1", license: BSD-3-Clause }
