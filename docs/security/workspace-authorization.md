@@ -60,6 +60,57 @@ internal storage/checkpoint records, not exposed by these import HTTP routes.
 
 ## Adjacent resource classification
 
+### Related-resource visibility (AUTH-08)
+
+Authorization of A never authorizes disclosure of workspace-scoped B merely
+because A references B. An HTTP response must not expose B's identifier, metadata,
+count, status, nested object, lineage or provenance unless the requester is
+independently authorized to know B, or the field is explicitly safe GLOBAL/SYSTEM
+metadata. Possession of a foreign key is not authorization. Serialization is part
+of the authorization boundary.
+
+RELATED-RESOURCE supplements DIRECT, PARENT-DERIVED and GLOBAL/SYSTEM: it describes
+an independently protected target referenced by an otherwise authorized object.
+`apps/api/import_visibility.py` resolves explicit import-family visibility paths
+through the same request-scoped session. It selects IDs in batches of at most 500,
+not one lookup per serialized row. It is not a recursive FK authorization engine.
+
+The HTTP representation uses null for inaccessible scalar references, including
+null/orphan parents. Stored relationships and trusted ingestion remain intact.
+Same-workspace references remain visible. A nonexistent manifest parent cannot be
+inserted with the FK enabled; deleting a referenced parent is RESTRICTed. Losing
+the parent's owning job is representable and must hide that parent reference.
+
+| Import-family field / output | Classification / disclosure rule |
+| --- | --- |
+| ImportJob.id, ImportSchedule.id, job/history/status/count | DIRECT; scoped resource and action permission |
+| Manifest.job_id | PARENT-DERIVED; surviving owning-job join before HTTP exposure |
+| Manifest.parent_manifest_id | RELATED-RESOURCE; independently visible manifest or null, shared list/detail serializer |
+| Macro/EnergyObservation.manifest_id, macro as-of output | RELATED-RESOURCE; independently visible manifest or null; canonical values/counts remain GLOBAL and unchanged |
+| Datasource-health latest_manifest_id/count/timestamps | PARENT-DERIVED; latest authorized manifest only; no raw lineage field |
+| ImportError.job_id and row/count | PARENT-DERIVED; joined owning job |
+| ImportError.batch_id | RELATED-RESOURCE; batch's own job must be visible, otherwise null |
+| Job detail batches and batch IDs | PARENT-DERIVED; job authorized first, collection constrained by that job |
+| Job events/quality report | PARENT-DERIVED; job authorized first; reviewed producers emit own diagnostics/counts and GLOBAL provider/worker labels, not other tenant IDs |
+| ScheduleRun.job_id in run-now response | RELATED-RESOURCE; independently scoped job or null; authorized schedule alone is insufficient |
+| Worker current_job_id, worker list/count | PARENT-DERIVED current association; existing joined scoped job |
+| Recovery returned job IDs/count | PARENT-DERIVED scoped leases/jobs, management permission; trusted global worker remains internal |
+| Provider IDs/codes, source/dataset definitions, canonical series IDs | GLOBAL reference metadata, not private execution ownership |
+| PriceBar.import_job_id | Internal provenance; price HTTP serializer does not expose it |
+| Raw objects/checkpoints, leases, operational metrics, SEC parse children | No standalone import HTTP serialization of their raw related IDs found |
+
+The bounded audit covers these import/manifest HTTP fields and the world-data
+observation serializers that directly expose DataManifest references. It does
+not certify independent research/backtest lineage documents or every scheduler
+relationship; those domains are not broadened into this corrective task. New
+fields and new consumers require explicit classification and adversarial tests,
+including nested JSON: arbitrary diagnostic strings are not automatically safe
+relationship containers.
+
+`tests/test_import_relationship_visibility.py` retains same/foreign/null/orphan
+lineage, FK integrity, batch/job secondary references, canonical observation
+provenance, unchanged database snapshots and a bounded-query-count check.
+
 | Resource | Classification / API boundary |
 |---|---|
 | ImportJob, ImportSchedule, task definitions/occurrences | Direct workspace scope |

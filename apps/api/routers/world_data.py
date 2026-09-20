@@ -5,26 +5,21 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import Select, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from apps.api.dependencies import get_db
+from apps.api.import_visibility import manifest_query, visible_import_ids
 from packages.database.models import (
     DataManifest,
     EnergyObservation,
     EnergySeries,
-    ImportJob,
     MacroObservation,
     MacroSeries,
 )
 from packages.world_data.registry import DatasetDefinition, load_dataset_registry
 
 router = APIRouter(tags=["world-data"])
-
-
-def _manifest_query() -> Select[tuple[DataManifest]]:
-    # No parent means no workspace authority, including ON DELETE SET NULL orphans.
-    return select(DataManifest).join(ImportJob, ImportJob.id == DataManifest.job_id)
 
 
 def _dataset(item: DatasetDefinition) -> dict[str, Any]:
@@ -53,7 +48,7 @@ def data_source_health(dataset_id: str, session: Session = Depends(get_db)) -> d
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Data source not found") from exc
     latest = session.scalars(
-        _manifest_query()
+        manifest_query()
         .where(DataManifest.dataset_id == dataset_id)
         .order_by(DataManifest.retrieval_time.desc())
         .limit(1)
@@ -80,8 +75,19 @@ def data_source(dataset_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="Data source not found") from exc
 
 
-def _manifest(item: DataManifest) -> dict[str, Any]:
-    return {column.name: getattr(item, column.name) for column in DataManifest.__table__.columns}
+def _manifests(items: list[DataManifest], session: Session) -> list[dict[str, Any]]:
+    visible = visible_import_ids(session, DataManifest, (item.parent_manifest_id for item in items))
+    return [
+        {
+            **{
+                column.name: getattr(item, column.name) for column in DataManifest.__table__.columns
+            },
+            "parent_manifest_id": (
+                item.parent_manifest_id if item.parent_manifest_id in visible else None
+            ),
+        }
+        for item in items
+    ]
 
 
 @router.get("/data-manifests")
@@ -90,29 +96,38 @@ def data_manifests(
     job_id: uuid.UUID | None = None,
     session: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    query = _manifest_query().order_by(DataManifest.retrieval_time.desc())
+    query = manifest_query().order_by(DataManifest.retrieval_time.desc())
     if dataset_id:
         query = query.where(DataManifest.dataset_id == dataset_id)
     if job_id is not None:
         query = query.where(DataManifest.job_id == job_id)
     items = session.scalars(query.limit(200)).all()
-    return {"items": [_manifest(item) for item in items], "total": len(items)}
+    return {"items": _manifests(list(items), session), "total": len(items)}
 
 
 @router.get("/data-manifests/{manifest_id}")
 def data_manifest(manifest_id: uuid.UUID, session: Session = Depends(get_db)) -> dict[str, Any]:
-    item = session.scalar(_manifest_query().where(DataManifest.id == manifest_id))
+    item = session.scalar(manifest_query().where(DataManifest.id == manifest_id))
     if item is None:
         raise HTTPException(status_code=404, detail="Data manifest not found")
-    return _manifest(item)
+    return _manifests([item], session)[0]
 
 
 def _series(item: MacroSeries | EnergySeries) -> dict[str, Any]:
     return {column.name: getattr(item, column.name) for column in item.__table__.columns}
 
 
-def _observation(item: MacroObservation | EnergyObservation) -> dict[str, Any]:
-    return {column.name: getattr(item, column.name) for column in item.__table__.columns}
+def _observations(
+    items: list[MacroObservation] | list[EnergyObservation], session: Session
+) -> list[dict[str, Any]]:
+    visible = visible_import_ids(session, DataManifest, (item.manifest_id for item in items))
+    return [
+        {
+            **{column.name: getattr(item, column.name) for column in item.__table__.columns},
+            "manifest_id": item.manifest_id if item.manifest_id in visible else None,
+        }
+        for item in items
+    ]
 
 
 @router.get("/macro/series")
@@ -137,7 +152,7 @@ def macro_observations(series_id: uuid.UUID, session: Session = Depends(get_db))
         .order_by(MacroObservation.observation_time, MacroObservation.revision_time)
     ).all()
     return {
-        "items": [_observation(item) for item in items],
+        "items": _observations(list(items), session),
         "total": len(items),
         "label": "latest revised; use /as-of for point-in-time research",
     }
@@ -166,7 +181,7 @@ def macro_as_of(
     for row in rows:
         latest_by_period.setdefault(row.observation_time, row)
     return {
-        "items": [_observation(item) for item in latest_by_period.values()],
+        "items": _observations(list(latest_by_period.values()), session),
         "total": len(latest_by_period),
         "as_of": as_of,
         "point_in_time_safe": True,
@@ -186,4 +201,4 @@ def energy_observations(series_id: uuid.UUID, session: Session = Depends(get_db)
         .where(EnergyObservation.series_id == series_id)
         .order_by(EnergyObservation.observation_time)
     ).all()
-    return {"items": [_observation(item) for item in items], "total": len(items)}
+    return {"items": _observations(list(items), session), "total": len(items)}

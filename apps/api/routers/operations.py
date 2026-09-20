@@ -9,6 +9,7 @@ from sqlalchemy import desc, func, select, update
 from sqlalchemy.orm import Session
 
 from apps.api.dependencies import get_db, get_import_job, require_permission
+from apps.api.import_visibility import visible_import_ids
 from apps.api.schemas_sprint4 import (
     ImportPreviewRequest,
     ReconciliationRequest,
@@ -649,10 +650,12 @@ def run_schedule_now(schedule_id: UUID, session: Session = Depends(get_db)) -> d
         .where(ScheduleRun.schedule_id == value.id)
         .order_by(ScheduleRun.scheduled_for.desc())
     )
+    job_id = schedule_run.job_id if schedule_run else None
+    visible_jobs = visible_import_ids(session, ImportJob, [job_id])
     session.commit()
     return {
         "schedule_id": value.id,
-        "job_id": schedule_run.job_id if schedule_run else None,
+        "job_id": job_id if job_id in visible_jobs else None,
         "status": "queued",
     }
 

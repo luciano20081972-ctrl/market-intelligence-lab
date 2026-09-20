@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from apps.api.dependencies import get_db, get_import_job
+from apps.api.import_visibility import visible_import_ids
 from apps.api.schemas_sprint3 import (
     CorporateActionPage,
     CorporateActionResponse,
@@ -29,6 +30,7 @@ from packages.core.config import get_settings
 from packages.database.models import (
     CorporateAction,
     ExchangeCalendar,
+    ImportBatch,
     ImportError,
     ImportJob,
     JobEvent,
@@ -329,12 +331,13 @@ def import_errors(
         .offset((page - 1) * page_size)
         .limit(page_size)
     ).all()
+    visible_batches = visible_import_ids(session, ImportBatch, (item.batch_id for item in rows))
     return ImportErrorPage(
         items=[
             ImportErrorResponse(
                 id=item.id,
                 job_id=item.job_id,
-                batch_id=item.batch_id,
+                batch_id=item.batch_id if item.batch_id in visible_batches else None,
                 error_code=item.error_code,
                 message=item.message,
                 record_identifier=item.record_identifier,
