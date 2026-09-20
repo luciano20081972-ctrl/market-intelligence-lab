@@ -35,6 +35,29 @@ identifiers must not leak across workspaces. Import batches and job events are
 accessed only after their parent job is authorized. Schedule runs similarly follow
 an authorized import schedule.
 
+### Import manifests and HTTP parent lookup (AUTH-06)
+
+DataManifest is parent-derived through `job_id -> ImportJob.workspace_id` for
+workspace HTTP access. List, optional job filter, detail, and datasource health
+use the same parent-joined query. A foreign/nonexistent manifest returns generic
+404; foreign/nonexistent job filters return an empty list/count. A manifest with
+no surviving import parent is not exposed to workspace HTTP clients, including
+rows orphaned by `ON DELETE SET NULL`. Null ownership does not grant global access.
+Trusted ingestion can still persist/read system manifests internally. Canonical
+macro/energy observations remain shared; no storage or provider change is made.
+
+HTTP import-job lookups use `get_import_job` to resolve the scoped parent and
+return a controlled 404 before child traversal. Job events/quality reports and
+management routes share that lookup. Invalid UUIDs remain validation errors;
+other domain failures are not broadly converted to not-found responses.
+
+Bounded import-family inventory: ImportJob/ImportSchedule are DIRECT; DataManifest,
+ImportBatch, ImportError, JobEvent, JobLease and ScheduleRun are PARENT-DERIVED.
+WorkerInstance is GLOBAL/SYSTEM with a parent-derived current-job view. PriceBar
+is shared canonical data whose import FK is provenance, not ownership.
+OperationalMetric has no direct HTTP route. RawDataObject/IngestionCheckpoint are
+internal storage/checkpoint records, not exposed by these import HTTP routes.
+
 ## Adjacent resource classification
 
 | Resource | Classification / API boundary |

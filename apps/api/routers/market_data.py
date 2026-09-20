@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
-from apps.api.dependencies import get_db
+from apps.api.dependencies import get_db, get_import_job
 from apps.api.schemas_sprint3 import (
     CorporateActionPage,
     CorporateActionResponse,
@@ -37,7 +37,6 @@ from packages.database.models import (
 )
 from packages.market_data.ingestion import (
     create_import_job,
-    get_job,
     request_cancellation,
     restart_import_job,
     run_import_job,
@@ -206,7 +205,7 @@ def create_job(
         if payload.execute_immediately:
             run_import_job(session, job)
         session.commit()
-        job = get_job(session, job.id)
+        job = get_import_job(session, job.id)
         return _job(job, include_batches=True)
     except ValueError as exc:
         session.rollback()
@@ -256,7 +255,7 @@ def job_detail(job_id: UUID, session: Session = Depends(get_db)) -> ImportJobRes
 @router.post("/import/jobs/{job_id}/cancel", response_model=ImportJobResponse)
 def cancel_job(job_id: UUID, session: Session = Depends(get_db)) -> ImportJobResponse:
     try:
-        job = request_cancellation(session, get_job(session, job_id))
+        job = request_cancellation(session, get_import_job(session, job_id))
         session.commit()
         return _job(job)
     except ValueError as exc:
@@ -268,7 +267,7 @@ def cancel_job(job_id: UUID, session: Session = Depends(get_db)) -> ImportJobRes
 @router.post("/import/jobs/{job_id}/restart", response_model=ImportJobResponse)
 def restart_job(job_id: UUID, session: Session = Depends(get_db)) -> ImportJobResponse:
     try:
-        job = restart_import_job(session, get_job(session, job_id))
+        job = restart_import_job(session, get_import_job(session, job_id))
         run_import_job(session, job)
         session.commit()
         return _job(job, include_batches=True)

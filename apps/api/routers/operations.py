@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import desc, func, select, update
 from sqlalchemy.orm import Session
 
-from apps.api.dependencies import get_db, require_permission
+from apps.api.dependencies import get_db, get_import_job, require_permission
 from apps.api.schemas_sprint4 import (
     ImportPreviewRequest,
     ReconciliationRequest,
@@ -35,7 +35,7 @@ from packages.database.models import (
     ScheduleRun,
     WorkerInstance,
 )
-from packages.market_data.ingestion import get_job, restart_import_job
+from packages.market_data.ingestion import restart_import_job
 from packages.market_data.operations import (
     process_due_schedules,
     queue_summary,
@@ -208,7 +208,7 @@ def preview_import(
 @router.post("/import/jobs/{job_id}/retry")
 def retry_job(job_id: UUID, session: Session = Depends(get_db)) -> dict[str, Any]:
     try:
-        job = get_job(session, job_id)
+        job = get_import_job(session, job_id)
         previous = job.status
         job = restart_import_job(session, job)
         session.add(
@@ -230,7 +230,7 @@ def retry_job(job_id: UUID, session: Session = Depends(get_db)) -> dict[str, Any
 
 @router.get("/import/jobs/{job_id}/events")
 def job_events(job_id: UUID, session: Session = Depends(get_db)) -> list[dict[str, Any]]:
-    get_job(session, job_id)
+    get_import_job(session, job_id)
     events = session.scalars(
         select(JobEvent).where(JobEvent.job_id == job_id).order_by(JobEvent.created_at)
     ).all()
@@ -250,7 +250,7 @@ def job_events(job_id: UUID, session: Session = Depends(get_db)) -> list[dict[st
 
 @router.get("/import/jobs/{job_id}/quality-report")
 def job_quality_report(job_id: UUID, session: Session = Depends(get_db)) -> dict[str, Any]:
-    job = get_job(session, job_id)
+    job = get_import_job(session, job_id)
     return {"job_id": job.id, "status": job.status, "report": job.validation_report}
 
 

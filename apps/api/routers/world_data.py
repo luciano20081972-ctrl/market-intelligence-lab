@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
 from apps.api.dependencies import get_db
@@ -13,12 +13,18 @@ from packages.database.models import (
     DataManifest,
     EnergyObservation,
     EnergySeries,
+    ImportJob,
     MacroObservation,
     MacroSeries,
 )
 from packages.world_data.registry import DatasetDefinition, load_dataset_registry
 
 router = APIRouter(tags=["world-data"])
+
+
+def _manifest_query() -> Select[tuple[DataManifest]]:
+    # No parent means no workspace authority, including ON DELETE SET NULL orphans.
+    return select(DataManifest).join(ImportJob, ImportJob.id == DataManifest.job_id)
 
 
 def _dataset(item: DatasetDefinition) -> dict[str, Any]:
@@ -47,7 +53,7 @@ def data_source_health(dataset_id: str, session: Session = Depends(get_db)) -> d
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Data source not found") from exc
     latest = session.scalars(
-        select(DataManifest)
+        _manifest_query()
         .where(DataManifest.dataset_id == dataset_id)
         .order_by(DataManifest.retrieval_time.desc())
         .limit(1)
@@ -80,18 +86,22 @@ def _manifest(item: DataManifest) -> dict[str, Any]:
 
 @router.get("/data-manifests")
 def data_manifests(
-    dataset_id: str | None = None, session: Session = Depends(get_db)
+    dataset_id: str | None = None,
+    job_id: uuid.UUID | None = None,
+    session: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    query = select(DataManifest).order_by(DataManifest.retrieval_time.desc())
+    query = _manifest_query().order_by(DataManifest.retrieval_time.desc())
     if dataset_id:
         query = query.where(DataManifest.dataset_id == dataset_id)
+    if job_id is not None:
+        query = query.where(DataManifest.job_id == job_id)
     items = session.scalars(query.limit(200)).all()
     return {"items": [_manifest(item) for item in items], "total": len(items)}
 
 
 @router.get("/data-manifests/{manifest_id}")
 def data_manifest(manifest_id: uuid.UUID, session: Session = Depends(get_db)) -> dict[str, Any]:
-    item = session.get(DataManifest, manifest_id)
+    item = session.scalar(_manifest_query().where(DataManifest.id == manifest_id))
     if item is None:
         raise HTTPException(status_code=404, detail="Data manifest not found")
     return _manifest(item)

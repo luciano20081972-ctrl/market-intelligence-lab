@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from packages.auth import AuthError, AuthPrincipal, authenticate_request, native
 from packages.auth.bootstrap import ensure_legacy_workspace
-from packages.database.models import UserProfile, WorkspaceMembership
+from packages.database.models import ImportJob, UserProfile, WorkspaceMembership
 from packages.security import WorkspaceContext
 from packages.security.authorization import permission_for_request
 
@@ -21,6 +21,14 @@ def get_db(request: Request) -> Iterator[Session]:
         yield session
     finally:
         session.close()
+
+
+def get_import_job(session: Session, job_id: UUID) -> ImportJob:
+    """Resolve the authoritative scoped parent before HTTP child access."""
+    job = session.scalar(select(ImportJob).where(ImportJob.id == job_id))
+    if job is None:
+        raise HTTPException(status_code=404, detail="Import job was not found")
+    return job
 
 
 def get_principal(request: Request, session: Session = Depends(get_db)) -> AuthPrincipal:
