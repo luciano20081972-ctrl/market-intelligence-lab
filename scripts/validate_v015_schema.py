@@ -19,7 +19,7 @@ def main() -> None:
         with engine.connect() as connection:
             heads = ScriptDirectory.from_config(Config("alembic.ini")).get_heads()
             revisions = list(connection.scalars(text("SELECT version_num FROM alembic_version")))
-            assert heads == revisions == ["f01500000001"], (heads, revisions)
+            assert heads == revisions == ["a015a0020001"], (heads, revisions)
             checks = {}
             for table in ("asset_listings", "asset_identifiers", "provider_asset_mappings"):
                 expected = {
