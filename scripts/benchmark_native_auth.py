@@ -33,9 +33,10 @@ def rss_kib() -> int:
 
         counters = Counters()
         counters.cb = ctypes.sizeof(counters)
-        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        win_dll = ctypes.__dict__["WinDLL"]
+        kernel = win_dll("kernel32", use_last_error=True)
         kernel.GetCurrentProcess.restype = ctypes.c_void_p
-        psapi = ctypes.WinDLL("psapi", use_last_error=True)
+        psapi = win_dll("psapi", use_last_error=True)
         psapi.GetProcessMemoryInfo.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ulong]
         if not psapi.GetProcessMemoryInfo(
             kernel.GetCurrentProcess(), ctypes.byref(counters), counters.cb
