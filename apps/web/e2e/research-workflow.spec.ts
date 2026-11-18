@@ -36,12 +36,27 @@ test("progressive research fixture is temporal, explainable, and budgeted", asyn
   const response = await page.request.get("http://127.0.0.1:8012/api/v1/research/candidates");
   expect(response.ok()).toBeTruthy();
   const payload = await response.json() as { items: Array<{ id: string; archetype: string }> };
-  for (const archetype of ["semiconductor", "airline", "agriculture"]) {
+  const candidatePaths = ["semiconductor", "airline", "agriculture"].map(archetype => {
     const candidate = payload.items.find(item => item.archetype === archetype);
     expect(candidate).toBeTruthy();
-    await page.goto(`/research/candidates/${candidate!.id}`);
-    await expect(page.getByText("Irrelevant pipelines skipped")).toBeVisible();
+    return `/research/candidates/${candidate!.id}`;
+  });
+  const skippedPipelines = page.getByText("Irrelevant pipelines skipped");
+  for (const candidatePath of candidatePaths) {
+    await page.goto(candidatePath);
+    await expect(skippedPipelines).toBeVisible();
+    await expect(page).toHaveURL(candidatePath);
     await expect(page.getByText("Yes", { exact: true })).toBeVisible();
   }
+
+  await page.reload();
+  await expect(skippedPipelines).toBeVisible();
+  await expect(page).toHaveURL(candidatePaths[2]);
+  await page.goBack();
+  await expect(skippedPipelines).toBeVisible();
+  await expect(page).toHaveURL(candidatePaths[1]);
+  await page.goForward();
+  await expect(skippedPipelines).toBeVisible();
+  await expect(page).toHaveURL(candidatePaths[2]);
   expect(severe).toEqual([]);
 });

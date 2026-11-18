@@ -47,7 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       if (generation.current === expected) clear();
       throw error;
-    } finally { setLoading(false); }
+    } finally {
+      if (generation.current === expected) setLoading(false);
+    }
   }
   useEffect(() => {
     configureRequestContext(null, null);

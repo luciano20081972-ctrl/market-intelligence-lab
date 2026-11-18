@@ -206,7 +206,11 @@ def test_evaluation_mode_and_forecast_type_are_bounded() -> None:
         )
 
 
-def test_protected_forecast_api_freezes_observes_and_scores(client: TestClient) -> None:
+def test_protected_forecast_api_freezes_observes_and_scores(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    now = datetime(2026, 8, 15, 12, tzinfo=UTC)
+    monkeypatch.setattr("apps.api.routers.prospective_intelligence.utc_now", lambda: now)
     created = client.post(
         "/api/v1/research/forecasts",
         json={
@@ -225,6 +229,7 @@ def test_protected_forecast_api_freezes_observes_and_scores(client: TestClient) 
     forecast_id = created.json()["id"]
     locked = client.post(f"/api/v1/research/forecasts/{forecast_id}/lock")
     assert locked.status_code == 200 and locked.json()["state"] == "LOCKED"
+    assert datetime.fromisoformat(locked.json()["locked_at"]) == now
     early = client.post(
         f"/api/v1/research/forecasts/{forecast_id}/observe",
         json={
@@ -234,11 +239,12 @@ def test_protected_forecast_api_freezes_observes_and_scores(client: TestClient) 
         },
     )
     assert early.status_code == 409
+    now = datetime(2026, 10, 3, 12, tzinfo=UTC)
     mature = client.post(
         f"/api/v1/research/forecasts/{forecast_id}/observe",
         json={
             "realized_value": {"value": 1},
-            "observed_at": "2026-10-03T12:00:00Z",
+            "observed_at": now.isoformat(),
             "source_manifest": {"eligible": True},
         },
     )
